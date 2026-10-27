@@ -1,27 +1,15 @@
 services:
   db:
-    image: postgres:15-alpine
-    container_name: credflow_postgres
+    image: pgvector/pgvector:pg16
+    container_name: auditor_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: credflow
+      POSTGRES_DB: auditor_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  app:
-    build: .
-    container_name: credflow_streamlit
-    ports:
-      - "8501:8501"
-    volumes:
-      - .:/app
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/credflow
-    depends_on:
-      - db
 
 volumes:
   postgres_data:

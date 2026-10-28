@@ -10,6 +10,18 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
+  api:
+    build: .
+    container_name: auditor_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/auditor_db
+    depends_on:
+      - db
+    restart: unless_stopped
+    
 volumes:
   postgres_data:

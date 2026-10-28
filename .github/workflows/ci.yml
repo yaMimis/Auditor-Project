@@ -1,3 +1,5 @@
+#CRITERIO DE GOVERNANÇA DE CODIGO
+#p/ segurança e integração continua
 name: CI Basico - Auditor
 
 on:

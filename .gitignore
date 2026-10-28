@@ -4,4 +4,8 @@
 __pycache__/
 .venv/
 venv/
+myenv/
 .VSCode/
+data/raw/*.csv
+data/clean/*.csv
+docker-compose.override.yml

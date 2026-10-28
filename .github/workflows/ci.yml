@@ -2,18 +2,24 @@ name: CI Basico - Auditor
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "setup+fastapi+prever" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: action/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout do repositorio
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Check code execution
-        run: echo "CI configurado"
+
+      - name: Validar ambiente
+        run: |
+          python --version
+          echo "CI configurado"

@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d
     restart: unless-stopped
 
   api:
@@ -21,7 +22,18 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/auditor_db
     depends_on:
       - db
-    restart: unless_stopped
-    
+    restart: unless-stopped
+
+  streamlit:
+    build: .
+    container_name: auditor_streamlit
+    command: streamlit run src/app/main.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
 volumes:
   postgres_data:

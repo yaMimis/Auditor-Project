@@ -6,8 +6,8 @@
 ## 1. Fonte e versão
 
 - Bondora LoanData: 179.235 contratos, 112 colunas, concessões de 2009 a 2021, data de corte 20/07/2021 (`ReportAsOfEOD`).
-- Arquivo: `data/raw/LoanData_Bondora.csv`. SHA-256 (impressão digital do arquivo): `<preencher>`. Conferir com `Get-FileHash data\raw\LoanData_Bondora.csv -Algorithm SHA256`.
-- Dicionário de dados: Public Reports do Bondora, consultado em `<data>`.
+- Arquivo: `data/raw/LoanData_Bondora.csv`. SHA-256 (impressão digital do arquivo): `<4728fc5ecf6d1f42246d97780a827d43b133dfa09b9f2f363ad91eee588663b5>`. Conferir com `Get-FileHash data\raw\LoanData_Bondora.csv -Algorithm SHA256`.
+- Dicionário de dados: Public Reports do Bondora, consultado em `<28/10/2026>`.
 - O CSV nunca entra no Git.
 
 ## 2. Unidade de análise

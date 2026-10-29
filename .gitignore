@@ -9,3 +9,6 @@ myenv/
 data/raw/*.csv
 data/clean/*.csv
 docker-compose.override.yml
+*.joblib
+*.pkl
+.ipynb_checkpoints/

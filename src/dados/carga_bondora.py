@@ -13,7 +13,9 @@ O que faz:
   * lê o CSV em blocos, tudo como texto, e converte coluna a coluna;
   * valor ilegível vira NULL e entra no relatório final (nada some em silêncio);
   * separa cada contrato nas três tabelas, todas ligadas por loan_id;
-  * UserName vira cliente_id com hash (pseudonimização);
+  * UserName vira cliente_id por HMAC-SHA256 com chave secreta (pseudonimização);
+    a chave é obrigatória: variável CLIENTE_ID_SAL (ou linha no .env), mínimo
+    16 caracteres, a mesma para todo o grupo e NUNCA no repositório;
   * carrega via COPY, em uma única transação, e recarrega do zero a cada
     execução (TRUNCATE) — rodar duas vezes dá o mesmo resultado.
 
@@ -21,13 +23,15 @@ O que NÃO faz: filtrar contratos nem tratar outliers. O recorte "encerrados de
 coortes maduras" (DATA.md) e a limpeza estatística ficam em view/consulta e no
 pandera, para a tabela bruta continuar auditável.
 
-Teste antivazamento: importe COLUNAS_LISTA_NEGRA e COLUNAS_SO_AUDITORIA daqui
-e falhe se alguma aparecer nas variáveis do modelo.
+Teste antivazamento: importe COLUNAS_LISTA_NEGRA, COLUNAS_SO_AUDITORIA e
+COLUNAS_INDISPONIVEIS_RECENTES daqui e falhe se alguma aparecer nas variáveis
+do modelo.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import io
 import os
 import re
@@ -39,8 +43,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-SAL_CLIENTE = os.environ.get("CLIENTE_ID_SAL", "")  # opcional; mantenha fora do repositório
-
 
 # --------------------------------------------------------------------------
 # Mapeamento CSV -> banco
@@ -50,7 +52,7 @@ class Col:
     csv: tuple[str, ...]          # nome(s) possíveis no CSV; vale o primeiro que existir
     db: str                       # nome da coluna no banco
     tipo: str                     # id | hash | texto | upper | int | cod | dep | num | bool | data
-    uso: str | None = None        # "lista_negra" | "so_auditoria"
+    uso: str | None = None        # "lista_negra" | "so_auditoria" | "indisponivel"
     dominio: frozenset | None = None  # só para tipo "cod": valores aceitos
 
 
@@ -61,6 +63,7 @@ def c(csv, db, tipo, uso=None, dominio=None) -> Col:
 
 LN = "lista_negra"
 SA = "so_auditoria"
+IND = "indisponivel"  # existe só até ~2017; fora do modelo
 CHAVE = c("LoanId", "loan_id", "id")
 
 # A ordem do dicionário é a ordem de carga (a tabela pai vem primeiro).
@@ -78,8 +81,8 @@ TABELAS: dict[str, list[Col]] = {
         c("Amount", "valor_concedido", "num"),
         c("Interest", "juro_aa", "num", LN),
         c("LoanDuration", "prazo_meses", "int"),
-        c("MonthlyPayment", "parcela_mensal", "num"),
-        c("UseOfLoan", "finalidade", "cod"),
+        c("MonthlyPayment", "parcela_mensal", "num", LN),  # embute o juro
+        c("UseOfLoan", "finalidade", "cod", IND),
         c("VerificationType", "tipo_verificacao", "cod"),
         # saídas do modelo do Bondora
         c("Rating", "rating", "texto", LN),
@@ -115,12 +118,12 @@ TABELAS: dict[str, list[Col]] = {
         c("Age", "idade", "int", SA),
         c("Country", "pais", "upper"),
         c("Education", "escolaridade", "cod"),
-        c("MaritalStatus", "estado_civil", "cod"),
-        c("NrOfDependants", "n_dependentes", "dep"),
-        c("EmploymentStatus", "situacao_emprego", "cod"),
+        c("MaritalStatus", "estado_civil", "cod", SA),
+        c("NrOfDependants", "n_dependentes", "dep", SA),
+        c("EmploymentStatus", "situacao_emprego", "cod", IND),
         c("EmploymentDurationCurrentEmployer", "tempo_emprego_atual", "texto"),
-        c("WorkExperience", "experiencia_trabalho", "texto"),
-        c("OccupationArea", "area_ocupacao", "cod"),
+        c("WorkExperience", "experiencia_trabalho", "texto", IND),
+        c("OccupationArea", "area_ocupacao", "cod", IND),
         c("HomeOwnershipType", "tipo_moradia", "cod"),
         c("IncomeFromPrincipalEmployer", "renda_empregador_principal", "num"),
         c("IncomeFromPension", "renda_pensao", "num"),
@@ -158,15 +161,42 @@ COLUNAS_LISTA_NEGRA = frozenset(
 COLUNAS_SO_AUDITORIA = frozenset(
     col.db for cols in TABELAS.values() for col in cols if col.uso == SA
 )
+COLUNAS_INDISPONIVEIS_RECENTES = frozenset(
+    col.db for cols in TABELAS.values() for col in cols if col.uso == IND
+)
 
 
 # --------------------------------------------------------------------------
 # Conversão de tipos (cada função devolve uma Series pronta para o COPY)
 # --------------------------------------------------------------------------
-def _hash(valor) -> object:
+def _carregar_env(caminho: str = ".env") -> None:
+    """Lê linhas CHAVE=valor de um .env (se existir) sem sobrescrever o ambiente."""
+    arq = Path(caminho)
+    if not arq.is_file():
+        return
+    for linha in arq.read_text(encoding="utf-8").splitlines():
+        linha = linha.strip()
+        if not linha or linha.startswith("#") or "=" not in linha:
+            continue
+        chave, valor = linha.split("=", 1)
+        os.environ.setdefault(chave.strip(), valor.strip().strip("\"'"))
+
+
+def _chave_cliente() -> bytes:
+    chave = os.environ.get("CLIENTE_ID_SAL", "")
+    if len(chave) < 16:
+        sys.exit(
+            "ERRO: defina CLIENTE_ID_SAL (mínimo 16 caracteres), no ambiente ou no .env.\n"
+            "Gere uma com: python -c \"import secrets; print(secrets.token_hex(32))\"\n"
+            "Use a MESMA chave em todo o grupo e nunca a coloque no repositório."
+        )
+    return chave.encode("utf-8")
+
+
+def _hash(valor, chave: bytes) -> object:
     if not isinstance(valor, str):
         return np.nan
-    return hashlib.sha256((SAL_CLIENTE + valor).encode("utf-8")).hexdigest()[:16]
+    return hmac.new(chave, valor.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
 
 
 def _para_int(s: pd.Series) -> pd.Series:
@@ -180,7 +210,8 @@ def _converter(bruto: pd.Series, col: Col) -> pd.Series:
     if t == "id":
         out = s.str.lower()
     elif t == "hash":
-        out = s.map(_hash)
+        chave = _chave_cliente()
+        out = s.map(lambda v: _hash(v, chave))
     elif t == "texto":
         out = s
     elif t == "upper":
@@ -250,6 +281,7 @@ def _conectar(dsn: str):
 
 def carregar(csv: Path, dsn: str, ddl: Path | None = None,
              bloco: int = 25_000, linhas: int | None = None) -> None:
+    _chave_cliente()  # aborta cedo se a chave não estiver definida
     cabecalho = pd.read_csv(csv, nrows=0, encoding="utf-8-sig").columns
     presentes, ausentes = _resolver(set(cabecalho))
 
@@ -341,6 +373,7 @@ def carregar(csv: Path, dsn: str, ddl: Path | None = None,
 
 
 def main() -> None:
+    _carregar_env()
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--csv", required=True, type=Path)
     ap.add_argument("--dsn", default=os.environ.get("DATABASE_URL"),

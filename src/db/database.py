@@ -7,11 +7,8 @@ from dotenv import load_dotenv
 # carrega as variáveis de ambiente
 load_dotenv()
 
-# URL padrão para rodar localmente fora do docker se precisar
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/auditor_db"
-)
+# Vai puxar o localhost:5432 que o Marcos configurou no .env
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

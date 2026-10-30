@@ -1,48 +1,59 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Literal, Dict
+from datetime import datetime
 
 #validar os dados que chegam na requisição do JSON
-class SolicitacaoAuditoriaSchema(BaseModel):
+class SolicitacaoEmprestimo(BaseModel):
     loan_id: str
     
     # variáveis Preditivas de Risco p/ o XGBoost do Samuel
-    valor_solicitado: float = Field(..., gt=0, description="AppliedAmount em Euros")
-    prazo_meses: int = Field(..., gt=0, description="LoanDuration")
-    renda_total: float = Field(..., ge=0, description="IncomeTotal")
-    situacao_emprego: int = Field(..., description="EmploymentStatus código")
-    divida_renda: float = Field(..., description="DebtToIncome")
-    caixa_livre: float = Field(..., description="FreeCash")
+    amount: float
+    income_total: float
+    employment_status: Optional[str] = "Unemployed"
+    verification_type: Optional[str] = "Not Verified"
+    gender: int
+    age: int
+    country: str
+    interest_cobrado: float  # Recebido em %, ex: 24.9
+
+#Schemas de saida e integração(Maria)
+ChaveNumero = Literal["pd", "juro_cobrado", "juro_justo", "juro_justo_min", "juro_justo_max"]
+
+class Fonte(BaseModel):
+    norma: str
+    artigo: str
+    trecho_id: str
+
+class ParecerIA(BaseModel):
+    """Reflete o modelo 'Parecer' definido no FORMATO_JSON.md"""
+    contrato_id: str
+    resumo: str
+    pontos_de_atencao: List[str] = Field(max_length=3)
+    recomendacao_texto: str
+    fontes: List[Fonte]
+    numeros_citados: Dict[ChaveNumero, float]
+    recomendacao: Literal["manter_preco", "revisar_preco", "encaminhar_compliance", "revisao_manual"]
+    origem: Literal["llm", "template"]
+    versao_prompt: str
+    gerado_em: datetime
+
+class MotivoSHAP(BaseModel):
+    variavel: str
+    efeito: Literal["aumenta_risco", "reduz_risco"]
+
+class RespostaPrever(BaseModel):
+    """Reflete a Entrada exigida pela Maria e o Retorno final para o Streamlit"""
+    contrato_id: str
+    versao_modelo: str
+    pd: float
+    faixa: Literal["A", "B", "C", "D", "E"]
+    juro_cobrado: float     # Deve ser fração (0.249)
+    juro_justo: float       # Deve ser fração (0.162)
+    juro_justo_min: float   # Deve ser fração
+    juro_justo_max: float   # Deve ser fração
+    situacao_preco: Literal["acima_do_justo", "abaixo_do_justo", "dentro_da_margem"]
+    motivos: List[MotivoSHAP]
+    alerta_dados: bool
     
-    # preço Auditado Alvo da Comparacao
-    juro_aa_cobrado: float = Field(..., description="Juro % a.a. aplicado no contrato pelo Bondora")
-    
-    # variáveis de Equidade / APENAS para a auditoria de viés
-    genero: int = Field(..., description="0=Homem, 1=Mulher, 2=Indefinido")
-    idade: int = Field(..., ge=18, le=100)
-    pais: str = Field(..., min_length=2, max_length=2, description="EE, ES, FI, SK")
-
-
-class RespostaAuditoriaSchema(BaseModel):
-    loan_id: str
-
-    # metricas de risco e regra de negocio
-    pd_calculada: float
-    juro_justo_aa: float
-    juro_cobrado_aa: float
-    delta_injustica_pp: float
-    fora_da_margem: bool
-    alerta_vies_demografico: bool
-
-    #area de integração com a GenIA p/ RAG da Maria
-    parecer_llm: Optional[str] = Field(
-        None,
-        description="Texto explicativo da LLM(quando ha anomalia ou vies)"
-    )
-    normas_citadas: List[str] = Field(
-        default_factory=list,
-        description="Lista de artigos e leis retornados da busca di RAG no pgvector" #verificar formato de retorno do pgvector
-    )
-    recomendacao_ia: Optional[str] = Field(
-        None,
-        description="Sugestão de ação gerada pela LLM" #verificar quando a LLM aciona
-    )
+    # O Parecer da IA é devolvido dentro desta chave
+    parecer_ia: Optional[ParecerIA] = None

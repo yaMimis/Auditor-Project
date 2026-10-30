@@ -1,24 +1,25 @@
+#CRITERIO DE GOVERNANÇA DE CODIGO
+#p/ segurança e integração continua
 name: CI Basico - Auditor
 
 on:
   push:
-    branches: [ "main", "setup+fastapi+prever" ]
+    branches: [ "main", "dados/*", "setup-fastapi-prever" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout do repositorio
-      - uses: actions/checkout@v4
-
+      - name: Chekout do repositorio
+        uses: actions/checkout@v4
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+          
       - name: Validar ambiente
         run: |
           python --version

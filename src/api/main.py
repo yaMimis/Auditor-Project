@@ -1,36 +1,14 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
+from fastapi import FastAPI
+from datetime import datetime, timezone
+from src.api.schemas import SolicitacaoEmprestimo, RespostaPrever
 
 #API REST PARA MOTOR DE REGRAS DE NEGOCIO DO SISTEMA
 
 app = FastAPI(
     title="Auditor de Juros - API",
     version= "1.0.0",
-    descriptions="API para cálculo de risco e juros justo"
+    description="API para cálculo de risco, juros justo e auditoria com GenAI"
 )
-
-class SolicitacaoEmprestimo(BaseModel):
-    loan_id: int
-    amount: float
-    income_total: float
-    employment_status: Optional[str] = "Unemployed"
-    verification_type: Optional[str] = "Not Verified"
-    gender: str
-    age: int
-    country: str
-    interest_cobrado: float
-
-class RespostaPrever(BaseModel):
-    loan_id: int
-    pd: float
-    faixa_risco: str    
-    juro_cobrado_am: float  #taxa real cobrada usando %a.m
-    juro_justo_am: float   #taxa calculada pelo motor %a.m
-    delta_injustica: float  #taxa calculada entre cobrado e o justo
-    fora_margem: bool
-    motivos_shap: List[str] #principais fatores de risco RAG
-    alerta_vies: bool
 
 @app.get("/")
 def read_root():
@@ -41,21 +19,34 @@ def prever_juro_justo(dados: SolicitacaoEmprestimo):
     #necessita endpoint samuel
     #mock temporaria pra testar a integração
     #DADOS SIMULADOS ATE ENDPOINT PRONTO
-    pd_mock = 0.12 if dados.income_total > 2000 else 0.35
-    faixa_mock = "B" if pd_mock < 0.20 else "D"
-    juro_justo_mock = round(1.5 + (pd_mock * 3.0), 2)
-    delta_mock = round(dados.interest_cobrado - juro_justo_mock, 2)
+    pd_mock = 0.184 if dados.income_total > 2000 else 0.350
+    faixa_mock = "C" if pd_mock < 0.20 else "D"
 
+    # CONVERSÃO (24.9) P/ (0.249) -> exigida pelo contrato
+    juro_cobrado_frac = round(dados.interest_cobrado / 100, 3) 
+    
+    juro_justo_frac = 0.162
+    juro_min = 0.141
+    juro_max = 0.183
+    
+    # Regra da situação do preço
+    situacao = "acima_do_justo" if juro_cobrado_frac > juro_max else "dentro_da_margem"
+
+    # Retorno Formatado. O parecer_ia fica como None até entao
     return {
-        "loan_id": dados.loan_id,
+        "contrato_id": dados.loan_id,
+        "versao_modelo": "v1-mock",
         "pd": pd_mock,
-        "faixa_risco": faixa_mock,
-        "juro_cobrado_am": dados.interest_cobrado,
-        "juro_justo_am": juro_justo_mock,
-        "delta_injustica": delta_mock,
-        "fora_margem": True if delta_mock > 1.0 else False,
-        "motivos_shap": [
-            "TESTE"
+        "faixa": faixa_mock,
+        "juro_cobrado": juro_cobrado_frac,
+        "juro_justo": juro_justo_frac,
+        "juro_justo_min": juro_min,
+        "juro_justo_max": juro_max,
+        "situacao_preco": situacao,
+        "motivos": [
+            {"variavel": "divida_sobre_renda", "efeito": "aumenta_risco"},
+            {"variavel": "tempo_no_emprego", "efeito": "reduz_risco"}
         ],
-        "alerta_vies": True if dados.country == "ES" and delta_mock > 1.5 else False
+        "alerta_dados": False,
+        "parecer_ia": None
     }

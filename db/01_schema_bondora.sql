@@ -25,6 +25,8 @@
 -- ---------------------------------------------------------------------
 -- emprestimo (tabela pai)
 -- ---------------------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS emprestimo (
     loan_id                   TEXT PRIMARY KEY,           -- LoanId (GUID em minúsculas)
     numero                    INTEGER,                    -- LoanNumber

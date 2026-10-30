@@ -2,3 +2,13 @@
 .venv/
 __pycache__/
 *.pyc
+venv/
+myenv/
+.VSCode/
+data/raw/*.csv
+data/raw/*.md
+data/clean/*.csv
+docker-compose.override.yml
+*.joblib
+*.pkl
+.ipynb_checkpoints/

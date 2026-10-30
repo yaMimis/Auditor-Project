@@ -6,7 +6,7 @@ on:
   push:
     branches: [ "main", "dados/*", "setup-fastapi-prever" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:

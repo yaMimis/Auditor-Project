@@ -6,7 +6,7 @@
 ## 1. Fonte e versão
 
 - Bondora LoanData: 179.235 contratos, 112 colunas, concessões de 2009 a 2021, data de corte 20/07/2021 (`ReportAsOfEOD`).
-- Arquivo: `data/raw/LoanData_Bondora.csv`. SHA-256 (impressão digital do arquivo): `<4728fc5ecf6d1f42246d97780a827d43b133dfa09b9f2f363ad91eee588663b5>`. Conferir com `Get-FileHash data\raw\LoanData_Bondora.csv -Algorithm SHA256`.
+- Arquivo: `data/raw/LoanData_Bondora.csv`. SHA-256 (impressão digital do arquivo):`<4728fc5ecf6d1f42246d97780a827d43b133dfa09b9f2f363ad91eee588663b5>`. Conferir com `Get-FileHash data\raw\LoanData_Bondora.csv -Algorithm SHA256`.
 - Dicionário de dados: Public Reports do Bondora, consultado em `<28/10/2026>`.
 - O CSV nunca entra no Git.
 
@@ -91,9 +91,18 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 
 ## 9. Fontes externas
 
-- **Euribor (Banco Central Europeu):** prazo (3, 6 ou 12 meses) **[A CONFIRMAR com o Samuel]**; série mensal de 01/2009 a 07/2021.
-- **Selic (Banco Central do Brasil):** série mensal, mesmo período.
-- **Taxas de crédito do BC:** o arquivo `historicotaxajurosdiario_BaCen.csv` é uma foto do período de 05/10/2026 a 09/10/2026, com 78 instituições, só crédito pessoal não consignado prefixado. Serve como referência de mercado no "modo Brasil". Há uma taxa zerada para limpar. Período e série adicionais **[A CONFIRMAR com o Samuel]**.
+- **Euribor (Portal de dados do BCE, data.ecb.europa.eu)** **[A CONFIRMAR com o Samuel]**:
+  - Principal: Euribor de 12 meses, série mensal, média das observações do mês (`FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA`).
+  - Sensibilidade: Euribor de 3 meses, mesma frequência (`FM.M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA`).
+  - Período: 01/2009 a 07/2021 (concessões de 28/02/2009 a 19/07/2021). Baixar a série completa e recortar depois.
+  - Junção: mês de `data_emprestimo` com o mês da série. Os valores negativos (de 2015–2016 em diante) ficam como vêm; o piso em zero, se houver, é decisão do Samuel na fórmula do preço.
+  - Limitação: a Euribor tem no máximo 12 meses, e a mediana do prazo dos contratos é de 60 meses (36 a 48 meses nos contratos maduros).
+- **Selic (Banco Central do Brasil)** **[A CONFIRMAR com o Samuel]**: Pepreçar os contratos históricos com a Selic do mesmo mês.
+  - Série SGS 4189, "Selic acumulada no mês anualizada base 252": mensal, em % ao ano, 01/2009 a 07/2021.
+  - Descartadas: a 4390 (% ao mês; exige anualizar e erra em meses curtos) e a meta Selic do Dados de Mercado (valor do 1º dia do mês; defasa quando a meta muda). A meta fica só como conferência da 4189.
+  - Limitação: a Selic é uma taxa de um dia útil, e a Euribor principal é de 12 meses. A comparação mais justa em prazo é com a Euribor de 3 meses.
+- **Tabelas no banco:** `euribor_mensal` (`mes`, `euribor_3m`, `euribor_12m`), `selic_mensal` (`mes`, `selic_aa` e `selic_meta_aa`, esta só para conferência) e a view `vw_custo_do_dinheiro`, que liga cada contrato ao mês da concessão. Esquema em `02_schema_macro.sql`; carga em `carga_macro.py`.
+- **Taxas de crédito do BC:** o arquivo `historicotaxajurosdiario_BaCen.csv` é o ranking do período de 05/10/2026 a 09/10/2026: uma taxa por instituição, 78 instituições, só crédito pessoal não consignado prefixado para pessoa física. Há uma taxa zerada para limpar. É uma referência de mercado atual; **não** cobre o período dos dados do Bondora (2009–2021), então não serve para calibrar o preço dele.
 
 ## 10. Privacidade e LGPD (Lei Geral de Proteção de Dados)
 
@@ -114,7 +123,8 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 ## 12. Pendências com o Samuel
 
 - [ ] Confirmar o alvo (seção 3), a coorte madura (seção 4) e a divisão treino e teste (seção 5).
-- [ ] Prazo da Euribor e período das séries (Euribor, Selic, taxas do BC).
+- [ ] Euribor: 12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021 (seção 9). Piso em zero para valores negativos?
+- [ ] Selic: confirmar a série 4189 para a leitura A (seção 9).
 - [ ] Confirmar `parcela_mensal` na lista negra e a fórmula da parcela ÷ renda sem juros.
 - [ ] Confirmar `estado_civil` e `n_dependentes` como só auditoria.
 - [ ] Confirmar `experiencia_trabalho` como indisponível após 2017.

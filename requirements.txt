@@ -2,6 +2,7 @@ pandas
 numpy
 streamlit
 psycopg2-binary
+pandera
 sqlalchemy
 requests
 pgvector

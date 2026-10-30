@@ -12,7 +12,10 @@
 --                   NUNCA entra como variável do modelo. Fica no banco
 --                   só para montar o alvo, o preço cobrado, a comparação
 --                   com a PD do Bondora e o backtest.
---   [SÓ AUDITORIA]  gênero e idade: usados apenas na auditoria de equidade.
+--   [SÓ AUDITORIA]  gênero, idade, estado civil e dependentes: usados apenas
+--                   na auditoria de equidade, nunca para prever risco.
+--   [INDISPONÍVEL APÓS 2017]  preenchidas só nos contratos até ~2017 (cerca de
+--                   81% em branco no período de teste): fora do modelo.
 --
 -- Valores monetários em euro. Juros em % ao ano, como vêm do Bondora.
 -- A carga NÃO filtra nada (inclui contratos ativos): o recorte "encerrados
@@ -37,8 +40,8 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     valor_concedido           NUMERIC(16,2),              -- Amount
     juro_aa                   NUMERIC(10,4),              -- Interest  [LISTA NEGRA] (é o preço auditado)
     prazo_meses               INTEGER,                    -- LoanDuration
-    parcela_mensal            NUMERIC(16,2),              -- MonthlyPayment
-    finalidade                SMALLINT,                   -- UseOfLoan (código; -1 vira NULL)
+    parcela_mensal            NUMERIC(16,2),              -- MonthlyPayment  [LISTA NEGRA] (embute o juro)
+    finalidade                SMALLINT,                   -- UseOfLoan (código; -1 vira NULL)  [INDISPONÍVEL APÓS 2017]
     tipo_verificacao          SMALLINT,                   -- VerificationType (código; -1 vira NULL)
 
     -- saídas do modelo do Bondora
@@ -80,19 +83,19 @@ CREATE INDEX IF NOT EXISTS ix_emprestimo_status          ON emprestimo (status);
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cliente (
     loan_id                    TEXT PRIMARY KEY REFERENCES emprestimo (loan_id) ON DELETE CASCADE,
-    cliente_id                 TEXT,                      -- UserName, já com hash (pseudonimizado)
+    cliente_id                 TEXT,                      -- UserName pseudonimizado: HMAC-SHA256 com chave secreta, 16 caracteres hex
 
     genero                     SMALLINT CHECK (genero IN (0, 1, 2)),  -- Gender: 0 homem, 1 mulher, 2 indefinido  [SÓ AUDITORIA]
     idade                      SMALLINT,                  -- Age                [SÓ AUDITORIA]
     pais                       CHAR(2),                   -- Country (EE, ES, FI, SK)
 
     escolaridade               SMALLINT,                  -- Education (código; -1 vira NULL)
-    estado_civil               SMALLINT,                  -- MaritalStatus (código)
-    n_dependentes              SMALLINT,                  -- NrOfDependants ("10Plus" vira 10)
-    situacao_emprego           SMALLINT,                  -- EmploymentStatus (código)
+    estado_civil               SMALLINT,                  -- MaritalStatus (código)  [SÓ AUDITORIA] [INDISPONÍVEL APÓS 2017]
+    n_dependentes              SMALLINT,                  -- NrOfDependants ("10Plus" vira 10)  [SÓ AUDITORIA] [INDISPONÍVEL APÓS 2017]
+    situacao_emprego           SMALLINT,                  -- EmploymentStatus (código)  [INDISPONÍVEL APÓS 2017]
     tempo_emprego_atual        TEXT,                      -- EmploymentDurationCurrentEmployer
-    experiencia_trabalho       TEXT,                      -- WorkExperience
-    area_ocupacao              SMALLINT,                  -- OccupationArea (código)
+    experiencia_trabalho       TEXT,                      -- WorkExperience  [INDISPONÍVEL APÓS 2017]
+    area_ocupacao              SMALLINT,                  -- OccupationArea (código)  [INDISPONÍVEL APÓS 2017]
     tipo_moradia               SMALLINT,                  -- HomeOwnershipType (código)
 
     renda_empregador_principal NUMERIC(16,2),             -- IncomeFromPrincipalEmployer

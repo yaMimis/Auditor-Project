@@ -1,13 +1,13 @@
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
-> Versão 0.2 (rascunho) · 28/10/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+> Versão 0.4 (rascunho) · 30/10/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
 > Itens marcados **[A CONFIRMAR]** dependem de decisão do Samuel. As regras das seções 3, 4 e 5 (alvo, coorte madura e divisão) são propostas ainda sem confirmação explícita dele. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
 
 - Bondora LoanData: 179.235 contratos, 112 colunas, concessões de 2009 a 2021, data de corte 20/07/2021 (`ReportAsOfEOD`).
-- Arquivo: `data/raw/LoanData_Bondora.csv`. SHA-256 (impressão digital do arquivo):`<4728fc5ecf6d1f42246d97780a827d43b133dfa09b9f2f363ad91eee588663b5>`. Conferir com `Get-FileHash data\raw\LoanData_Bondora.csv -Algorithm SHA256`.
-- Dicionário de dados: Public Reports do Bondora, consultado em `<28/10/2026>`.
+- Arquivo: `data/raw/LoanData_Bondora.csv`. SHA-256 (impressão digital do arquivo): `4728fc5ecf6d1f42246d97780a827d43b133dfa09b9f2f363ad91eee588663b5`. Conferir com `Get-FileHash data\raw\LoanData_Bondora.csv -Algorithm SHA256`.
+- Dicionário de dados: Public Reports do Bondora, consultado em 28/10/2026.
 - O CSV nunca entra no Git.
 
 ## 2. Unidade de análise
@@ -97,12 +97,15 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
   - Período: 01/2009 a 07/2021 (concessões de 28/02/2009 a 19/07/2021). Baixar a série completa e recortar depois.
   - Junção: mês de `data_emprestimo` com o mês da série. Os valores negativos (de 2015–2016 em diante) ficam como vêm; o piso em zero, se houver, é decisão do Samuel na fórmula do preço.
   - Limitação: a Euribor tem no máximo 12 meses, e a mediana do prazo dos contratos é de 60 meses (36 a 48 meses nos contratos maduros).
-- **Selic (Banco Central do Brasil)** **[A CONFIRMAR com o Samuel]**: Pepreçar os contratos históricos com a Selic do mesmo mês.
+- **Selic (Banco Central do Brasil)** **[A CONFIRMAR com o Samuel]**: usada só no cenário "modo Brasil" (leitura A), que reprecifica os contratos históricos com a Selic do mesmo mês. O motor base continua usando a Euribor da época.
   - Série SGS 4189, "Selic acumulada no mês anualizada base 252": mensal, em % ao ano, 01/2009 a 07/2021.
   - Descartadas: a 4390 (% ao mês; exige anualizar e erra em meses curtos) e a meta Selic do Dados de Mercado (valor do 1º dia do mês; defasa quando a meta muda). A meta fica só como conferência da 4189.
   - Limitação: a Selic é uma taxa de um dia útil, e a Euribor principal é de 12 meses. A comparação mais justa em prazo é com a Euribor de 3 meses.
-- **Tabelas no banco:** `euribor_mensal` (`mes`, `euribor_3m`, `euribor_12m`), `selic_mensal` (`mes`, `selic_aa` e `selic_meta_aa`, esta só para conferência) e a view `vw_custo_do_dinheiro`, que liga cada contrato ao mês da concessão. Esquema em `02_schema_macro.sql`; carga em `carga_macro.py`.
-- **Taxas de crédito do BC:** o arquivo `historicotaxajurosdiario_BaCen.csv` é o ranking do período de 05/10/2026 a 09/10/2026: uma taxa por instituição, 78 instituições, só crédito pessoal não consignado prefixado para pessoa física. Há uma taxa zerada para limpar. É uma referência de mercado atual; **não** cobre o período dos dados do Bondora (2009–2021), então não serve para calibrar o preço dele.
+- **Tabelas no banco:** `euribor_mensal` (`mes`, `euribor_3m`, `euribor_12m`), `selic_mensal` (`mes`, `selic_aa` e `selic_meta_aa`, esta só para conferência) e a view `vw_custo_do_dinheiro`, que liga cada contrato ao mês da concessão. Esquema em `02_schema_macro.sql`; carga em `carga_macro.py`. A série 20742 vai na tabela `bc_credito_pessoal_mensal` (`mes`, `taxa_aa`), que a `carga_macro.py` carrega quando o arquivo `data/raw/bcdata.sgs.20742.csv` existe; a view traz a coluna `bc_credito_pessoal_aa`, vazia antes de 03/2011.
+- **Taxas de crédito do BC (referência de mercado)** **[A CONFIRMAR com o Samuel]**: série SGS 20742, taxa média de juros do crédito pessoal não consignado para pessoas físicas, mensal, em % ao ano, de 03/2011 a 07/2021.
+  - Uso: só contexto no painel do analista e no parecer, mostrando a taxa média do mercado brasileiro no mês da concessão de cada contrato (coluna `bc_credito_pessoal_aa` da view). O número vem da API, nunca do LLM, e o parecer não conclui "justo" ou "injusto" a partir dele. Antes de 03/2011 o campo fica vazio e o parecer não cita a referência. Não calibra o preço e não entra no modelo.
+  - Cobertura: 2009 a 02/2011 ficam sem benchmark (1.894 contratos). Não emendar com a série de crédito pessoal total, que inclui o consignado.
+  - O ranking de instituições de 2026 foi retirado do projeto.
 
 ## 10. Privacidade e LGPD (Lei Geral de Proteção de Dados)
 
@@ -115,6 +118,7 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 
 - Dados estonianos, de 2009 a 2021, só de empréstimos aprovados.
 - Análise jurídica hipotética ("se este contrato fosse brasileiro").
+- A referência de mercado do BC (série 20742) começa em 03/2011 e o risco dos dois mercados é muito diferente (54,7% de default na coorte madura do Bondora): serve de contexto, não de veredito sobre preço justo.
 - A coorte madura exclui os contratos recentes e muda a composição por prazo ao longo dos anos.
 - Excluir gênero e idade do modelo não elimina proxies (variáveis que carregam a mesma informação). É isso que a auditoria de resíduos testa.
 - Gênero está muito ligado ao país (gênero indefinido é quase só da Espanha).
@@ -124,7 +128,9 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 
 - [ ] Confirmar o alvo (seção 3), a coorte madura (seção 4) e a divisão treino e teste (seção 5).
 - [ ] Euribor: 12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021 (seção 9). Piso em zero para valores negativos?
-- [ ] Selic: confirmar a série 4189 para a leitura A (seção 9).
+- [ ] Selic: confirmar a série 4189 e que a leitura A é um cenário "modo Brasil", com o motor base na Euribor (seção 9).
+- [ ] Confirmar a série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (seção 9).
+- [ ] Combinar com a Yasmin e a Maria o campo da referência de mercado na API e no parecer (mudar o formato exige aviso a todos).
 - [ ] Confirmar `parcela_mensal` na lista negra e a fórmula da parcela ÷ renda sem juros.
 - [ ] Confirmar `estado_civil` e `n_dependentes` como só auditoria.
 - [ ] Confirmar `experiencia_trabalho` como indisponível após 2017.

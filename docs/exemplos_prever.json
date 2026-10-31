@@ -1,0 +1,43 @@
+[
+  {
+    "contrato_id": "EXEMPLO-1",
+    "pd": 0.184, "pd_ic95": [0.159, 0.210], "faixa": "C",
+    "juro_cobrado": 0.249, "juro_justo": 0.162, "juro_justo_ic": [0.144, 0.180],
+    "diferenca_pp": 8.7, "situacao": "acima_do_justo",
+    "motivos": [
+      {"fator": "divida_sobre_renda", "valor": 0.48, "efeito": "aumenta", "peso": 0.31},
+      {"fator": "prazo_meses", "valor": 60, "efeito": "aumenta", "peso": 0.18},
+      {"fator": "tempo_emprego_atual", "valor": "MoreThan5Years", "efeito": "reduz", "peso": 0.12}
+    ],
+    "fora_da_faixa_de_treino": false, "versao_modelo": "exemplo"
+  },
+  {
+    "contrato_id": "EXEMPLO-2",
+    "pd": 0.62, "pd_ic95": [0.57, 0.67], "faixa": "E",
+    "juro_cobrado": 0.21, "juro_justo": 0.38, "juro_justo_ic": [0.34, 0.42],
+    "diferenca_pp": -17.0, "situacao": "abaixo_do_justo",
+    "motivos": [
+      {"fator": "novo_cliente", "valor": true, "efeito": "aumenta", "peso": 0.27},
+      {"fator": "renda_relativa", "valor": 0.55, "efeito": "aumenta", "peso": 0.22}
+    ],
+    "fora_da_faixa_de_treino": false, "versao_modelo": "exemplo"
+  },
+  {
+    "contrato_id": "EXEMPLO-3",
+    "pd": 0.09, "pd_ic95": [0.07, 0.11], "faixa": "A",
+    "juro_cobrado": 0.118, "juro_justo": 0.112, "juro_justo_ic": [0.098, 0.126],
+    "diferenca_pp": 0.6, "situacao": "dentro_da_margem",
+    "motivos": [
+      {"fator": "n_emprestimos_anteriores", "valor": 4, "efeito": "reduz", "peso": 0.25}
+    ],
+    "fora_da_faixa_de_treino": false, "versao_modelo": "exemplo"
+  },
+  {
+    "contrato_id": "EXEMPLO-4",
+    "pd": null, "pd_ic95": null, "faixa": null,
+    "juro_cobrado": 0.30, "juro_justo": null, "juro_justo_ic": null,
+    "diferenca_pp": null, "situacao": "revisao_manual",
+    "motivos": [],
+    "fora_da_faixa_de_treino": true, "versao_modelo": "exemplo"
+  }
+]

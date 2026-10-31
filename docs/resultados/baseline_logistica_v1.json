@@ -1,0 +1,17 @@
+{
+  "modelo": "baseline_logistica_v1",
+  "data": "2026-10-31T16:30:41",
+  "cv_media": {
+    "auc": 0.7579,
+    "ks": 0.3955,
+    "brier": 0.1997
+  },
+  "teste": {
+    "contratos": 7311,
+    "default_real": 0.6708,
+    "default_previsto": 0.6653,
+    "auc": 0.7041,
+    "ks": 0.3041,
+    "brier": 0.194
+  }
+}

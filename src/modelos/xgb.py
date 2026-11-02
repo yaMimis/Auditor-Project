@@ -25,7 +25,6 @@ FIXOS = dict(learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
 
 
 def _preparo() -> ColumnTransformer:
-    # XGBoost lida com vazios sozinho: numéricas passam direto.
     return ColumnTransformer([
         ("num", "passthrough", NUMERICAS),
         ("cat", OneHotEncoder(handle_unknown="ignore", min_frequency=0.01,
@@ -72,6 +71,11 @@ class ModeloXGB:
             p = self.calibrador.predict_proba(_logit(p).reshape(-1, 1))[:, 1]
         return np.column_stack([1 - p, p])
 
+def _simples(v):
+    """Valor pronto para JSON (sem tipos do numpy/pandas)."""
+    if pd.isna(v):
+        return None
+    return v.item() if hasattr(v, "item") else v
 
 def _logit(p):
     p = np.clip(p, 1e-6, 1 - 1e-6)
@@ -118,7 +122,7 @@ def motivos(modelo: ModeloXGB, X: pd.DataFrame, n: int = 5,
             "variavel": v,
             "rotulo": ROTULOS.get(v, v),
             "efeito": "aumenta_risco" if s > 0 else "reduz_risco",
-            "valor": None if pd.isna(X.iloc[i][v]) else X.iloc[i][v],
+            "valor": _simples(X.iloc[i][v]),
             "peso": round(float(abs(s) / total), 3),
         } for v, s in top.items()])
     return saida

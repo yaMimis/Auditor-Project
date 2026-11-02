@@ -1,43 +1,107 @@
 [
   {
     "contrato_id": "EXEMPLO-1",
-    "pd": 0.184, "pd_ic95": [0.159, 0.210], "faixa": "C",
-    "juro_cobrado": 0.249, "juro_justo": 0.162, "juro_justo_ic": [0.144, 0.180],
-    "diferenca_pp": 8.7, "situacao": "acima_do_justo",
+    "versao_modelo": "exemplo",
+    "pd": 0.184,
+    "pd_ic95": [0.159, 0.210],
+    "faixa": "C",
+    "juro_cobrado": 0.249,
+    "juro_justo": 0.162,
+    "juro_justo_min": 0.141,
+    "juro_justo_max": 0.183,
+    "diferenca_pp": 8.7,
+    "situacao_preco": "acima_do_justo",
     "motivos": [
-      {"fator": "divida_sobre_renda", "valor": 0.48, "efeito": "aumenta", "peso": 0.31},
-      {"fator": "prazo_meses", "valor": 60, "efeito": "aumenta", "peso": 0.18},
-      {"fator": "tempo_emprego_atual", "valor": "MoreThan5Years", "efeito": "reduz", "peso": 0.12}
+      {
+        "variavel": "divida_sobre_renda",
+        "rotulo": "dívidas em relação à renda",
+        "efeito": "aumenta_risco",
+        "valor": 0.48,
+        "peso": 0.31
+      },
+      {
+        "variavel": "prazo_meses",
+        "rotulo": "prazo do empréstimo",
+        "efeito": "aumenta_risco",
+        "valor": 60,
+        "peso": 0.18
+      },
+      {
+        "variavel": "tempo_emprego_atual",
+        "rotulo": "tempo no emprego atual",
+        "efeito": "reduz_risco",
+        "valor": "MoreThan5Years",
+        "peso": 0.12
+      }
     ],
-    "fora_da_faixa_de_treino": false, "versao_modelo": "exemplo"
+    "alerta_dados": false
   },
   {
     "contrato_id": "EXEMPLO-2",
-    "pd": 0.62, "pd_ic95": [0.57, 0.67], "faixa": "E",
-    "juro_cobrado": 0.21, "juro_justo": 0.38, "juro_justo_ic": [0.34, 0.42],
-    "diferenca_pp": -17.0, "situacao": "abaixo_do_justo",
+    "versao_modelo": "exemplo",
+    "pd": 0.62,
+    "pd_ic95": [0.57, 0.67],
+    "faixa": "E",
+    "juro_cobrado": 0.21,
+    "juro_justo": 0.38,
+    "juro_justo_min": 0.34,
+    "juro_justo_max": 0.42,
+    "diferenca_pp": -17.0,
+    "situacao_preco": "abaixo_do_justo",
     "motivos": [
-      {"fator": "novo_cliente", "valor": true, "efeito": "aumenta", "peso": 0.27},
-      {"fator": "renda_relativa", "valor": 0.55, "efeito": "aumenta", "peso": 0.22}
+      {
+        "variavel": "novo_cliente",
+        "rotulo": "primeiro empréstimo na plataforma",
+        "efeito": "aumenta_risco",
+        "valor": true,
+        "peso": 0.27
+      },
+      {
+        "variavel": "renda_relativa",
+        "rotulo": "renda comparada à média do país",
+        "efeito": "aumenta_risco",
+        "valor": 0.55,
+        "peso": 0.22
+      }
     ],
-    "fora_da_faixa_de_treino": false, "versao_modelo": "exemplo"
+    "alerta_dados": false
   },
   {
     "contrato_id": "EXEMPLO-3",
-    "pd": 0.09, "pd_ic95": [0.07, 0.11], "faixa": "A",
-    "juro_cobrado": 0.118, "juro_justo": 0.112, "juro_justo_ic": [0.098, 0.126],
-    "diferenca_pp": 0.6, "situacao": "dentro_da_margem",
+    "versao_modelo": "exemplo",
+    "pd": 0.09,
+    "pd_ic95": [0.07, 0.11],
+    "faixa": "A",
+    "juro_cobrado": 0.118,
+    "juro_justo": 0.112,
+    "juro_justo_min": 0.098,
+    "juro_justo_max": 0.126,
+    "diferenca_pp": 0.6,
+    "situacao_preco": "dentro_da_margem",
     "motivos": [
-      {"fator": "n_emprestimos_anteriores", "valor": 4, "efeito": "reduz", "peso": 0.25}
+      {
+        "variavel": "n_emprestimos_anteriores",
+        "rotulo": "empréstimos anteriores na plataforma",
+        "efeito": "reduz_risco",
+        "valor": 4,
+        "peso": 0.25
+      }
     ],
-    "fora_da_faixa_de_treino": false, "versao_modelo": "exemplo"
+    "alerta_dados": false
   },
   {
     "contrato_id": "EXEMPLO-4",
-    "pd": null, "pd_ic95": null, "faixa": null,
-    "juro_cobrado": 0.30, "juro_justo": null, "juro_justo_ic": null,
-    "diferenca_pp": null, "situacao": "revisao_manual",
+    "versao_modelo": "exemplo",
+    "pd": null,
+    "pd_ic95": null,
+    "faixa": null,
+    "juro_cobrado": 0.30,
+    "juro_justo": null,
+    "juro_justo_min": null,
+    "juro_justo_max": null,
+    "diferenca_pp": null,
+    "situacao_preco": "revisao_manual",
     "motivos": [],
-    "fora_da_faixa_de_treino": true, "versao_modelo": "exemplo"
+    "alerta_dados": true
   }
 ]

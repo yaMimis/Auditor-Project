@@ -72,7 +72,13 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 
 - **Método:** fluxo de caixa (PD convertida em taxa mensal, amortização, desconto).
 - **Custo do dinheiro:** Euribor do mês de concessão, com piso em zero.
-- **LGD:** `lgd_bondora` ou calculada com defaults antigos.
+- **LGD:** realizada por país, com defaults de 2014–2015 (cobrança madura, mesma época do treino):
+  EE ~0,34 · ES ~0,76 · FI ~0,55 (troque pelos valores do notebook 07).
+  Defaults de 2016–2017 ainda em cobrança em 2021 (LGD subindo na EE e na FI);
+  2009–2013 é outra época da plataforma. A do Bondora (0,75) é estimativa prévia, mais conservadora.
+- **Horizonte mínimo de 12 meses** para converter a PD em risco mensal
+  (o default pode ocorrer depois do fim do contrato).
+
 - **Custos e margem:** calibrados para a média do juro justo igualar a média do juro cobrado.
 - **Sensibilidade:** margem ±1 pp e LGD ±10 pp.
 - `juro_aa` vem em porcentagem: dividir por 100.

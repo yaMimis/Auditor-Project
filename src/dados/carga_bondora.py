@@ -19,6 +19,10 @@ O que faz:
   * carrega via COPY, em uma única transação, e recarrega do zero a cada
     execução (TRUNCATE) — rodar duas vezes dá o mesmo resultado.
 
+Atenção: `renda_empregador_principal`, `divida_renda` e `caixa_livre` vêm com zero no lugar de
+vazio a partir de 2018 (70% a 72% em 2017). A carga as grava como vêm; elas estão em
+COLUNAS_INDISPONIVEIS_RECENTES e, portanto, fora do modelo.
+
 O que NÃO faz: filtrar contratos nem tratar outliers. O recorte "encerrados de
 coortes maduras" (DATA.md) e a limpeza estatística ficam em view/consulta e no
 pandera, para a tabela bruta continuar auditável.
@@ -63,7 +67,7 @@ def c(csv, db, tipo, uso=None, dominio=None) -> Col:
 
 LN = "lista_negra"
 SA = "so_auditoria"
-IND = "indisponivel"  # existe só até ~2017; fora do modelo
+IND = "indisponivel"  # some depois de 2017 (em branco ou com zero no lugar de vazio); fora do modelo
 CHAVE = c("LoanId", "loan_id", "id")
 
 # A ordem do dicionário é a ordem de carga (a tabela pai vem primeiro).
@@ -125,7 +129,7 @@ TABELAS: dict[str, list[Col]] = {
         c("WorkExperience", "experiencia_trabalho", "texto", IND),
         c("OccupationArea", "area_ocupacao", "cod", IND),
         c("HomeOwnershipType", "tipo_moradia", "cod"),
-        c("IncomeFromPrincipalEmployer", "renda_empregador_principal", "num"),
+        c("IncomeFromPrincipalEmployer", "renda_empregador_principal", "num", IND),
         c("IncomeFromPension", "renda_pensao", "num"),
         c("IncomeFromFamilyAllowance", "renda_auxilio_familiar", "num"),
         c("IncomeFromSocialWelfare", "renda_assistencia_social", "num"),
@@ -146,8 +150,8 @@ TABELAS: dict[str, list[Col]] = {
         c("ExistingLiabilities", "passivos_existentes", "int"),
         c("LiabilitiesTotal", "passivos_total", "num"),
         c("RefinanceLiabilities", "refinanciamento_passivos", "int"),
-        c("DebtToIncome", "divida_renda", "num"),
-        c("FreeCash", "caixa_livre", "num"),
+        c("DebtToIncome", "divida_renda", "num", IND),
+        c("FreeCash", "caixa_livre", "num", IND),
         c("CreditScoreEsMicroL", "score_es_microl", "texto"),
         c("CreditScoreEsEquifaxRisk", "score_es_equifax", "texto"),
         c("CreditScoreFiAsiakasTietoRiskGrade", "score_fi_asiakastieto", "texto"),

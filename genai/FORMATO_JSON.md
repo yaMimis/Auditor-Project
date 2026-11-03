@@ -1,6 +1,6 @@
 # FORMATO_JSON.md — Contrato de dados do parecer (GenAI)
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.3 · **Data:** 03/11/2026
+**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.4 · **Data:** 03/11/2026
 **Status:** entrada aprovada pelo Samuel em 30/10/2026; recomendação v1.2 (acima do justo → revisar_preco) aprovada pela Maria em 03/11/2026; saída aguardando aprovação da Yasmin.
 
 ## 1. Finalidade
@@ -216,7 +216,7 @@ O LLM **não** recebe `contrato_id`, `versao_modelo`, os campos extras nem dados
 
 - **Formato:** `<arquivo da norma>-art<número do artigo>-<parte>`, gerado pelo `genai/src/dividir.py`. Ex.: `cdc-art6-1` (CDC, art. 6º, 1ª parte), `cdc-art54b-1` (CDC, art. 54-B), `lgpd-art20-1` (LGPD, art. 20).
 - **Por que "parte" e não inciso:** cada trecho é um artigo inteiro; artigos longos são divididos em partes entre incisos e parágrafos. O inciso aparece no campo `artigo` da fonte (ex.: `"artigo": "art. 6º, III"`), não no `trecho_id`.
-- **Relatório de Economia Bancária** (quando indexado), dividido por parágrafo: `reb-spread-<parágrafo>`. Ex.: `reb-spread-4`.
+- **Relatório de Estabilidade Financeira** (`ref.md`), dividido por parágrafo: `ref-p<parágrafo>-1`. Ex.: `ref-p3-1`. Na fonte, o campo `artigo` traz o parágrafo (ex.: `"artigo": "parágrafo 3"`).
 
 ---
 
@@ -318,5 +318,6 @@ class Parecer(RespostaLLM):
 | 1.1 | 30/10/2026 | Entrada alinhada com o Samuel: campo `rotulo` nos motivos, `revisao_manual` em `situacao_preco` com campos nulos, campos extras ignorados, país fora dos motivos. Novo exemplo de revisão manual, modelo `EntradaPrever` e `trecho_id` para parágrafos. |
 | 1.2 | 31/10/2026 | Exemplo 5.1 com `recomendacao: "revisar_preco"` e texto "não é explicada pelo risco estimado pelo modelo"; `encaminhar_compliance` deixa de ser escolhida automaticamente. Pendências do Samuel fechadas. (Proposta do Samuel, aguardando a Maria.) |
 | 1.3 | 03/11/2026 | Proposta da v1.2 aprovada pela Maria. `trecho_id` no formato real do índice (`cdc-art6-1`); seção 5.5 reescrita. |
+| 1.4 | 03/11/2026 | REB substituído pelo REF (o REB foi descontinuado em 2025); formato `ref-p<parágrafo>-1` na seção 5.5. |
 
 Qualquer mudança neste formato só vale com aviso a todo o grupo.

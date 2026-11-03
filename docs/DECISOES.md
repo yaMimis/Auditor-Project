@@ -1,4 +1,3 @@
-
 # DECISOES.md — Modelo de risco e juro justo
 
 **Responsável:** Samuel · **Atualizado:** 31/10/2026

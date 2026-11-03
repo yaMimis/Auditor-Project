@@ -1,5 +1,7 @@
 # CDC — Lei nº 8.078/1990 (trechos selecionados)
 
+URL: https://www.planalto.gov.br/ccivil_03/leis/l8078compilado.htm
+
 Fonte: Código de Defesa do Consumidor (CDC), texto compilado do Planalto. Trechos selecionados para o RAG do Projeto Integrador: arts. 2º, 3º, 4º, 6º, 30, 31, 39, 42, 42-A, 46, 47, 52, 54, 54-A, 54-B, 54-C, 54-D, 54-F, 54-G, 104-A, 104-B e 104-C. Anotações legislativas (redação dada, vigência, revogados e vetados) foram removidas.
 
 Art. 2º Consumidor é toda pessoa física ou jurídica que adquire ou utiliza produto ou serviço como destinatário final.

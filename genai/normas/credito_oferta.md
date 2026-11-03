@@ -1,5 +1,7 @@
 # Resolução CMN nº 5.004/2022 — Oferta e contratação de crédito
 
+URL: https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?tipo=Resolu%C3%A7%C3%A3o%20CMN&numero=5004
+
 Fonte: Resolução CMN nº 5.004, de 24 de março de 2022, publicada pelo Banco Central do Brasil, com as alterações da Resolução CMN nº 5.112/2023. Dispõe sobre os requisitos a serem observados na oferta, na contratação e na prestação de serviços de operações de crédito e de arrendamento mercantil financeiro. Trechos selecionados para o RAG do Projeto Integrador: arts. 1º a 9º. Preâmbulo, títulos de capítulo, anotações de alteração e disposições de revogação e vigência foram removidos.
 
 Art. 1º Esta Resolução dispõe sobre os requisitos a serem observados na oferta, na contratação e na prestação de serviços de operações de crédito e de arrendamento mercantil financeiro pelas instituições financeiras e demais instituições autorizadas a funcionar pelo Banco Central do Brasil.

@@ -242,7 +242,7 @@ def main() -> None:
                     help="padrão: variável de ambiente DATABASE_URL")
     ap.add_argument("--ddl", type=Path, help="arquivo .sql aplicado antes da carga")
     ap.add_argument("--euribor-12m", type=Path,
-                    default=PASTA_PADRAO / "ECB_Euribor_Serie-Mensal-12-Meses_csv.csv")
+                    default=PASTA_PADRAO / "ECB_Euribor_Serie-Mensal-12-Meses.csv")
     ap.add_argument("--euribor-3m", type=Path,
                     default=PASTA_PADRAO / "ECB_Euribor_Serie-Mensal-3-Meses.csv")
     ap.add_argument("--selic", type=Path,

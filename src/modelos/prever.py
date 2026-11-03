@@ -17,8 +17,12 @@ PACOTE_PADRAO = RAIZ / "modelos_salvos" / "pacote_prever_v1.joblib"
 VERSAO = "xgboost_v2"
 
 FAIXAS = [(0.30, "A"), (0.45, "B"), (0.60, "C"), (0.75, "D"), (1.01, "E")]
-LGD_PADRAO = 0.60          # provisório
+LGD_PADRAO = 0.60      
+LGD_POR_PAIS = {"EE": 0.34, "ES": 0.76, "FI": 0.55}   # LGD realizada, defaults 2014–2015 (notebook 07)    
 MARGEM_PADRAO = 0.05       # custos + margem ao ano, provisório
+# custos + margem ao ano por safra: média do justo = média do cobrado (notebook 08)
+MARGEM_POR_SAFRA = {2009: 0.0873, 2010: 0.1427, 2011: 0.1583, 2012: 0.1684,
+                    2013: 0.1738, 2014: 0.0497, 2015: 0.0896, 2016: 0.2046}
 MARGEM_INCERTEZA_PP = 2.0  # provisório: ± pontos percentuais
 CHECAR_FAIXA = ["valor_concedido", "prazo_meses", "renda_total"]
 
@@ -53,7 +57,7 @@ def _pacote(caminho: Path = PACOTE_PADRAO) -> dict:
 def juro_justo(prazo: int, pd_total: float, lgd: float, custo_anual: float) -> float:
     """Taxa anual em que o valor presente esperado dos recebimentos = valor emprestado."""
     prazo = max(int(prazo), 1)
-    h = 1 - (1 - pd_total) ** (1 / max(prazo, 12))  # default pode ocorrer após o fim do contrato
+    h = 1 - (1 - pd_total) ** (1 / max(prazo, 12)) 
     d = (1 + custo_anual) ** (1 / 12) - 1
 
     def vp_menos_1(taxa):
@@ -65,7 +69,6 @@ def juro_justo(prazo: int, pd_total: float, lgd: float, custo_anual: float) -> f
             saldo -= parcela - saldo * i
             vivo *= 1 - h
         return vp - 1.0
-
     try:
         return float(brentq(vp_menos_1, 1e-6, 5.0))
     except ValueError:
@@ -107,7 +110,10 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
 
     mes = pd.to_datetime(df["data_emprestimo"].iloc[0]).to_period("M").to_timestamp()
     euribor = max(float(pac["euribor_12m"].get(mes, 0.0)) / 100, 0.0)
-    justo = round(juro_justo(df["prazo_meses"].iloc[0], pd_, LGD_PADRAO, euribor + MARGEM_PADRAO), 4)
+    lgd = LGD_POR_PAIS.get(df["pais"].iloc[0], LGD_PADRAO)
+    ano = int(df["ano"].iloc[0])
+    margem = MARGEM_POR_SAFRA.get(ano, MARGEM_POR_SAFRA[max(MARGEM_POR_SAFRA)])  # ano novo → última safra
+    justo = round(juro_justo(df["prazo_meses"].iloc[0], pd_, lgd, euribor + margem), 4)
     jmin = round(max(justo - MARGEM_INCERTEZA_PP / 100, 0), 4)
     jmax = round(justo + MARGEM_INCERTEZA_PP / 100, 4)
 

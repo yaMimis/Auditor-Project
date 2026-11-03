@@ -2,8 +2,11 @@
 -- Auditor de Preço Justo · séries mensais do custo do dinheiro
 -- PostgreSQL 14+ · idempotente (pode rodar mais de uma vez)
 --
---   euribor_mensal  Euribor de 3 e de 12 meses (Portal de dados do BCE)
---   selic_mensal    Selic da leitura A do "modo Brasil" (Banco Central)
+--   euribor_mensal             Euribor de 3 e de 12 meses (Portal de dados do BCE)
+--   selic_mensal               Selic da leitura A do "modo Brasil" (Banco Central)
+--   bc_credito_pessoal_mensal  Taxa média do crédito pessoal não consignado, pessoas físicas
+--                              (Banco Central, SGS 20742): referência de mercado, 03/2011 em
+--                              diante; 2009 a 02/2011 ficam sem benchmark de propósito
 --
 -- Chave: `mes` é sempre o 1º dia do mês. Os arquivos do BCE trazem o último
 -- dia do mês, e a carga converte. A junção com os contratos é pelo mês de
@@ -30,10 +33,16 @@ CREATE TABLE IF NOT EXISTS selic_mensal (
     selic_meta_aa  NUMERIC(6,2)                -- % a.a., meta Selic no 1º dia do mês (Dados de Mercado); só conferência
 );
 
+CREATE TABLE IF NOT EXISTS bc_credito_pessoal_mensal (
+    mes       DATE PRIMARY KEY,                -- 1º dia do mês
+    taxa_aa   NUMERIC(10,2)                    -- % a.a., taxa média das novas operações (BCB, SGS 20742); só referência, não calibra o preço
+);
+
 -- ---------------------------------------------------------------------
 -- vw_custo_do_dinheiro: cada contrato ligado às taxas do mês da concessão.
 -- LEFT JOIN de propósito: contrato sem taxa aparece com NULL em vez de sumir
--- (a carga confere que isso não acontece na janela 01/2009 a 07/2021).
+-- (a carga confere que isso não acontece na janela 01/2009 a 07/2021; a taxa do BC só
+-- é exigida de 03/2011 em diante).
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW vw_custo_do_dinheiro AS
 SELECT e.loan_id,
@@ -41,7 +50,9 @@ SELECT e.loan_id,
        date_trunc('month', e.data_emprestimo)::date AS mes,
        t.euribor_3m,
        t.euribor_12m,
-       s.selic_aa
+       s.selic_aa,
+       b.taxa_aa AS bc_credito_pessoal_aa     -- NULL antes de 03/2011 (sem benchmark)
 FROM emprestimo e
-LEFT JOIN euribor_mensal t ON t.mes = date_trunc('month', e.data_emprestimo)::date
-LEFT JOIN selic_mensal   s ON s.mes = date_trunc('month', e.data_emprestimo)::date;
+LEFT JOIN euribor_mensal            t ON t.mes = date_trunc('month', e.data_emprestimo)::date
+LEFT JOIN selic_mensal              s ON s.mes = date_trunc('month', e.data_emprestimo)::date
+LEFT JOIN bc_credito_pessoal_mensal b ON b.mes = date_trunc('month', e.data_emprestimo)::date;

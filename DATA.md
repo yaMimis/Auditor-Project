@@ -1,7 +1,7 @@
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
-> Versão 0.4 (rascunho) · 30/10/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
-> Itens marcados **[A CONFIRMAR]** dependem de decisão do Samuel. As regras das seções 3, 4 e 5 (alvo, coorte madura e divisão) são propostas ainda sem confirmação explícita dele. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
+> Versão 0.5 (rascunho) · 31/10/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+> Itens marcados **[A CONFIRMAR]** dependem de decisão do Samuel. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (29/10/2026); onde o texto e o notebook dele divergem, a seção diz qual foi seguido. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
 
@@ -16,33 +16,36 @@ Uma linha por contrato, nas três tabelas ligadas por `loan_id`: `emprestimo`, `
 
 ## 3. Alvo (o que é inadimplente)
 
-`inadimplente = 1` quando `data_default` está preenchida; não se usa `status`. O Bondora registra essa data quando o atraso passa de 60 dias (segundo o dicionário; anotar a data da consulta).
+`inadimplente = 1` quando `data_default` está preenchida; senão 0. Não se usa `status` (`DECISOES.md`, seção 1). O Bondora registra essa data quando o atraso passa de 60 dias (segundo o dicionário; anotar a data da consulta).
 
-Há 7.031 contratos maduros com status `Repaid` e data de default, ou seja, atrasaram e depois quitaram. Contam como inadimplentes; a recuperação entra na LGD (Loss Given Default, perda dado o default).
+Os contratos que atrasaram e depois quitaram (`status = 'Repaid'` com data de default: 5.465 na base de modelagem) contam como inadimplentes; a recuperação entra na LGD (Loss Given Default, perda dado o default).
 
-A PD (Probability of Default) é a de "default em qualquer momento do contrato" **[A CONFIRMAR]**.
+A PD (Probability of Default, probabilidade de default) é a de "default em qualquer momento do contrato".
 
-## 4. Recorte (coorte madura)
+## 4. Recorte (base de modelagem)
 
-Entra o contrato com `data_vencimento_original` até 20/07/2021 e `status` diferente de `Current`.
+Entra o contrato concedido de 2009 a 2016 (`data_emprestimo`) e encerrado: `status = 'Repaid'` ou `data_default` preenchida (`DECISOES.md`, seção 2). A view `vw_base_modelagem` (`03_view_modelagem.sql`) aplica esta regra e marca o conjunto de cada contrato.
 
-- Contratos com vencimento original até a data de corte: 49.869 (51,7% de default).
-- Saem os 2.791 que seguem `Current` depois do vencimento original (provavelmente reagendados; o desfecho é desconhecido). Sobram **47.078 contratos, com 54,7% de default**.
-- Cuidado com a composição por ano: os contratos maduros de 2019 e 2020 são só os curtos, e o default deles é 13,8% e 6,3%, contra cerca de 58% em 2015–2017. Não comparar essas épocas diretamente.
+- Resultado: 30.210 contratos, com 56,3% de default.
+- Sai a Eslováquia (294 contratos, quase todos de 2014). Sobram **29.916 contratos, com 56,0% de default**.
+- **[A CONFIRMAR]** Reestruturados: o texto do `DECISOES.md` manda excluí-los, mas o notebook do Samuel não aplica a exclusão, e a view segue o notebook. São 7.941 contratos (26,5%), com 76,2% de default contra 48,6% nos demais. Excluí-los reduziria a base a 21.975.
+- Ficam de fora os contratos de 2009 a 2016 ainda em andamento (1.045 sem a Eslováquia: 926 `Current` e 119 `Late` sem default). Só 2016 tem 609, o que infla um pouco o default de 2016 (63,1% contra 59,4% se todos entrassem como sem default).
+- 2009–2012 tem só a Estônia, com default de 21% a 39%. Espanha e Finlândia entram em 2013–2014, e o default sobe a partir de 2014 (`DECISOES.md`, seção 10).
 
 ## 5. Divisão treino e teste
 
-Por tempo (`data_emprestimo`) e por cliente:
+Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
-| Conjunto | Concessões                                 | Contratos                          | Default |
-| -------- | ------------------------------------------- | ---------------------------------- | ------- |
-| Treino   | 2013 a 2016                                 | 26.269 (19.030 clientes)           | 57,5%   |
-| Teste    | 2017 e 2018                                 | 10.805 (após a regra por cliente) | 64,6%   |
-| Fora     | 2009–2012 (2.729) e 2019 em diante (2.076) | n/a                                | n/a     |
+| Conjunto           | Concessões                    | Contratos                                               | Default |
+| ------------------ | ------------------------------ | ------------------------------------------------------- | ------- |
+| Treino e validação | 2009 a 2015                    | 20.011 (13.972 clientes)                                | 52,4%   |
+| Teste              | 2016, sem clientes do treino   | 7.311 (6.290 clientes: EE 3.642, ES 2.226, FI 1.443)    | 67,1%   |
+| Fora               | 2016 de clientes do treino; 2017 em diante | 2.594 e 147.978                              | n/a     |
 
-- Fora: 2009–2012 tem poucos contratos e é de outra época; de 2019 em diante só restam contratos curtos.
-- Regra por cliente: se o `cliente_id` aparece no treino, seus contratos saem do teste. São 2.660 clientes e 5.199 contratos (32,5% do teste bruto de 16.004).
-- Limitação conhecida: o preço mudou entre 2017 e 2018 (juro médio de 53,7% para 28,2% ao ano nos contratos maduros).
+- Validação dentro do treino: GroupKFold por cliente.
+- Regra por cliente: se o `cliente_id` aparece no treino, seus contratos de 2016 saem do teste. São 2.594 contratos (26,2% do teste bruto de 9.905), de 1.874 clientes. Metade dos contratos da base é de clientes repetidos (50,7%).
+- O teste só tem clientes novos e é mais arriscado que o treino (67,1% contra 52,4%) e que todo o 2016 (63,1%). Esperar perda de calibração e avaliar por país.
+- 2017 em diante (147.978 contratos, 82,6% da base) não entra no treino nem no teste, porque ainda não tem desfecho suficiente, mas é a carteira que será pontuada na auditoria e no ROI.
 
 ## 6. Colunas
 
@@ -52,14 +55,15 @@ Por tempo (`data_emprestimo`) e por cliente:
 
 - `juro_aa` é o preço que estamos auditando; usá-lo para prever o risco tornaria a auditoria circular.
 - `parcela_mensal` está na lista negra porque, dados o valor e o prazo, ela embute o juro (correlação de 0,90 com a parcela calculada a partir do juro).
+- A `COLUNAS_LISTA_NEGRA` exportada pela `carga_bondora.py` já inclui `parcela_mensal`; o teste automático não precisa somá-la à parte.
 
-**Só auditoria (4): usadas apenas na auditoria de equidade, nunca para prever risco.**
+**Só auditoria (4): usadas apenas na auditoria de equidade, nunca para prever risco.** `estado_civil` e `n_dependentes` ainda precisam da aprovação do grupo **[A CONFIRMAR]**.
 
 `genero`, `idade`, `estado_civil`, `n_dependentes`
 
 - `estado_civil` e `n_dependentes` só têm dados nos contratos até 2017, então a auditoria delas cobre só esse período.
 
-**Indisponíveis após 2017 (4): fora do modelo.** Cerca de 81% em branco no teste, contra quase 0% no treino. Um modelo treinado com elas perderia a informação justamente onde será usado.
+**Indisponíveis após 2017 (4): fora do modelo [A CONFIRMAR].** Estão preenchidas em 2009–2016 (no máximo 1,0% em branco no treino e no teste), mas 96,4% em branco nos contratos de 2017 a 2021, que são 82,6% da base e a carteira a pontuar. Um modelo treinado com elas perderia a informação justamente onde será usado.
 
 `finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho`
 
@@ -71,9 +75,9 @@ Por tempo (`data_emprestimo`) e por cliente:
 
 - Contrato: `novo_cliente`, `valor_solicitado`, `valor_concedido`, `prazo_meses`, `tipo_verificacao`
 - Cliente: `pais`, `escolaridade`, `tipo_moradia`, `tempo_emprego_atual`, as oito colunas `renda_*`
-- Histórico: `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `pagamentos_anteriores` (14% em branco no teste), `quitacoes_antecipadas_valor`, `quitacoes_antecipadas_qtd`, `passivos_existentes`, `passivos_total`, `refinanciamento_passivos`, `divida_renda`, `caixa_livre`
-- Scores externos (`score_es_microl`, `score_es_equifax`, `score_fi_asiakastieto`, `score_ee_mini`): a cobertura muda muito entre treino e teste (`score_es_microl` tem 77% em branco no treino e 16% no teste) e varia por país. Sugestão: fora do modelo base, testar depois como sensibilidade.
-- `pais` entra no modelo. O default é 38% na Estônia, 72% na Finlândia e 76% na Espanha; sem o país, a auditoria de preço marcaria como discriminação o que é diferença de risco.
+- Histórico: `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `pagamentos_anteriores` (0% em branco no treino e no teste, mas 42% em 2017–2021), `quitacoes_antecipadas_valor`, `quitacoes_antecipadas_qtd`, `passivos_existentes`, `passivos_total`, `refinanciamento_passivos`, `divida_renda`, `caixa_livre`
+- Scores externos (`score_es_microl`, `score_es_equifax`, `score_fi_asiakastieto`, `score_ee_mini`): a cobertura muda muito entre treino, teste e carteira (`score_es_microl` tem 81% em branco no treino e 4% em 2017–2021; `score_es_equifax` faz o contrário, com 81% e 96%) e varia por país. Sugestão: fora do modelo base, testar depois como sensibilidade.
+- `pais` entra no modelo. O default é 42% na Estônia, 73% na Finlândia e 78% na Espanha (base de modelagem); sem o país, a auditoria de preço marcaria como discriminação o que é diferença de risco.
 - A variável derivada parcela ÷ renda deve usar `valor_concedido / prazo_meses / renda_total` (parcela sem juros), porque `parcela_mensal` está na lista negra.
 
 ## 7. Valores especiais e qualidade
@@ -91,12 +95,12 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 
 ## 9. Fontes externas
 
-- **Euribor (Portal de dados do BCE, data.ecb.europa.eu)** **[A CONFIRMAR com o Samuel]**:
+- **Euribor (Portal de dados do BCE, data.ecb.europa.eu)** **[A CONFIRMAR com o Samuel: o prazo]**:
   - Principal: Euribor de 12 meses, série mensal, média das observações do mês (`FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA`).
   - Sensibilidade: Euribor de 3 meses, mesma frequência (`FM.M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA`).
   - Período: 01/2009 a 07/2021 (concessões de 28/02/2009 a 19/07/2021). Baixar a série completa e recortar depois.
-  - Junção: mês de `data_emprestimo` com o mês da série. Os valores negativos (de 2015–2016 em diante) ficam como vêm; o piso em zero, se houver, é decisão do Samuel na fórmula do preço.
-  - Limitação: a Euribor tem no máximo 12 meses, e a mediana do prazo dos contratos é de 60 meses (36 a 48 meses nos contratos maduros).
+  - Junção: mês de `data_emprestimo` com o mês da série. Os valores negativos (de 2015–2016 em diante) ficam como vêm na tabela; a fórmula do preço usa piso em zero (`DECISOES.md`, seção 7).
+  - Limitação: a Euribor tem no máximo 12 meses, e a mediana do prazo dos contratos é de 60 meses (48 meses no treino e 36 no teste).
 - **Selic (Banco Central do Brasil)** **[A CONFIRMAR com o Samuel]**: usada só no cenário "modo Brasil" (leitura A), que reprecifica os contratos históricos com a Selic do mesmo mês. O motor base continua usando a Euribor da época.
   - Série SGS 4189, "Selic acumulada no mês anualizada base 252": mensal, em % ao ano, 01/2009 a 07/2021.
   - Descartadas: a 4390 (% ao mês; exige anualizar e erra em meses curtos) e a meta Selic do Dados de Mercado (valor do 1º dia do mês; defasa quando a meta muda). A meta fica só como conferência da 4189.
@@ -118,21 +122,25 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 
 - Dados estonianos, de 2009 a 2021, só de empréstimos aprovados.
 - Análise jurídica hipotética ("se este contrato fosse brasileiro").
-- A referência de mercado do BC (série 20742) começa em 03/2011 e o risco dos dois mercados é muito diferente (54,7% de default na coorte madura do Bondora): serve de contexto, não de veredito sobre preço justo.
-- A coorte madura exclui os contratos recentes e muda a composição por prazo ao longo dos anos.
+- A base de modelagem termina em 2016, e a carteira a pontuar (2017 a 2021) é 82,6% da base: o modelo será usado fora da época em que foi treinado e testado. O juro médio mudou nesse período (41,2% em 2016, 46,7% em 2017 e 31,7% em 2018, em todos os contratos).
+- Só entram contratos encerrados. Os 609 de 2016 ainda em andamento ficam de fora e inflam um pouco o default de 2016.
+- O teste só tem clientes novos, com default maior que o do 2016 inteiro (67,1% contra 63,1%).
+- 2009–2012 tem só a Estônia, com default menor; o default sobe a partir de 2014, em boa parte pela entrada da Espanha e da Finlândia.
+- A referência de mercado do BC (série 20742) começa em 03/2011 e o risco dos dois mercados é muito diferente (56,0% de default na base de modelagem do Bondora): serve de contexto, não de veredito sobre preço justo.
 - Excluir gênero e idade do modelo não elimina proxies (variáveis que carregam a mesma informação). É isso que a auditoria de resíduos testa.
 - Gênero está muito ligado ao país (gênero indefinido é quase só da Espanha).
 - Quando o grupo compara contratos "parecidos" controlando por variáveis como renda, é preciso lembrar que a renda pode ser afetada pelo próprio gênero. Registrar isso na parte de ética.
 
 ## 12. Pendências com o Samuel
 
-- [ ] Confirmar o alvo (seção 3), a coorte madura (seção 4) e a divisão treino e teste (seção 5).
-- [ ] Euribor: 12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021 (seção 9). Piso em zero para valores negativos?
+- [ ] Reestruturados: excluir ou não do treino? O texto e o notebook do `DECISOES.md` divergem (seção 4).
+- [ ] Variáveis indisponíveis após 2017 (`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho`): fora do modelo principal? (seção 6).
+- [ ] Desenho do teste e da validação: manter todo o 2016 tirando do treino os clientes do teste; validação por janela móvel; calibrar com o ano mais recente; comparar com e sem 2009–2012 (ver o documento "Avaliação do desenho de modelagem").
+- [ ] Euribor: o prazo (12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021; seção 9).
 - [ ] Selic: confirmar a série 4189 e que a leitura A é um cenário "modo Brasil", com o motor base na Euribor (seção 9).
 - [ ] Confirmar a série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (seção 9).
 - [ ] Combinar com a Yasmin e a Maria o campo da referência de mercado na API e no parecer (mudar o formato exige aviso a todos).
-- [ ] Confirmar `parcela_mensal` na lista negra e a fórmula da parcela ÷ renda sem juros.
-- [ ] Confirmar `estado_civil` e `n_dependentes` como só auditoria.
-- [ ] Confirmar `experiencia_trabalho` como indisponível após 2017.
+- [ ] Confirmar a fórmula da parcela ÷ renda sem juros.
+- [ ] Grupo: `estado_civil` e `n_dependentes` como só auditoria.
 - [ ] Decidir o tratamento dos scores externos.
-- [ ] Combinar quem cria a view de contratos encerrados de coortes maduras (proposta: Marcos).
+- [ ] Conferir a view `vw_base_modelagem` contra os números do `DECISOES.md` (20.011 no treino e 7.311 no teste).

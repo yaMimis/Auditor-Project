@@ -1,0 +1,62 @@
+﻿
+OK   | O cliente pode pedir revisão de uma decisão de crédito tomada só por um sistema automático?
+     esperado: LGPD, Art. 20
+     -> CDC, Art. 54-G (parte 1)  distância=0.389
+     -> CDC, Art. 54-D (parte 1)  distância=0.397
+     -> LGPD, Art. 20 (parte 1)  distância=0.405
+
+OK   | O que é dado pessoal sensível?
+     esperado: LGPD, Art. 5º
+     -> LGPD, Art. 5º (parte 1)  distância=0.514
+     -> LGPD, Art. 11 (parte 4)  distância=0.527
+     -> LGPD, Art. 11 (parte 1)  distância=0.558
+
+OK   | Dados anonimizados são considerados dados pessoais?
+     esperado: LGPD, Art. 12
+     -> LGPD, Art. 12 (parte 1)  distância=0.219
+     -> LGPD, Art. 11 (parte 4)  distância=0.396
+     -> LGPD, Art. 11 (parte 2)  distância=0.411
+
+ERRO | O tratamento de dados pessoais pode ser feito para fins discriminatórios?
+     esperado: LGPD, Art. 6º
+     -> LGPD, Art. 11 (parte 1)  distância=0.283
+     -> LGPD, Art. 11 (parte 4)  distância=0.311
+     -> LGPD, Art. 11 (parte 2)  distância=0.312
+
+OK   | No financiamento, o fornecedor precisa informar a taxa efetiva anual de juros e a soma total a pagar?
+     esperado: CDC, Art. 52
+     -> CDC, Art. 52 (parte 1)  distância=0.224
+     -> CDC, Art. 54-B (parte 1)  distância=0.319
+     -> Resolução CMN nº 5.004/2022, Art. 9º (parte 1)  distância=0.332
+
+OK   | Exigir do consumidor vantagem manifestamente excessiva é prática abusiva?
+     esperado: CDC, Art. 39
+     -> CDC, Art. 42 (parte 1)  distância=0.312
+     -> CDC, Art. 39 (parte 1)  distância=0.336
+     -> CDC, Art. 39 (parte 3)  distância=0.361
+
+OK   | Na oferta de crédito, o que deve ser informado sobre o custo efetivo total?
+     esperado: CDC, Art. 54-B ou Resolução CMN nº 4.881/2020, Art. 7º
+     -> CDC, Art. 52 (parte 1)  distância=0.228
+     -> CDC, Art. 54-B (parte 1)  distância=0.250
+     -> Resolução CMN nº 4.881/2020, Art. 3º (parte 1)  distância=0.298
+
+OK   | O que entra no cálculo do Custo Efetivo Total?
+     esperado: Resolução CMN nº 4.881/2020, Art. 3º ou Resolução CMN nº 4.881/2020, Art. 2º
+     -> CDC, Art. 52 (parte 1)  distância=0.436
+     -> Resolução CMN nº 4.881/2020, Art. 3º (parte 1)  distância=0.466
+     -> CDC, Art. 54-B (parte 1)  distância=0.476
+
+ERRO | O contrato de crédito precisa discriminar a taxa efetiva mensal e anual, as tarifas e os tributos?
+     esperado: Resolução CMN nº 5.004/2022, Art. 3º
+     -> Resolução CMN nº 5.004/2022, Art. 7º (parte 1)  distância=0.255
+     -> Resolução CMN nº 5.004/2022, Art. 9º (parte 1)  distância=0.259
+     -> CDC, Art. 54-D (parte 2)  distância=0.275
+
+OK   | Na quitação antecipada do empréstimo, qual taxa de juros é usada para calcular o desconto?
+     esperado: Resolução CMN nº 5.004/2022, Art. 7º ou CDC, Art. 52
+     -> Resolução CMN nº 4.881/2020, Art. 6º (parte 1)  distância=0.367
+     -> Resolução CMN nº 5.004/2022, Art. 7º (parte 1)  distância=0.367
+     -> Relatório de Estabilidade Financeira (BC, maio/2026), parágrafo 14 (parte 1)  distância=0.391
+
+Resultado: 8 de 10 com o artigo certo no top 3. Meta: 8.

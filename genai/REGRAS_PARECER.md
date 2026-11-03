@@ -1,7 +1,7 @@
 # REGRAS_PARECER.md — Regras para o parecer gerado pela IA
 
 **Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.2 · **Data:** 31/10/2026
-**Status:** proposta; ajuste da seção 7 sugerido pelo Samuel em 31/10/2026, aguardando a Maria e o grupo.
+**Status:** v1.2 aprovada pela Maria em 03/11/2026 (ajuste da seção 7 proposto pelo Samuel)
 
 ## 1. Finalidade
 
@@ -135,6 +135,6 @@ Nos 20 casos de avaliação (critérios em `genai/avaliacao/CRITERIOS.md`), alé
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1.0     | 29/10/2026 | Primeira versão.                                                                                                                                                                                                                                     |
 | 1.1     | 30/10/2026 | Revisão manual pelo template, sem LLM, quando `situacao_preco` é `revisao_manual` ou `alerta_dados` é verdadeiro. Motivos citados pelo `rotulo`. Campos extras do `prever()` fora do parecer. Checagem da entrada com `EntradaPrever`. |
-| 1.2     | 31/10/2026 | Seção 7: acima do justo passa de `encaminhar_compliance` para `revisar_preco`, com encaminhamento ao compliance como decisão do analista; texto "não é explicada pelo risco estimado pelo modelo". (Proposta do Samuel, aguardando a Maria.) |
+| 1.2     | 31/10/2026 | Seção 7: acima do justo passa de `encaminhar_compliance` para `revisar_preco`, com encaminhamento ao compliance como decisão do analista; texto "não é explicada pelo risco estimado pelo modelo". (Proposta do Samuel em 31/10; aprovada pela Maria em 03/11.)
 
 Qualquer mudança nestas regras gera nova versão do prompt (`parecer_v2`, `parecer_v3`...) com o motivo anotado.

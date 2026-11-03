@@ -23,7 +23,9 @@ As regras seguem o DATA.md (seções 6 e 7). Os esquemas das três tabelas do Bo
 gerados a partir do mapeamento da carga (carga_bondora.TABELAS): se alguém acrescentar
 ou tirar uma coluna lá e não aqui, o esquema acusa (strict=True).
 
-Para testes sem banco, use validar_tabelas(dict_de_dataframes, estrito=False).
+Para testes sem banco, use validar_tabelas(dict_de_dataframes, parcial=True). O DataFrame de
+cada tabela precisa ter TODAS as colunas (coluna faltando é erro); estrito=False só deixa
+passar colunas a mais.
 """
 from __future__ import annotations
 
@@ -278,6 +280,19 @@ def esquema_alerta(tabela: str) -> "pa.DataFrameSchema | None":
 # --------------------------------------------------------------------------
 COLUNAS_RESULTADO = ["severidade", "tabela", "coluna", "regra", "violacoes", "exemplos"]
 
+# Coluna que sumiu ou sobrou no banco: o pandera guarda o NOME da coluna no failure_case,
+# e deixa o campo "column" vazio.
+ESTRUTURA = {"column_in_dataframe": "coluna ausente no banco",
+             "column_in_schema": "coluna a mais no banco (fora do esquema)"}
+
+
+def _nome_da_coluna(caso, coluna) -> str:
+    if isinstance(caso, (list, tuple, set)):
+        return ", ".join(str(x) for x in caso)
+    if caso is not None and not (isinstance(caso, float) and pd.isna(caso)):
+        return str(caso)
+    return str(coluna) if coluna is not None and not pd.isna(coluna) else "(tabela)"
+
 
 def _vazio() -> pd.DataFrame:
     return pd.DataFrame(columns=COLUNAS_RESULTADO)
@@ -296,6 +311,10 @@ def _coletar(df: pd.DataFrame, esquema, tabela: str, severidade: str) -> list[di
     # O pandera reporta uma regra de linha (várias colunas) uma vez para CADA coluna da
     # tabela; aqui ela vira uma só, com a contagem de linhas distintas.
     fc["_col"] = fc["column"].fillna("(linha)").astype(str).where(~fc["_chk"].isin(_NOMES_LINHA), "(linha)")
+    estrutura = fc["_chk"].isin(ESTRUTURA)
+    if estrutura.any():
+        fc.loc[estrutura, "_col"] = [_nome_da_coluna(caso, col) for caso, col in
+                                     zip(fc.loc[estrutura, "failure_case"], fc.loc[estrutura, "column"])]
     for (col, regra), g in fc.groupby(["_col", "_chk"]):
         idx = g["index"].dropna()
         n = int(idx.nunique()) if len(idx) else int(len(g))
@@ -304,7 +323,7 @@ def _coletar(df: pd.DataFrame, esquema, tabela: str, severidade: str) -> list[di
             alvo = idx.drop_duplicates().head(3).tolist()
             exemplos = ", ".join(str(v) for v in df.loc[alvo, chave].tolist())
         saida.append({"severidade": severidade, "tabela": tabela, "coluna": col,
-                      "regra": regra, "violacoes": n, "exemplos": exemplos})
+                      "regra": ESTRUTURA.get(regra, regra), "violacoes": n, "exemplos": exemplos})
     return saida
 
 
@@ -368,7 +387,7 @@ def validar_tabelas(tabelas: dict[str, pd.DataFrame], parcial: bool = False,
                     estrito: bool = True) -> pd.DataFrame:
     """Valida o dicionário {nome da tabela: DataFrame} e devolve um DataFrame com uma
     linha por (severidade, tabela, coluna, regra) violada. Vazio = nada a registrar.
-    estrito=False aceita DataFrames com só algumas colunas (útil nos testes)."""
+    estrito=False deixa passar colunas a mais no DataFrame (colunas a menos continuam sendo erro)."""
     linhas: list[dict] = []
     for tabela in _regras_erro():
         df = tabelas.get(tabela)
@@ -411,6 +430,22 @@ def conectar(url: str):
     return create_engine(_url_sqlalchemy(url))
 
 
+def conectar_ou_sair(dsn: str):
+    """Abre a conexão e confere que ela funciona. Falha de conexão sai com código 2
+    (não é o mesmo que "tabela ausente")."""
+    motor = conectar(dsn)
+    try:
+        with motor.connect():
+            pass
+    except Exception as exc:
+        primeiras = " ".join(str(exc).splitlines()[:2])[:260]
+        print("ERRO: não consegui conectar ao banco.\n  " + primeiras +
+              "\nConfira a DATABASE_URL (usuário, senha e, principalmente, a PORTA) e se o "
+              "contêiner está no ar (docker compose ps).", file=sys.stderr)
+        sys.exit(2)
+    return motor
+
+
 def ler_tabelas(conexao) -> dict[str, pd.DataFrame]:
     """Lê as tabelas e a view com pd.read_sql (SQLAlchemy engine ou conexão sqlite3).
     O que não existir no banco fica de fora e vira erro na validação."""
@@ -437,16 +472,7 @@ def main() -> None:
     a = ap.parse_args()
     if not a.dsn:
         sys.exit("ERRO: informe --dsn ou defina DATABASE_URL.")
-    motor = conectar(a.dsn)
-    try:                                              # falha de conexão não é "tabela ausente"
-        with motor.connect():
-            pass
-    except Exception as exc:
-        primeiras = " ".join(str(exc).splitlines()[:2])[:260]
-        print("ERRO: não consegui conectar ao banco.\n  " + primeiras +
-              "\nConfira a DATABASE_URL (usuário, senha e, principalmente, a PORTA) e se o "
-              "contêiner está no ar (docker compose ps).", file=sys.stderr)
-        sys.exit(2)
+    motor = conectar_ou_sair(a.dsn)
     res = validar_tabelas(ler_tabelas(motor), parcial=a.parcial)
     if a.saida:
         res.to_csv(a.saida, index=False)

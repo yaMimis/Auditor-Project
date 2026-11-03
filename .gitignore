@@ -12,3 +12,4 @@ docker-compose.override.yml
 *.joblib
 *.pkl
 .ipynb_checkpoints/
+.pytest_cache/

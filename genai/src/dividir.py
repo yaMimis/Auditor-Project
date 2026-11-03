@@ -17,11 +17,15 @@ TAMANHO_CAPUT = 150    # quanto do caput é repetido nas partes seguintes
 
 
 def ler_norma(caminho):
-    """Lê o arquivo e pega o nome da norma na 1ª linha ('# LGPD — ...' -> 'LGPD')."""
+    """Lê o arquivo e pega o nome da norma na 1ª linha ('# LGPD — ...' -> 'LGPD')
+    e o link oficial na linha que começa com 'URL:'."""
     texto = caminho.read_text(encoding="utf-8-sig")
     titulo = texto.strip().splitlines()[0].lstrip("#").strip()
     norma = titulo.split("—")[0].strip()
-    return norma, texto
+    achado = re.search(r"^URL:\s*(\S+)", texto, re.MULTILINE)
+    if not achado:
+        raise SystemExit(f"{caminho.name}: falta a linha 'URL: <link>' no cabeçalho.")
+    return norma, achado.group(1), texto
 
 
 def separar_artigos(texto):
@@ -73,7 +77,7 @@ def dividir_normas():
     for caminho in sorted(PASTA_NORMAS.glob("*.md")):
         if caminho.name == "FONTES.md":
             continue
-        norma, texto = ler_norma(caminho)
+        norma, url, texto = ler_norma(caminho)
         for artigo_texto in separar_artigos(texto):
             artigo = numero_do_artigo(artigo_texto)
             slug = re.sub(r"[^0-9a-z]", "", artigo.lower())  # 'Art. 54-A' -> 'art54a'
@@ -84,6 +88,7 @@ def dividir_normas():
                     "artigo": artigo,
                     "parte": i,
                     "arquivo": caminho.name,
+                    "url": url,
                     "texto": parte,
                 })
     return trechos

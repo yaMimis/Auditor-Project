@@ -1,0 +1,10 @@
+# Dependências para rodar os testes (localmente e no CI).
+# O requirements.txt continua sendo o da imagem Docker; este arquivo só soma o que os testes precisam.
+-r requirements.txt
+pytest
+# usado por src/modelos/treino.py e por tests/modelos/test_treino.py (do Samuel).
+# Se a API vai carregar o modelo em produção, o certo é mover para o requirements.txt.
+scikit-learn
+# EDA e gráficos dos slides
+matplotlib
+seaborn

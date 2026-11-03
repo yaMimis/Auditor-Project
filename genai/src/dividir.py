@@ -1,7 +1,9 @@
 """
-Divide as normas de genai/normas/*.md em trechos: um trecho por artigo.
-Artigos longos viram mais de um trecho, sempre quebrando entre linhas
-(incisos, parágrafos), nunca no meio de uma frase.
+Divide as normas de genai/normas/*.md em trechos.
+
+- Leis e resoluções (arquivos com "Art."): um trecho por artigo. Artigos longos
+  viram mais de um trecho, sempre quebrando entre linhas (incisos, parágrafos).
+- Relatórios sem artigos (ex.: ref.md): um trecho por parágrafo do texto.
 
 Como rodar (na pasta raiz do repositório):
     python genai/src/dividir.py
@@ -33,6 +35,14 @@ def separar_artigos(texto):
     partes = re.split(r"\n(?=Art\. \d)", texto)
     # A 1ª parte é o cabeçalho do arquivo (não começa com 'Art.'): fica de fora.
     return [p.strip() for p in partes if p.strip().startswith("Art.")]
+
+
+def separar_paragrafos(texto):
+    """Para documentos sem artigos: devolve os parágrafos do corpo do texto,
+    pulando o título (#) e as linhas de cabeçalho 'URL:' e 'Fonte:'."""
+    blocos = re.split(r"\n\s*\n", texto.strip())
+    cabecalho = ("#", "URL:", "Fonte:")
+    return [b.strip() for b in blocos if b.strip() and not b.strip().startswith(cabecalho)]
 
 
 def numero_do_artigo(artigo_texto):
@@ -78,10 +88,15 @@ def dividir_normas():
         if caminho.name == "FONTES.md":
             continue
         norma, url, texto = ler_norma(caminho)
-        for artigo_texto in separar_artigos(texto):
-            artigo = numero_do_artigo(artigo_texto)
-            slug = re.sub(r"[^0-9a-z]", "", artigo.lower())  # 'Art. 54-A' -> 'art54a'
-            for i, parte in enumerate(quebrar_artigo(artigo_texto), start=1):
+        artigos = separar_artigos(texto)
+        if artigos:  # lei ou resolução: um bloco por artigo
+            blocos = [(numero_do_artigo(a), a) for a in artigos]
+        else:        # relatório: um bloco por parágrafo
+            blocos = [(f"parágrafo {n}", p) for n, p in enumerate(separar_paragrafos(texto), start=1)]
+        for artigo, bloco_texto in blocos:
+            # 'Art. 54-A' -> 'art54a';  'parágrafo 3' -> 'p3'
+            slug = re.sub(r"[^0-9a-z]", "", artigo.lower()) if artigo.startswith("Art.") else "p" + artigo.split()[-1]
+            for i, parte in enumerate(quebrar_artigo(bloco_texto), start=1):
                 trechos.append({
                     "trecho_id": f"{caminho.stem}-{slug}-{i}",
                     "norma": norma,

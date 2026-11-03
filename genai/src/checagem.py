@@ -7,6 +7,7 @@ Parecer é o que gerar_parecer() entrega para a tela.
 Teste rápido (na pasta raiz):
     python genai/src/checagem.py
 """
+import re
 from datetime import datetime
 from typing import Literal
 
@@ -77,6 +78,62 @@ class Parecer(RespostaLLM):
     versao_prompt: str
     gerado_em: datetime
 
+# ---------- Conferência do parecer (números e fontes) ----------
+
+UNIDADE_JURO = "ao ano"  # decisão 3: se o grupo mudar para "ao mês", muda só aqui
+TOLERANCIA_PP = 0.051     # o texto usa 1 casa decimal: 16,2% vale para 0.162 e 0.1624
+
+# Número com "%" (aceita "18,4%", "18.4 %") ou número com vírgula decimal ("0,184", "8,7 p.p.").
+# Números inteiros sem % ("art. 6º", "Lei nº 8.078", "Resolução 4.881") são ignorados.
+PADRAO_NUMERO = re.compile(r"(\d+(?:[.,]\d+)?)\s*%|(\d+,\d+)")
+
+
+def formatar_percentual(valor: float) -> str:
+    """0.184 -> '18,4%'"""
+    return f"{valor * 100:.1f}%".replace(".", ",")
+
+
+def formatar_juro(valor: float) -> str:
+    """0.249 -> '24,9% ao ano'"""
+    return f"{formatar_percentual(valor)} {UNIDADE_JURO}"
+
+
+def extrair_numeros(texto: str) -> list[float]:
+    """Devolve os números do texto que precisam vir do prever(), em pontos percentuais."""
+    numeros = []
+    for com_porcento, com_virgula in PADRAO_NUMERO.findall(texto):
+        bruto = com_porcento or com_virgula
+        numeros.append(float(bruto.replace(",", ".")))
+    return numeros
+
+
+def conferir_parecer(resposta: RespostaLLM, entrada: EntradaPrever,
+                     trechos_recuperados: list[str]) -> list[str]:
+    """Confere o que o LLM escreveu. Lista vazia = aprovado; senão, usar o template."""
+    problemas = []
+
+    # 1. numeros_citados: só campos que vieram do prever(), com o valor exato.
+    for chave, valor in resposta.numeros_citados.items():
+        original = getattr(entrada, chave)
+        if original is None:
+            problemas.append(f"numeros_citados.{chave}: o campo veio nulo do prever()")
+        elif abs(valor - original) > 1e-9:
+            problemas.append(f"numeros_citados.{chave}: {valor} diferente do prever() ({original})")
+
+    # 2. Todo número escrito no texto precisa ser um dos numeros_citados.
+    permitidos = [round(v * 100, 1) for v in resposta.numeros_citados.values()]
+    textos = [resposta.resumo, *resposta.pontos_de_atencao, resposta.recomendacao_texto]
+    for texto in textos:
+        for numero in extrair_numeros(texto):
+            if not any(abs(numero - p) <= TOLERANCIA_PP for p in permitidos):
+                problemas.append(f"número {numero} no texto não vem do prever(): \"{texto[:60]}...\"")
+
+    # 3. Toda fonte citada precisa estar entre os trechos que a busca devolveu.
+    for fonte in resposta.fontes:
+        if fonte.trecho_id not in trechos_recuperados:
+            problemas.append(f"fonte {fonte.trecho_id} não está entre os trechos recuperados")
+
+    return problemas
 
 if __name__ == "__main__":
     import json

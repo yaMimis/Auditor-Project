@@ -1,0 +1,17 @@
+# Controle de versão
+.git/
+.gitignore
+
+# Ambientes virtuais e cache do Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Variáveis de ambiente sensíveis
+.env
+
+# Dados brutos pesados que não devem ir para a imagem da aplicação
+data/raw/

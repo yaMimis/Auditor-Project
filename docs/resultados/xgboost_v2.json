@@ -1,0 +1,17 @@
+{
+  "modelo": "xgboost_v2",
+  "data": "2026-11-01T20:30:00",
+  "params": {
+    "max_depth": 3,
+    "min_child_weight": 20,
+    "reg_lambda": 1
+  },
+  "teste": {
+    "contratos": 7311,
+    "default_real": 0.6708,
+    "default_previsto": 0.5656,
+    "auc": 0.7271,
+    "ks": 0.3366,
+    "brier": 0.1987
+  }
+}

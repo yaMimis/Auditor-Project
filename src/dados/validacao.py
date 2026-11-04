@@ -335,6 +335,21 @@ def _janela(df: pd.DataFrame, tabela: str) -> pd.DataFrame:
     return df[(df["mes"] >= ini) & (df["mes"] <= JANELA_FIM)].reset_index(drop=True)
 
 
+def _razao_renda_2009_2010(e, c) -> float | None:
+    """Mediana da renda (Estônia) em 2009–2010 dividida pela de 2011–2012. Em coroas sem
+    conversão a razão é cerca de 14; convertida, cerca de 0,9. Sem dados suficientes, None."""
+    if e is None or c is None or "data_emprestimo" not in e.columns \
+            or not {"pais", "renda_total"} <= set(c.columns):
+        return None
+    d = e[["loan_id", "data_emprestimo"]].merge(c[["loan_id", "pais", "renda_total"]], on="loan_id")
+    d = d[(d["pais"] == "EE") & (d["renda_total"] > 0)]
+    ano = d["data_emprestimo"].dt.year
+    antes, depois = d.loc[ano <= 2010, "renda_total"], d.loc[ano.isin([2011, 2012]), "renda_total"]
+    if len(antes) < 30 or len(depois) < 30:
+        return None
+    return float(antes.median() / depois.median())
+
+
 def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
     saida = []
 
@@ -351,6 +366,11 @@ def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
         if not parcial:
             erro(f"nº de contratos diferente de {N_CONTRATOS:,}".replace(",", "."),
                  abs(len(e) - N_CONTRATOS), f"há {len(e):,}".replace(",", "."))
+    # moeda: a renda de 2009–2010 não pode estar em outra unidade que a de 2011–2012
+    razao = _razao_renda_2009_2010(e, c)
+    if razao is not None and (razao > 3 or razao < 1 / 3):
+        erro("renda de 2009–2010 em outra unidade (coroas?): rode a carga com a correção de moeda",
+             1, f"mediana 2009–2010 / 2011–2012 = {razao:.1f} (esperado perto de 1)")
     # cobertura das séries na janela do projeto e nos meses de concessão
     if e is not None and "data_emprestimo" in e.columns:
         meses_contrato = e["data_emprestimo"].dropna().dt.to_period("M").dt.to_timestamp()

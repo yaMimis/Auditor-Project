@@ -72,11 +72,23 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 
 - **Método:** fluxo de caixa (PD convertida em taxa mensal, amortização, desconto).
 - **Custo do dinheiro:** Euribor do mês de concessão, com piso em zero.
-- **LGD:** `lgd_bondora` ou calculada com defaults antigos.
+- **LGD:** realizada por país, com defaults de 2014–2015 (cobrança madura, mesma época do treino):
+  EE ~0,34 · ES ~0,76 · FI ~0,55 (troque pelos valores do notebook 07).
+  Defaults de 2016–2017 ainda em cobrança em 2021 (LGD subindo na EE e na FI);
+  2009–2013 é outra época da plataforma. A do Bondora (0,75) é estimativa prévia, mais conservadora.
+- **Horizonte mínimo de 12 meses** para converter a PD em risco mensal
+  (o default pode ocorrer depois do fim do contrato).
+
 - **Custos e margem:** calibrados para a média do juro justo igualar a média do juro cobrado.
 - **Sensibilidade:** margem ±1 pp e LGD ±10 pp.
 - `juro_aa` vem em porcentagem: dividir por 100.
 - Reestruturados ficam fora da comparação de preço.
+- Taxas: CSVs do Marcos em data/raw/ (Euribor 3m e 12m do BCE; Selic SGS 4189).
+  Completas de 2009 a 2016 (96 meses), em % ao ano → dividir por 100.
+- Custo do dinheiro: Euribor 12 meses (a mais próxima do prazo dos contratos);
+  3 meses só na sensibilidade. Piso em zero (mínimo −0,08% em 2016).
+- Euribor média de 0,9% contra juros de 20–30%: o custo do dinheiro pesa pouco;
+  o juro justo depende sobretudo da perda esperada e de custos e margem.
 
 ## 9. Regra de achado
 
@@ -133,6 +145,10 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - Em 2016 subestima o risco nas faixas do meio (50–68% previsto × 58–75% real);
   em 2015 a calibração é boa → mudança de 2016, tratada na calibração do XGBoost
   (ajustada em 2015, sem usar 2016).
+- XGBoost v2 (árvores 2009–2015, calibração Platt fora da amostra): modelo principal.
+  Teste: AUC 0,727 (EE 0,709 · ES 0,647 · FI 0,572), Brier 0,199, previsto 56,6% × real 67,1%.
+- Desvio de nível em 2016 (safra mais arriscada que o treino): tratado no juro justo,
+  calibrando custos e margem por safra.
 
 ### Escolha das variáveis v3 (validação em 2015, 5.943 contratos, default real 66,6%)
 

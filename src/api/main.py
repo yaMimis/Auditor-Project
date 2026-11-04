@@ -32,21 +32,32 @@ def prever_juro_justo(dados: SolicitacaoEmprestimo):
     # Regra da situação do preço
     situacao = "acima_do_justo" if juro_cobrado_frac > juro_max else "dentro_da_margem"
 
-    # Retorno Formatado. O parecer_ia fica como None até entao
+    # Formato de mock corrigido conforme o schemas.py e o Guia v2
     return {
         "contrato_id": dados.loan_id,
-        "versao_modelo": "v1-mock",
-        "pd": pd_mock,
-        "faixa": faixa_mock,
-        "juro_cobrado": juro_cobrado_frac,
-        "juro_justo": juro_justo_frac,
-        "juro_justo_min": juro_min,
-        "juro_justo_max": juro_max,
-        "situacao_preco": situacao,
-        "motivos": [
-            {"variavel": "divida_sobre_renda", "efeito": "aumenta_risco"},
-            {"variavel": "tempo_no_emprego", "efeito": "reduz_risco"}
-        ],
+        "versao_modelo": "v1.0",
+        "pd": 0.15,
+        "faixa": "C",
+        "juro_cobrado": dados.interest_cobrado / 100, # Convertido para fração
+        "juro_justo": 0.19,
+        "juro_justo_min": 0.16,
+        "juro_justo_max": 0.22,
+        "situacao_preco": "abaixo_do_justo",
         "alerta_dados": False,
-        "parecer_ia": None
+        "motivos": [
+            {"variavel": "divida_renda", "efeito": "aumenta_risco"},
+            {"variavel": "historico", "efeito": "reduz_risco"}
+        ],
+        "parecer_ia": {
+            "contrato_id": dados.loan_id,
+            "resumo": "Análise preliminar indica juro desfasado do risco.",
+            "pontos_de_atencao": ["Risco de fuga do cliente", "Diferença de 4 p.p."],
+            "recomendacao_texto": "Sugerida a revisão imediata do preço.",
+            "fontes": [],
+            "numeros_citados": {"pd": 0.15, "juro_cobrado": 0.249},
+            "recomendacao": "revisar_preco",
+            "origem": "template",
+            "versao_prompt": "v1",
+            "gerado_em": "2026-11-04T10:00:00Z"
+        }
     }

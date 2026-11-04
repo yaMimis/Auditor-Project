@@ -1,5 +1,7 @@
+#docker compose build (para rodar as imagens)
+#docker compose up -d (para rodar o container e colocar o app no ar)
 services:
-  db:
+  postgres:
     image: pgvector/pgvector:pg16
     container_name: auditor_postgres
     environment:
@@ -19,9 +21,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/auditor_db
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auditor_db
     depends_on:
-      - db
+      - postgres
     restart: unless-stopped
 
   streamlit:
@@ -35,5 +37,6 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
 volumes:
   postgres_data:

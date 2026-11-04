@@ -1,26 +1,51 @@
-#CRITERIO DE GOVERNANÇA DE CODIGO
-#p/ segurança e integração continua
-name: CI Basico - Auditor
-
+name: Pipeline de Validação (CI)
 on:
   push:
-    branches: [ "main", "dados/*", "setup-fastapi-prever" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
-  build:
+  testes-automatizados:
+    name: Validação de Código e Banco de Dados
     runs-on: ubuntu-latest
-    
+
+    # db temporário para os testes
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: auditor_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - name: Chekout do repositorio
+      - name: Clonar o repositório
         uses: actions/checkout@v4
-      - name: Configurar Python
+
+      - name: Configurar o Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          
-      - name: Validar ambiente
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar dependências
         run: |
-          python --version
-          echo "CI configurado"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      # Validações
+      - name: Rodar Bateria de Testes do Pytest
+        env:
+          # Aponta os testes para o banco temporário criado no passo 2
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/auditor_db
+        run: |
+          pytest tests/ -v

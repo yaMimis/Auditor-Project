@@ -1,0 +1,6 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# requirements-genai.txt
+-r requirements.txt
+sentence-transformers>=2.3.0
+torch>=2.0.0

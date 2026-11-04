@@ -1,0 +1,87 @@
+"""Tabelas pequenas e inventadas, válidas pelas regras de src/dados/validacao.py.
+
+Os testes copiam estas tabelas e estragam um campo por vez. Nada aqui usa banco nem o CSV.
+"""
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+from src.dados.carga_bondora import TABELAS
+
+ANOS = [2013, 2015, 2016, 2016]          # um contrato por linha
+STATUS = ["Repaid", "Late", "Repaid", "Current"]
+
+
+def _guid(i: int) -> str:
+    return f"{i:08x}-0000-4000-8000-{i:012x}"
+
+
+def _hex16(i: int) -> str:
+    return f"{i:016x}"
+
+
+def _vazia(tabela: str, n: int) -> pd.DataFrame:
+    """DataFrame com TODAS as colunas da tabela (as mesmas da carga), vazias."""
+    df = pd.DataFrame(index=range(n))
+    for c in TABELAS[tabela]:
+        if c.tipo == "data":
+            df[c.db] = pd.Series([pd.NaT] * n, dtype="datetime64[ns]")
+        else:
+            df[c.db] = pd.Series([np.nan] * n, dtype="float64")
+    return df
+
+
+def _meses(ini: str, fim: str) -> pd.DatetimeIndex:
+    return pd.date_range(ini, fim, freq="MS")
+
+
+def tabelas_validas() -> dict[str, pd.DataFrame]:
+    n = len(ANOS)
+    ids = [_guid(i) for i in range(n)]
+    conc = [pd.Timestamp(f"{a}-03-15") for a in ANOS]
+
+    e = _vazia("emprestimo", n)
+    e["loan_id"] = ids
+    e["numero"] = [1, 2, 3, 4]
+    e["status"] = STATUS
+    e["data_referencia"] = pd.Timestamp("2021-07-20")
+    e["data_emprestimo"] = pd.Series(conc)
+    e["data_pedido"] = pd.Series([d - pd.Timedelta(days=1) for d in conc])
+    e["data_primeira_parcela"] = pd.Series([d + pd.Timedelta(days=30) for d in conc])
+    e["data_vencimento_original"] = pd.Series([d + pd.DateOffset(months=12) for d in conc])
+    e["data_default"] = pd.Series([pd.NaT, conc[1] + pd.Timedelta(days=200), pd.NaT, pd.NaT])
+    e["valor_solicitado"] = 1000.0
+    e["valor_concedido"] = 1000.0
+    e["juro_aa"] = 30.0
+    e["prazo_meses"] = 12
+
+    c = _vazia("cliente", n)
+    c["loan_id"] = ids
+    c["cliente_id"] = [_hex16(i) for i in range(n)]
+    c["genero"] = [0, 1, 0, 1]
+    c["idade"] = 30
+    c["pais"] = ["EE", "FI", "ES", "EE"]
+    c["renda_total"] = 1000.0
+
+    h = _vazia("historico_credito", n)
+    h["loan_id"] = ids
+    h["n_emprestimos_anteriores"] = 0
+    h["passivos_total"] = 100.0
+
+    janela = _meses("2009-01-01", "2021-07-01")
+    euribor = pd.DataFrame({"mes": janela, "euribor_3m": 0.5, "euribor_12m": 0.6})
+    selic = pd.DataFrame({"mes": janela, "selic_aa": 10.0, "selic_meta_aa": 10.0})
+    bc = pd.DataFrame({"mes": _meses("2011-03-01", "2021-07-01"), "taxa_aa": 80.0})
+
+    vw = pd.DataFrame({
+        "loan_id": ids,
+        "cliente_id": c["cliente_id"],
+        "pais": c["pais"],
+        "ano": ANOS,
+        "inadimplente": [0, 1, 0, 0],
+        "reestruturado": [False] * n,
+        "conjunto": ["treino" if a <= 2015 else "teste" for a in ANOS],
+    })
+    return {"emprestimo": e, "cliente": c, "historico_credito": h, "euribor_mensal": euribor,
+            "selic_mensal": selic, "bc_credito_pessoal_mensal": bc, "vw_base_modelagem": vw}

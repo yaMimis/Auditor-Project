@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Auditor" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.52.0">
+  <bpmn:collaboration id="Collaboration_Auditor">
+    <bpmn:extensionElements />
+    <bpmn:participant id="Participant_Auditor" name="Auditor de Preço Justo - Processo de Avaliação de Crédito" processRef="Process_AuditorPrecoJusto" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_AuditorPrecoJusto" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_01">
+      <bpmn:lane id="Lane_Analista" name="Analista de Crédito / Compliance (Streamlit)">
+        <bpmn:flowNodeRef>UserTask_RevisarPainel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DecisaoAnalista</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_PrecoMantido</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_EscaladoCompliance</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_GenAI" name="Motor de IA &#38; RAG (LangChain / pgvector)">
+        <bpmn:flowNodeRef>Task_ConsultarRAG</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GerarParecerLLM</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Backend" name="Sistema &#38; Motor de Regras (FastAPI)">
+        <bpmn:flowNodeRef>StartEvent_SolicitacaoRecebida</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CalcularJuroJusto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CalcularPD</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AuditarVies</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_VerificaInjustica</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_AprovadoDireto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GerarMinutaReprecificacao</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Reprecificado</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:userTask id="UserTask_RevisarPainel" name="Revisar Parecer e Métricas no Streamlit">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:startEvent id="StartEvent_SolicitacaoRecebida" name="Solicitação de Crédito Recebida">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_CalcularJuroJusto" name="Precificar Juro Justo (Política de Preço)">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_CalcularJuroJusto" targetRef="Task_AuditarVies" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_AuditarVies" targetRef="Gateway_VerificaInjustica" />
+    <bpmn:sequenceFlow id="Flow_SemInjustica" name="Não" sourceRef="Gateway_VerificaInjustica" targetRef="EndEvent_AprovadoDireto" />
+    <bpmn:sequenceFlow id="Flow_ComInjustica" name="Sim" sourceRef="Gateway_VerificaInjustica" targetRef="Task_ConsultarRAG" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_ConsultarRAG" targetRef="Task_GerarParecerLLM" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_GerarParecerLLM" targetRef="UserTask_RevisarPainel" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="UserTask_RevisarPainel" targetRef="Gateway_DecisaoAnalista" />
+    <bpmn:sequenceFlow id="Flow_Manter" name="Mantém Preço" sourceRef="Gateway_DecisaoAnalista" targetRef="EndEvent_PrecoMantido" />
+    <bpmn:sequenceFlow id="Flow_Reprecificar" name="Ajusta Taxa" sourceRef="Gateway_DecisaoAnalista" targetRef="Task_GerarMinutaReprecificacao" />
+    <bpmn:sequenceFlow id="Flow_Escalar" name="Escala para Compliance&#10;(NORMAS)" sourceRef="Gateway_DecisaoAnalista" targetRef="EndEvent_EscaladoCompliance" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_GerarMinutaReprecificacao" targetRef="EndEvent_Reprecificado" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_SolicitacaoRecebida" targetRef="Task_CalcularPD" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_CalcularPD" targetRef="Task_CalcularJuroJusto" />
+    <bpmn:serviceTask id="Task_CalcularPD" name="Calcular PD e Faixa de Risco (XGBoost)">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AuditarVies" name="Auditar Disparidade e Viés (Fairness Engine)">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_VerificaInjustica" name="Injustiça de Preço ou Viés Detectado?">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_SemInjustica</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ComInjustica</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_ConsultarRAG" name="Consultar Normas Legais (RAG - pgvector)">
+      <bpmn:incoming>Flow_ComInjustica</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_GerarParecerLLM" name="Gerar Parecer Explicativo em JSON (LLM)">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_AprovadoDireto" name="Preço Aprovado Sem Anomalias">
+      <bpmn:incoming>Flow_SemInjustica</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_GerarMinutaReprecificacao" name="Emitir Termo de Reprecificação">
+      <bpmn:incoming>Flow_Reprecificar</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_Reprecificado" name="Contrato Corrigido e Enviado">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_DecisaoAnalista" name="Decisão do Analista">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_Manter</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Reprecificar</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Escalar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_PrecoMantido" name="Preço Mantido com Justificativa">
+      <bpmn:incoming>Flow_Manter</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_EscaladoCompliance" name="Caso Escalado para Compliance">
+      <bpmn:incoming>Flow_Escalar</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_Auditor">
+      <bpmndi:BPMNShape id="Participant_Auditor_di" bpmnElement="Participant_Auditor" isHorizontal="true">
+        <dc:Bounds x="155" y="70" width="1095" height="520" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Analista_di" bpmnElement="Lane_Analista" isHorizontal="true">
+        <dc:Bounds x="185" y="410" width="1065" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_GenAI_di" bpmnElement="Lane_GenAI" isHorizontal="true">
+        <dc:Bounds x="185" y="250" width="1065" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Backend_di" bpmnElement="Lane_Backend" isHorizontal="true">
+        <dc:Bounds x="185" y="70" width="1065" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_RevisarPainel_di" bpmnElement="UserTask_RevisarPainel">
+        <dc:Bounds x="795" y="450" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_SolicitacaoRecebida_di" bpmnElement="StartEvent_SolicitacaoRecebida">
+        <dc:Bounds x="242" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="219" y="169" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CalcularJuroJusto_di" bpmnElement="Task_CalcularJuroJusto">
+        <dc:Bounds x="430" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CalcularPD_di" bpmnElement="Task_CalcularPD">
+        <dc:Bounds x="310" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AuditarVies_di" bpmnElement="Task_AuditarVies">
+        <dc:Bounds x="560" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_VerificaInjustica_di" bpmnElement="Gateway_VerificaInjustica" isMarkerVisible="true">
+        <dc:Bounds x="715" y="145" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="705" y="91" width="69" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConsultarRAG_di" bpmnElement="Task_ConsultarRAG">
+        <dc:Bounds x="620" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GerarParecerLLM_di" bpmnElement="Task_GerarParecerLLM">
+        <dc:Bounds x="795" y="300" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_AprovadoDireto_di" bpmnElement="EndEvent_AprovadoDireto">
+        <dc:Bounds x="832" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="811" y="192" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GerarMinutaReprecificacao_di" bpmnElement="Task_GerarMinutaReprecificacao">
+        <dc:Bounds x="940" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Reprecificado_di" bpmnElement="EndEvent_Reprecificado">
+        <dc:Bounds x="1102" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1093" y="192" width="54" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DecisaoAnalista_di" bpmnElement="Gateway_DecisaoAnalista" isMarkerVisible="true">
+        <dc:Bounds x="965" y="465" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="962" y="520.5" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_PrecoMantido_di" bpmnElement="EndEvent_PrecoMantido">
+        <dc:Bounds x="1102" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1079" y="463" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_EscaladoCompliance_di" bpmnElement="EndEvent_EscaladoCompliance">
+        <dc:Bounds x="1172" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1148" y="544" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="530" y="150" />
+        <di:waypoint x="560" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="660" y="150" />
+        <di:waypoint x="688" y="150" />
+        <di:waypoint x="688" y="170" />
+        <di:waypoint x="715" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SemInjustica_di" bpmnElement="Flow_SemInjustica">
+        <di:waypoint x="765" y="170" />
+        <di:waypoint x="832" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="788" y="153" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ComInjustica_di" bpmnElement="Flow_ComInjustica">
+        <di:waypoint x="740" y="195" />
+        <di:waypoint x="740" y="243" />
+        <di:waypoint x="670" y="243" />
+        <di:waypoint x="670" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="710" y="223" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="720" y="340" />
+        <di:waypoint x="795" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="845" y="380" />
+        <di:waypoint x="845" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="895" y="490" />
+        <di:waypoint x="965" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Manter_di" bpmnElement="Flow_Manter">
+        <di:waypoint x="1000" y="475" />
+        <di:waypoint x="1000" y="440" />
+        <di:waypoint x="1102" y="440" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1010" y="423" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Reprecificar_di" bpmnElement="Flow_Reprecificar">
+        <di:waypoint x="990" y="465" />
+        <di:waypoint x="990" y="210" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="998" y="231" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Escalar_di" bpmnElement="Flow_Escalar">
+        <di:waypoint x="1015" y="490" />
+        <di:waypoint x="1059" y="490" />
+        <di:waypoint x="1059" y="520" />
+        <di:waypoint x="1172" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1049" y="524" width="59" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1040" y="170" />
+        <di:waypoint x="1102" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="278" y="150" />
+        <di:waypoint x="310" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="410" y="150" />
+        <di:waypoint x="430" y="150" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

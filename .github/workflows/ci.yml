@@ -13,7 +13,7 @@ jobs:
     # db temporário para os testes
     services:
       postgres:
-        image: ankane/pgvector:latest
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

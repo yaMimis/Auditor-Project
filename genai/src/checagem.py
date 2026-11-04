@@ -3,6 +3,8 @@ Contratos de dados da frente de GenAI (fonte da verdade do FORMATO_JSON.md, seç
 
 EntradaPrever valida o que chega do prever(); RespostaLLM é o que o LLM devolve;
 Parecer é o que gerar_parecer() entrega para a tela.
+conferir_parecer() confere o que o LLM escreveu (REGRAS_PARECER.md, seção 9).
+motivos_permitidos() tira gênero, idade e país dos motivos (REGRAS_PARECER.md, seção 4).
 
 Teste rápido (na pasta raiz):
     python genai/src/checagem.py
@@ -78,7 +80,8 @@ class Parecer(RespostaLLM):
     versao_prompt: str
     gerado_em: datetime
 
-# ---------- Conferência do parecer (números e fontes) ----------
+
+# ---------- Conferência do parecer (REGRAS_PARECER.md, seção 9) ----------
 
 UNIDADE_JURO = "ao ano"  # decisão 3: se o grupo mudar para "ao mês", muda só aqui
 TOLERANCIA_PP = 0.051     # o texto usa 1 casa decimal: 16,2% vale para 0.162 e 0.1624
@@ -86,6 +89,44 @@ TOLERANCIA_PP = 0.051     # o texto usa 1 casa decimal: 16,2% vale para 0.162 e 
 # Número com "%" (aceita "18,4%", "18.4 %") ou número com vírgula decimal ("0,184", "8,7 p.p.").
 # Números inteiros sem % ("art. 6º", "Lei nº 8.078", "Resolução 4.881") são ignorados.
 PADRAO_NUMERO = re.compile(r"(\d+(?:[.,]\d+)?)\s*%|(\d+,\d+)")
+
+# Seção 3: palavras que afirmam conclusão jurídica (só o compliance pode concluir).
+# Atenção: "discriminar"/"discriminando" (= detalhar, Res. 5.004 art. 3º) é permitido.
+PALAVRAS_PROIBIDAS = re.compile(
+    r"\b(ilega(?:l\w*|is)|il[ií]cit\w+|irregular\w*|crim(?:e|es|inos\w*)|fraud\w+|"
+    r"viola(?:m|r|ç(?:ão|ões))?|violou|violad[oa]s?|abusiv\w+|"
+    r"discriminaç(?:ão|ões)|discriminat[óo]ri\w+)\b",
+    re.IGNORECASE,
+)
+
+# Seção 4: gênero, idade e país nunca aparecem no parecer.
+ATRIBUTOS_SENSIVEIS = re.compile(
+    r"\b(g[eê]neros?|sexo|idades?|et[áa]ri[oa]s?|idos[oa]s?|pa[ií]s|pa[ií]ses|nacionalidade|estrangeir[oa]s?)\b",
+    re.IGNORECASE)
+VARIAVEIS_SENSIVEIS = {"age", "gender", "sex", "country", "nationality",
+                       "idade", "genero", "sexo", "pais", "nacionalidade"}
+
+MAXIMO_FRASES_RESUMO = 2
+# Uma frase termina em . ! ou ? seguido de espaço e letra maiúscula ("art. 6º" não quebra).
+FIM_DE_FRASE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])")
+# Abreviações jurídicas ("inc. III", "Res. CMN") não terminam frase.
+ABREVIACOES = re.compile(r"\b(arts?|incs?|res|par|dra?|sra?|n[ºo])\.\s", re.IGNORECASE)
+
+
+def motivo_e_sensivel(motivo: Motivo) -> bool:
+    """True se o motivo fala de gênero, idade ou país (em português ou no nome técnico)."""
+    partes_da_variavel = set(re.split(r"[^a-z]+", motivo.variavel.lower()))
+    return bool(ATRIBUTOS_SENSIVEIS.search(motivo.rotulo) or partes_da_variavel & VARIAVEIS_SENSIVEIS)
+
+
+def motivos_permitidos(entrada: EntradaPrever) -> list[Motivo]:
+    """Motivos que podem ir para o parecer e para o LLM."""
+    return [m for m in entrada.motivos if not motivo_e_sensivel(m)]
+
+
+def contar_frases(texto: str) -> int:
+    texto = ABREVIACOES.sub(r"\1._", texto.strip())  # "inc. III" vira "inc._III" só para contar
+    return len([f for f in FIM_DE_FRASE.split(texto) if f])
 
 
 def formatar_percentual(valor: float) -> str:
@@ -133,7 +174,20 @@ def conferir_parecer(resposta: RespostaLLM, entrada: EntradaPrever,
         if fonte.trecho_id not in trechos_recuperados:
             problemas.append(f"fonte {fonte.trecho_id} não está entre os trechos recuperados")
 
+    # 4. Vocabulário e 5. atributos sensíveis, em todos os textos.
+    for texto in textos:
+        for achado in PALAVRAS_PROIBIDAS.findall(texto):
+            problemas.append(f"palavra proibida \"{achado}\" no texto")
+        for achado in ATRIBUTOS_SENSIVEIS.findall(texto):
+            problemas.append(f"atributo sensível \"{achado}\" no texto")
+
+    # 6. Tamanho: resumo com até 2 frases (o limite de 3 pontos já vem do RespostaLLM).
+    frases = contar_frases(resposta.resumo)
+    if frases > MAXIMO_FRASES_RESUMO:
+        problemas.append(f"resumo com {frases} frases (máximo {MAXIMO_FRASES_RESUMO})")
+
     return problemas
+
 
 if __name__ == "__main__":
     import json

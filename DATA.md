@@ -1,7 +1,8 @@
+
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
-> Versão 0.6.1 (rascunho) · 04/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
-> Itens marcados **[A CONFIRMAR]** dependem de decisão do Samuel. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (29/10/2026); onde o texto e o notebook dele divergem, a seção diz qual foi seguido. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
+> Versão 0.7 · 05/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+> As decisões do Samuel de 05/11/2026 estão incorporadas; não restam itens **[A CONFIRMAR]**. Itens que dependem do grupo estão na seção 12. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (29/10/2026); onde o texto e o notebook dele divergem, a seção diz qual foi seguido. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
 
@@ -28,7 +29,7 @@ Entra o contrato concedido de 2009 a 2016 (`data_emprestimo`) e encerrado: `stat
 
 - Resultado: 30.210 contratos, com 56,3% de default.
 - Sai a Eslováquia (294 contratos, quase todos de 2014). Sobram **29.916 contratos, com 56,0% de default**.
-- **[A CONFIRMAR]** Reestruturados: o texto do `DECISOES.md` manda excluí-los, mas o notebook do Samuel não aplica a exclusão, e a view segue o notebook. São 7.941 contratos (26,5%), com 76,2% de default contra 48,6% nos demais. Excluí-los reduziria a base a 21.975.
+- Reestruturados (7.941 contratos, 26,5%, com 76,2% de default contra 48,6% nos demais) **ficam no modelo**: tirá-los seria escolher os dados por algo que aconteceu depois da concessão, e o modelo subestimaria o risco. Eles saem **só da auditoria de preço**, porque o juro mudou no meio do contrato (marca `fora_da_auditoria`; `DECISOES.md`, seção 2). A view já segue essa regra.
 - Ficam de fora os contratos de 2009 a 2016 ainda em andamento (1.045 sem a Eslováquia: 926 `Current` e 119 `Late` sem default). Só 2016 tem 609, o que infla um pouco o default de 2016 (63,1% contra 59,4% se todos entrassem como sem default).
 - 2009–2012 tem só a Estônia, com default de 21% a 39%. Espanha e Finlândia entram em 2013–2014, e o default sobe a partir de 2014 (`DECISOES.md`, seção 10).
 
@@ -36,11 +37,11 @@ Entra o contrato concedido de 2009 a 2016 (`data_emprestimo`) e encerrado: `stat
 
 Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
-| Conjunto           | Concessões                    | Contratos                                               | Default |
-| ------------------ | ------------------------------ | ------------------------------------------------------- | ------- |
-| Treino e validação | 2009 a 2015                    | 20.011 (13.972 clientes)                                | 52,4%   |
-| Teste              | 2016, sem clientes do treino   | 7.311 (6.290 clientes: EE 3.642, ES 2.226, FI 1.443)    | 67,1%   |
-| Fora               | 2016 de clientes do treino; 2017 em diante | 2.594 e 147.978                              | n/a     |
+| Conjunto             | Concessões                                | Contratos                                            | Default |
+| -------------------- | ------------------------------------------ | ---------------------------------------------------- | ------- |
+| Treino e validação | 2009 a 2015                                | 20.011 (13.972 clientes)                             | 52,4%   |
+| Teste                | 2016, sem clientes do treino               | 7.311 (6.290 clientes: EE 3.642, ES 2.226, FI 1.443) | 67,1%   |
+| Fora                 | 2016 de clientes do treino; 2017 em diante | 2.594 e 147.978                                      | n/a     |
 
 - Validação dentro do treino: GroupKFold por cliente.
 - Regra por cliente: se o `cliente_id` aparece no treino, seus contratos de 2016 saem do teste. São 2.594 contratos (26,2% do teste bruto de 9.905), de 1.874 clientes. Metade dos contratos da base é de clientes repetidos (50,7%).
@@ -57,38 +58,36 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - `parcela_mensal` está na lista negra porque, dados o valor e o prazo, ela embute o juro (correlação de 0,90 com a parcela calculada a partir do juro).
 - A `COLUNAS_LISTA_NEGRA` exportada pela `carga_bondora.py` já inclui `parcela_mensal`; o teste automático não precisa somá-la à parte.
 
-**Só auditoria (4): usadas apenas na auditoria de equidade, nunca para prever risco.** `estado_civil` e `n_dependentes` ainda precisam da aprovação do grupo **[A CONFIRMAR]**.
+**Só auditoria (4): usadas apenas na auditoria de equidade, nunca para prever risco.** `estado_civil` e `n_dependentes` entram nesta categoria pela mesma lógica de gênero e idade: são atributos pessoais com risco de discriminação e só existem até 2017, então não serviriam para a carteira de 2017–2021 (decisão de 05/11; validar com o grupo).
 
 `genero`, `idade`, `estado_civil`, `n_dependentes`
 
 - `estado_civil` e `n_dependentes` só têm dados nos contratos até 2017, então a auditoria delas cobre só esse período.
 
-**Indisponíveis após 2017 (7): fora do modelo [A CONFIRMAR].** As quatro primeiras estão preenchidas em 2009–2016 (no máximo 1,0% em branco no treino e no teste), mas 96,4% em branco nos contratos de 2017 a 2021, que são 82,6% da base e a carteira a pontuar. As três últimas vêm com zero no lugar de vazio: zeros em no máximo 7% dos contratos até 2016, 70% a 72% em 2017 e 100% a partir de 2018, o que não é valor real. Um modelo treinado com elas perderia a informação justamente onde será usado.
+**Indisponíveis após 2017 (7): fora do modelo** (decidido; estão em `PROIBIDAS`, `variaveis.py`). As quatro primeiras estão preenchidas em 2009–2016 (no máximo 1,0% em branco no treino e no teste), mas 96,4% em branco nos contratos de 2017 a 2021, que são 82,6% da base e a carteira a pontuar. As três últimas vêm com zero no lugar de vazio: zeros em no máximo 7% dos contratos até 2016, 70% a 72% em 2017 e 100% a partir de 2018, o que não é valor real. Um modelo treinado com elas perderia a informação justamente onde será usado.
 
 `finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho`, `divida_renda`, `caixa_livre`, `renda_empregador_principal`
 
 - A carga grava as três últimas como vêm (zero), e elas já estão em `COLUNAS_INDISPONIVEIS_RECENTES` (`carga_bondora.py`), então o teste antivazamento as barra. Em qualquer análise que as use, tratá-las como NULL a partir de 2018.
 
-**Identificadores e datas: servem para dividir e agrupar, não como variável.** O ano da concessão também não entra; o efeito de época vem da Euribor.
+**Identificadores e datas: servem para dividir e agrupar, não como variável.** O ano da concessão também não entra no modelo; o efeito de época vem da Euribor e, no preço, da margem por safra do juro justo.
 
 `loan_id`, `cliente_id`, `numero`, `data_referencia`, `data_pedido`, `data_emprestimo`, `data_primeira_parcela`, `data_vencimento_original`
 
-**Candidatas a variáveis do modelo [A CONFIRMAR]:**
+**Variáveis do modelo (XGBoost v2; lista em `variaveis.py`):**
 
-- Contrato: `novo_cliente`, `valor_solicitado`, `valor_concedido`, `prazo_meses`, `tipo_verificacao`
-- Cliente: `pais`, `escolaridade`, `tipo_moradia`, `tempo_emprego_atual`, `renda_total` (os componentes `renda_*` não entram: o principal, `renda_empregador_principal`, vem zerado desde 2018)
-- Histórico: `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `pagamentos_anteriores` (0% em branco no treino e no teste, mas 42% em 2017–2021), `quitacoes_antecipadas_valor`, `quitacoes_antecipadas_qtd`, `passivos_existentes`, `passivos_total`, `refinanciamento_passivos`
-- Atenção: `pagamentos_anteriores` e `quitacoes_antecipadas_valor` mudam de regime. Os zeros vão de 84% e 99% dos contratos em 2014 para 11% e 89% em 2018, e para 0% nas duas a partir de 2019. Confirmar o significado no dicionário antes de usar.
-- Scores externos (`score_es_microl`, `score_es_equifax`, `score_fi_asiakastieto`, `score_ee_mini`): a cobertura muda muito entre treino, teste e carteira (`score_es_microl` tem 81% em branco no treino e 4% em 2017–2021; `score_es_equifax` faz o contrário, com 81% e 96%) e varia por país. Sugestão: fora do modelo base, testar depois como sensibilidade.
+- Numéricas: `valor_concedido`, `prazo_meses`, `renda_total`, `parcela_neutra_sobre_renda` (`valor_concedido / prazo_meses / renda_total`, parcela sem juros, porque `parcela_mensal` está na lista negra), `valor_sobre_renda`, `divida_sobre_renda` (`passivos_total / renda_total`), `renda_relativa` (renda ÷ mediana do país e ano, calculada no treino), `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `passivos_existentes`, `pagamentos_anteriores`, `quitacoes_antecipadas_qtd`, `quitacoes_antecipadas_valor`, `score_ee_mini`
+- Categóricas: `pais`, `novo_cliente`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `tipo_verificacao`, `score_fi_asiakastieto`, `score_es_equifax`, `score_es_microl` (fora do próprio país: "sem_info"; categorias com menos de 1% viram "outros")
+- Testadas e descartadas (`DECISOES.md`, seção 12): `fracao_concedida` (usa `valor_solicitado`), `caixa_livre_sobre_renda`, `divida_renda_bondora`, `refinanciamento_passivos` e as frações da renda vindas de auxílios e de pensão. Os componentes `renda_*` não entram: o principal, `renda_empregador_principal`, vem zerado desde 2018.
+- Atenção: `pagamentos_anteriores` e `quitacoes_antecipadas_valor` mudam de regime (zeros de 84% e 99% dos contratos em 2014 para 11% e 89% em 2018, e 0% a partir de 2019), e a cobertura dos scores muda entre treino, teste e carteira (`score_es_microl`: 81% em branco no treino e 4% em 2017–2021; `score_es_equifax`: 81% e 96%). Confirmar o significado no dicionário; ver a seção 11.
 - `pais` entra no modelo. O default é 42% na Estônia, 73% na Finlândia e 78% na Espanha (base de modelagem); sem o país, a auditoria de preço marcaria como discriminação o que é diferença de risco.
-- A variável derivada parcela ÷ renda deve usar `valor_concedido / prazo_meses / renda_total` (parcela sem juros), porque `parcela_mensal` está na lista negra.
 
 ## 7. Valores especiais e qualidade
 
 - `-1` nas colunas de código significa "sem informação" e vira NULL. O valor `0` é mantido; confirmar no dicionário o que ele significa em cada coluna.
 - Datas anteriores a 2000 (como `0001-01-01`) viram NULL. `n_dependentes` "10Plus" vira 10.
 - **Juros acima de 100% ao ano são legítimos** (Espanha 2.738 contratos, Finlândia 143, em 2016–2018; máximo de 264%). Não remover.
-- Idade menor que 18 (53 contratos, 48 deles com idade 0) e renda zero (64 contratos): regras de validação no pandera. Marcar ou excluir **[A CONFIRMAR]**.
+- Idade menor que 18 (53 contratos, 48 deles com idade 0) e renda zero (64 contratos): regras de validação no pandera. **Marcar, não excluir** (decisão de 05/11). Excluir não muda o modelo: idade não é variável do modelo, e renda fora da faixa de treino já leva o `prever()` a `revisao_manual`. Na auditoria de equidade, os contratos com idade menor que 18 ficam de fora.
 - Outros alertas, para registrar no relatório de qualidade sem falhar o teste: `valor_concedido` maior que `valor_solicitado` (249 contratos), `prazo_meses` menor que 3 (221; o mínimo é 1), vencimento original diferente de concessão mais prazo em mais de 2 meses (133), `Current` com `data_default` (163) e `caixa_livre` negativo (23).
 - **Zeros no lugar de vazio:** `divida_renda`, `caixa_livre` e `renda_empregador_principal` têm 100% de zeros a partir de 2018 (70% a 72% em 2017). A carga não os pega, porque só troca `-1` por NULL. Ver a seção 6.
 - Gênero 2 ("indefinido") é quase só da Espanha (12.164 de 12.180; cerca de 46% dos contratos espanhóis). Na auditoria, tratar como dado ausente e comparar só 0 e 1, de preferência dentro de cada país.
@@ -103,23 +102,25 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **A taxa do BC (série 20742) é efetiva.** O "% ao ano" dela é a composição das taxas mensais: 6,42% ao mês correspondem a 110,95% ao ano. A etiqueta é a mesma, e a convenção é outra.
 - **Conversão para comparar** (feita pelo código do parecer, nunca no banco):
 
-  | De | Para | Fórmula |
-  | --- | --- | --- |
+  | De                | Para                           | Fórmula                          |
+  | ----------------- | ------------------------------ | --------------------------------- |
   | efetiva a.a. (BC) | nominal a.a. (como o contrato) | 12 × [(1 + efetiva)^(1/12) − 1] |
-  | efetiva a.a. | taxa ao mês | (1 + efetiva)^(1/12) − 1 |
-  | nominal a.a. | efetiva a.a. | (1 + nominal ÷ 12)^12 − 1 |
+  | efetiva a.a.      | taxa ao mês                   | (1 + efetiva)^(1/12) − 1         |
+  | nominal a.a.      | efetiva a.a.                   | (1 + nominal ÷ 12)^12 − 1       |
 
   Exemplo (concessão em mar/2016): 126,2% efetiva = 84,5% nominal = 7,04% ao mês.
+- **O juro justo do `prever()` segue a mesma convenção nominal** (taxa mensal = juro ÷ 12), para a comparação com o juro cobrado ser na mesma base. A margem por safra foi recalibrada com essa convenção.
 
 ## 9. Fontes externas
 
-- **Euribor (Portal de dados do BCE, data.ecb.europa.eu)** **[A CONFIRMAR com o Samuel: o prazo]**:
+- **Euribor (Portal de dados do BCE, data.ecb.europa.eu)** (decidido: 12 meses como principal, 3 meses como sensibilidade):
   - Principal: Euribor de 12 meses, série mensal, média das observações do mês (`FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA`).
   - Sensibilidade: Euribor de 3 meses, mesma frequência (`FM.M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA`).
   - Período: 01/2009 a 07/2021 (concessões de 28/02/2009 a 19/07/2021). Baixar a série completa e recortar depois.
   - Junção: mês de `data_emprestimo` com o mês da série. Os valores negativos (de 2015–2016 em diante) ficam como vêm na tabela; a fórmula do preço usa piso em zero (`DECISOES.md`, seção 7).
+  - Contratos posteriores à série (auditoria de um contrato novo pela API) usam o último mês disponível. Atualizar a série até a data atual; com o último mês em 07/2021 (negativo), o custo do dinheiro fica em zero.
   - Limitação: a Euribor tem no máximo 12 meses, e a mediana do prazo dos contratos é de 60 meses (48 meses no treino e 36 no teste).
-- **Selic (Banco Central do Brasil)** **[A CONFIRMAR com o Samuel]**: usada só no cenário "modo Brasil" (leitura A), que reprecifica os contratos históricos com a Selic do mesmo mês. O motor base continua usando a Euribor da época.
+- **Selic (Banco Central do Brasil)** (decidido em 05/11): **cenário opcional "modo Brasil"** (leitura A), fora da entrega principal. Ele reprecificaria os contratos históricos com a Selic do mesmo mês, mas misturaria o risco do Bondora com o custo do dinheiro brasileiro. O motor base continua usando a Euribor da época. Série e carga ficam prontas para uso futuro.
   - Série SGS 4189, "Selic acumulada no mês anualizada base 252": mensal, em % ao ano, 01/2009 a 07/2021.
   - Descartadas: a 4390 (% ao mês; exige anualizar e erra em meses curtos) e a meta Selic do Dados de Mercado (valor do 1º dia do mês; defasa quando a meta muda). A meta fica só como conferência da 4189.
   - Limitação: a Selic é uma taxa de um dia útil, e a Euribor principal é de 12 meses. A comparação mais justa em prazo é com a Euribor de 3 meses.
@@ -156,17 +157,18 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
 ## 12. Pendências com o Samuel
 
-- [ ] Reestruturados: excluir ou não do treino? O texto e o notebook do `DECISOES.md` divergem (seção 4).
-- [ ] Variáveis indisponíveis após 2017 (`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho` e, com zero no lugar de vazio, `divida_renda`, `caixa_livre` e `renda_empregador_principal`): fora do modelo principal? (seção 6).
-- [ ] Desenho do teste e da validação: manter todo o 2016 tirando do treino os clientes do teste; validação por janela móvel; calibrar com o ano mais recente; comparar com e sem 2009–2012 (ver o documento "Avaliação do desenho de modelagem").
-- [ ] Euribor: o prazo (12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021; seção 9).
-- [ ] Selic: confirmar a série 4189 e que a leitura A é um cenário "modo Brasil", com o motor base na Euribor (seção 9).
-- [x] Série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (documento de contextualização do Samuel, 31/10; seção 9).
+- [X] Reestruturados: ficam no modelo e saem só da auditoria de preço (seção 4).
+- [X] Variáveis indisponíveis após 2017 (`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho` e, com zero no lugar de vazio, `divida_renda`, `caixa_livre` e `renda_empregador_principal`): fora do modelo (seção 6).
+- [X] Desenho do teste e da validação: mantido o atual (teste em 2016 só com clientes novos, GroupKFold por cliente no treino, validação temporal em 2015, calibração Platt; `DECISOES.md`, seções 4 e 12). Os resultados em `docs/resultados/` dependem dele. Janela móvel e comparação com e sem 2009–2012 ficam como trabalho futuro.
+- [X] Euribor: o prazo (12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021; seção 9).
+- [X] Selic: série 4189 confirmada; "modo Brasil" é cenário opcional, fora da entrega principal; motor base na Euribor (seção 9).
+- [X] Série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (documento de contextualização do Samuel, 31/10; seção 9).
 - [ ] Campo da referência de mercado: desenho proposto pela Maria (campo opcional `bc_credito_pessoal_aa` na entrada e `contexto_mercado` na saída, frase escrita pelo código, conversão para nominal; seção 9). Falta a Yasmin passar o valor da view e mostrar o campo, e avisar todos da mudança de formato.
-- [ ] Confirmar a fórmula da parcela ÷ renda sem juros.
-- [x] Marcos: incluir `divida_renda`, `caixa_livre` e `renda_empregador_principal` em `COLUNAS_INDISPONIVEIS_RECENTES` (feito na `carga_bondora.py`).
+- [X] Fórmula da parcela ÷ renda sem juros confirmada (`parcela_neutra`, `variaveis.py`).
+- [X] Marcos: incluir `divida_renda`, `caixa_livre` e `renda_empregador_principal` em `COLUNAS_INDISPONIVEIS_RECENTES` (feito na `carga_bondora.py`).
 - [ ] Marcos: conferir no dicionário o significado de `pagamentos_anteriores`, `quitacoes_antecipadas_valor` e de `novo_cliente` frente a `n_emprestimos_anteriores`.
-- [ ] Gênero: só para registro, o período da análise final (por exemplo 2013–2016 contra todos os anos) e a ressalva sobre 2017–2019 (seção 7).
-- [ ] Grupo: `estado_civil` e `n_dependentes` como só auditoria.
-- [ ] Decidir o tratamento dos scores externos.
+- [X] Gênero: análise final em **2013–2016** (os três países presentes e antes da quebra de codificação de 2017–2019; seção 7). Proposta do Samuel; validar com o grupo.
+- [ ] Grupo: validar `estado_civil` e `n_dependentes` como só auditoria (proposta do Samuel: sim; seção 6).
+- [X] Scores externos: entram no XGBoost v2 (seção 6).
 - [ ] Conferir a view `vw_base_modelagem` contra os números do `DECISOES.md` (20.011 no treino e 7.311 no teste).
+- [ ] Marcos: atualizar a Euribor (12m e 3m) até a data atual (seção 9)

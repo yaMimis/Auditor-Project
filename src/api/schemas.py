@@ -17,7 +17,8 @@ class SolicitacaoEmprestimo(BaseModel):
     interest_cobrado: float  # Recebido em %, ex: 24.9
 
 #Schemas de saida e integração(Maria)
-ChaveNumero = Literal["pd", "juro_cobrado", "juro_justo", "juro_justo_min", "juro_justo_max"]
+# NOVO: 'juro_risco' adicionado às chaves numéricas permitidas
+ChaveNumero = Literal["pd", "juro_cobrado", "juro_justo", "juro_risco", "juro_justo_min", "juro_justo_max"]
 
 class Fonte(BaseModel):
     norma: str
@@ -48,7 +49,8 @@ class RespostaPrever(BaseModel):
     pd: float
     faixa: Literal["A", "B", "C", "D", "E"]
     juro_cobrado: float     # Deve ser fração (0.249)
-    juro_justo: float       # Deve ser fração (0.162)
+    juro_risco: float       # <- NOVO: Juro calculado pelo motor com base na PD do Samuel
+    juro_justo: float       # O que era antes o juro absoluto, agora é o juro "Mediana de Mercado"
     juro_justo_min: float   # Deve ser fração
     juro_justo_max: float   # Deve ser fração
     situacao_preco: Literal["acima_do_justo", "abaixo_do_justo", "dentro_da_margem"]

@@ -1,67 +1,77 @@
-from fastapi import FastAPI
-from datetime import datetime, timezone
-from src.api.schemas import SolicitacaoEmprestimo, RespostaPrever
+"""API do Auditor de Preço Justo.
 
-#API REST PARA MOTOR DE REGRAS DE NEGOCIO DO SISTEMA
+POST /prever: converte o formulário para os nomes do banco, chama o prever() real
+(Samuel) e anexa o parecer. Enquanto o gerar_parecer() da Maria não existe, o parecer
+vem do template de reserva (origem "template"), que segue as mesmas regras.
+"""
+from fastapi import FastAPI, HTTPException
+
+from genai.src.checagem import EntradaPrever, Parecer
+from genai.src.template import montar_template
+from src.api.schemas import RespostaPrever, SolicitacaoEmprestimo
+from src.modelos.prever import PACOTE_PADRAO, prever
 
 app = FastAPI(
     title="Auditor de Juros - API",
-    version= "1.0.0",
-    description="API para cálculo de risco, juros justo e auditoria com GenAI"
+    version="1.0.0",
+    description="API para cálculo de risco, juro justo e auditoria com GenAI",
 )
+
 
 @app.get("/")
 def read_root():
-    return {"status": "API - AUDITOR OPERACIONAL"}
+    return {
+        "status": "API - AUDITOR OPERACIONAL",
+        "modelo_carregavel": PACOTE_PADRAO.exists(),  # False = falta o .joblib em modelos_salvos/
+    }
+
+
+def montar_contrato(dados: SolicitacaoEmprestimo) -> dict:
+    """Formulário → dict com os nomes do banco, como o prever() espera.
+
+    Todas as chaves abaixo precisam existir (com None quando não houver dado).
+    Gênero e idade NÃO entram: servem só para a auditoria de equidade.
+    """
+    return {
+        "loan_id": dados.loan_id,
+        "valor_concedido": dados.amount,
+        "renda_total": dados.income_total,
+        "prazo_meses": dados.loan_duration,
+        "data_emprestimo": dados.data_emprestimo.isoformat(),
+        "pais": dados.country,
+        "juro_aa": dados.interest_cobrado,  # em %; o prever() divide por 100
+        "passivos_total": dados.liabilities_total,
+        "passivos_existentes": None,
+        "n_emprestimos_anteriores": None,
+        "valor_emprestimos_anteriores": None,
+        "novo_cliente": None,
+        "tempo_emprego_atual": None,
+        "escolaridade": None,
+        "tipo_moradia": None,
+        "tipo_verificacao": None,
+    }
+
 
 @app.post("/prever", response_model=RespostaPrever)
 def prever_juro_justo(dados: SolicitacaoEmprestimo):
-    #necessita endpoint samuel
-    #mock temporaria pra testar a integração
-    #DADOS SIMULADOS ATE ENDPOINT PRONTO
-    pd_mock = 0.184 if dados.income_total > 2000 else 0.350
-    faixa_mock = "C" if pd_mock < 0.20 else "D"
+    try:
+        resultado = prever(montar_contrato(dados))
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Modelo não encontrado em {PACOTE_PADRAO.name}. "
+                   "Coloque o arquivo em modelos_salvos/ (ele não vai para o GitHub).",
+        )
 
-    # CONVERSÃO (24.9) P/ (0.249) -> exigida pelo contrato
-    juro_cobrado_frac = round(dados.interest_cobrado / 100, 3) 
-    
-    # NOVAS MÉTRICAS SIMULADAS PARA O FRONTEND
-    juro_risco_mock = pd_mock + 0.05 # Lógica simples simulada: risco + margem
-    juro_mercado_mock = 0.162 # Antigo 'juro_justo' (mediana)
-    
-    juro_min = 0.141
-    juro_max = 0.183
-    
-    # Regra da situação do preço (agora avaliada contra o Juro de Risco, e não mais contra a mediana)
-    situacao = "acima_do_justo" if juro_cobrado_frac > juro_risco_mock else "dentro_da_margem"
+    return {**resultado, "parecer_ia": _parecer(resultado)}
 
-    # Formato de mock corrigido conforme o schemas.py e o Guia v2
-    return {
-        "contrato_id": dados.loan_id,
-        "versao_modelo": "v1.0",
-        "pd": pd_mock, # Usando a variável gerada no mock em vez do 0.15 fixo
-        "faixa": faixa_mock,
-        "juro_cobrado": juro_cobrado_frac,
-        "juro_risco": juro_risco_mock, # <- NOVO CAMPO: Vai preencher o cartão "Juro por Risco" no Streamlit
-        "juro_justo": juro_mercado_mock, # Vai preencher o cartão "Mediana dos Pares" no Streamlit
-        "juro_justo_min": juro_min,
-        "juro_justo_max": juro_max,
-        "situacao_preco": situacao,
-        "alerta_dados": False,
-        "motivos": [
-            {"variavel": "divida_renda", "efeito": "aumenta_risco"},
-            {"variavel": "historico", "efeito": "reduz_risco"}
-        ],
-        "parecer_ia": {
-            "contrato_id": dados.loan_id,
-            "resumo": "Análise preliminar indica juro desfasado do risco.",
-            "pontos_de_atencao": ["Risco de fuga do cliente", "Diferença em relação à PD"],
-            "recomendacao_texto": "Sugerida a revisão imediata do preço.",
-            "fontes": [],
-            "numeros_citados": {"pd": pd_mock, "juro_cobrado": juro_cobrado_frac, "juro_risco": juro_risco_mock},
-            "recomendacao": "revisar_preco",
-            "origem": "template",
-            "versao_prompt": "v1",
-            "gerado_em": "2026-11-04T10:00:00Z"
-        }
-    }
+
+@app.post("/parecer", response_model=Parecer)
+def parecer_de_saida_prever(saida: RespostaPrever):
+    """Gera o parecer para uma saída do prever() já calculada (exemplos e carteira)."""
+    return _parecer(saida.model_dump(exclude={"parecer_ia"}))
+
+
+def _parecer(resultado: dict) -> dict:
+    # TODO (Maria, até 08/11): trocar o template por gerar_parecer(resultado).
+    return montar_template(EntradaPrever.model_validate(resultado)).model_dump()

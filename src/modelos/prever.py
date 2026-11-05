@@ -55,13 +55,14 @@ def _pacote(caminho: Path = PACOTE_PADRAO) -> dict:
 
 
 def juro_justo(prazo: int, pd_total: float, lgd: float, custo_anual: float) -> float:
-    """Taxa anual em que o valor presente esperado dos recebimentos = valor emprestado."""
+    """Taxa anual nominal (capitalização mensal, i/12) em que o valor presente
+    esperado dos recebimentos = valor emprestado. Mesma convenção do juro do Bondora."""
     prazo = max(int(prazo), 1)
-    h = 1 - (1 - pd_total) ** (1 / max(prazo, 12)) 
+    h = 1 - (1 - pd_total) ** (1 / max(prazo, 12))  # default pode ocorrer após o fim do contrato
     d = (1 + custo_anual) ** (1 / 12) - 1
 
     def vp_menos_1(taxa):
-        i = (1 + taxa) ** (1 / 12) - 1
+        i = taxa / 12                                  # ← MUDOU: nominal, como o Bondora
         parcela = i / (1 - (1 + i) ** -prazo)
         saldo, vivo, vp = 1.0, 1.0, 0.0
         for t in range(1, prazo + 1):

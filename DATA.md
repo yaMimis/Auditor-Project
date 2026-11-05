@@ -1,6 +1,6 @@
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
-> Versão 0.6 (rascunho) · 02/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+> Versão 0.6.1 (rascunho) · 04/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
 > Itens marcados **[A CONFIRMAR]** dependem de decisão do Samuel. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (29/10/2026); onde o texto e o notebook dele divergem, a seção diz qual foi seguido. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
@@ -98,7 +98,18 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
 ## 8. Moeda e unidades
 
-Valores em euro. Juros em % ao ano, como vêm do Bondora.
+- **Valores em euro**, com uma exceção: a renda e os passivos dos contratos **da Estônia concedidos até 31/12/2010** vinham em coroas estonianas (EEK). A carga os converte para euros (÷ 15,6466; `src/dados/moeda.py`), e o treino faz o mesmo ao ler o CSV. Evidências: a renda mediana vai de 12.000 (dez/2010) para 860 (jan/2011), e o valor pedido de 2009–2010 multiplicado por 15,6466 dá um número redondo de coroas em 100% dos contratos. São 1.822 contratos, todos da Estônia.
+- **Juros em % ao ano, como taxa nominal.** A taxa mensal do contrato é `juro_aa ÷ 12`. Conferido na parcela: com `juro_aa ÷ 12` o erro mediano é de 2,6% nos contratos acima de 100% ao ano, contra 36,6% com a equivalência composta, (1 + i)^(1/12) − 1.
+- **A taxa do BC (série 20742) é efetiva.** O "% ao ano" dela é a composição das taxas mensais: 6,42% ao mês correspondem a 110,95% ao ano. A etiqueta é a mesma, e a convenção é outra.
+- **Conversão para comparar** (feita pelo código do parecer, nunca no banco):
+
+  | De | Para | Fórmula |
+  | --- | --- | --- |
+  | efetiva a.a. (BC) | nominal a.a. (como o contrato) | 12 × [(1 + efetiva)^(1/12) − 1] |
+  | efetiva a.a. | taxa ao mês | (1 + efetiva)^(1/12) − 1 |
+  | nominal a.a. | efetiva a.a. | (1 + nominal ÷ 12)^12 − 1 |
+
+  Exemplo (concessão em mar/2016): 126,2% efetiva = 84,5% nominal = 7,04% ao mês.
 
 ## 9. Fontes externas
 
@@ -113,8 +124,11 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
   - Descartadas: a 4390 (% ao mês; exige anualizar e erra em meses curtos) e a meta Selic do Dados de Mercado (valor do 1º dia do mês; defasa quando a meta muda). A meta fica só como conferência da 4189.
   - Limitação: a Selic é uma taxa de um dia útil, e a Euribor principal é de 12 meses. A comparação mais justa em prazo é com a Euribor de 3 meses.
 - **Tabelas no banco:** `euribor_mensal` (`mes`, `euribor_3m`, `euribor_12m`), `selic_mensal` (`mes`, `selic_aa` e `selic_meta_aa`, esta só para conferência) e a view `vw_custo_do_dinheiro`, que liga cada contrato ao mês da concessão. Esquema em `02_schema_macro.sql`; carga em `carga_macro.py`. A série 20742 vai na tabela `bc_credito_pessoal_mensal` (`mes`, `taxa_aa`), que a `carga_macro.py` carrega quando o arquivo `data/raw/bcdata.sgs.20742.csv` existe; a view traz a coluna `bc_credito_pessoal_aa`, vazia antes de 03/2011.
-- **Taxas de crédito do BC (referência de mercado)** **[A CONFIRMAR com o Samuel]**: série SGS 20742, taxa média de juros do crédito pessoal não consignado para pessoas físicas, mensal, em % ao ano, de 03/2011 a 07/2021.
-  - Uso: só contexto no painel do analista e no parecer, mostrando a taxa média do mercado brasileiro no mês da concessão de cada contrato (coluna `bc_credito_pessoal_aa` da view). O número vem da API, nunca do LLM, e o parecer não conclui "justo" ou "injusto" a partir dele. Antes de 03/2011 o campo fica vazio e o parecer não cita a referência. Não calibra o preço e não entra no modelo.
+- **Taxas de crédito do BC (referência de mercado)**: série SGS 20742, taxa média das novas operações de crédito pessoal não consignado para pessoas físicas, mensal, em % ao ano **efetiva**, de 03/2011 a 07/2021 (na janela, de 66,3% a 141,9% efetiva, ou de 52,0% a 91,7% nominal).
+  - Uso: só contexto no painel do analista e no parecer, mostrando a taxa média do mercado brasileiro no mês da concessão de cada contrato (coluna `bc_credito_pessoal_aa` da view, em % efetiva ao ano). **Quem escreve a frase é o código, e não o LLM**: o código converte o valor para nominal (seção 8) e monta uma frase fixa, num campo próprio do parecer (`contexto_mercado`), separado do texto do LLM. O LLM não recebe o número, e o parecer não conclui "justo" ou "injusto" a partir dele; se o LLM citar uma "média do mercado", a conferência recusa o parecer. O campo é opcional: antes de 03/2011 fica vazio e a frase não aparece. Não calibra o preço e não entra no modelo.
+  - Onde fica: a conversão, o campo `contexto_mercado` e os testes ficam em `genai/src/checagem.py` (Maria), com a regra em `REGRAS_PARECER.md` e o formato em `FORMATO_JSON.md`. Proposta, a combinar com a Maria: mostrar a efetiva entre parênteses, porque é a que o BC divulga e a que o CDC (art. 52) manda informar.
+  - Escala: a série fica mensal, e cada contrato usa o mês da concessão. Não anualizar: a taxa varia de 8 a 37 pontos dentro de um mesmo ano, e usar a média do ano erraria, em média, 7 pontos.
+  - Conferência opcional: a série SGS 25464 (a mesma medida, mensal, em % ao mês) deve dar o mesmo resultado que a conversão (12 × taxa mensal), com diferença só de arredondamento, porque o BC publica 2 casas.
   - Cobertura: 2009 a 02/2011 ficam sem benchmark (1.894 contratos). Não emendar com a série de crédito pessoal total, que inclui o consignado.
   - O ranking de instituições de 2026 foi retirado do projeto.
 
@@ -133,7 +147,7 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 - Só entram contratos encerrados. Os 609 de 2016 ainda em andamento ficam de fora e inflam um pouco o default de 2016.
 - O teste só tem clientes novos, com default maior que o do 2016 inteiro (67,1% contra 63,1%).
 - 2009–2012 tem só a Estônia, com default menor; o default sobe a partir de 2014, em boa parte pela entrada da Espanha e da Finlândia.
-- A referência de mercado do BC (série 20742) começa em 03/2011 e o risco dos dois mercados é muito diferente (56,0% de default na base de modelagem do Bondora): serve de contexto, não de veredito sobre preço justo.
+- A referência de mercado do BC (série 20742) começa em 03/2011, e os dois mercados são muito diferentes: na mesma base (nominal ao ano), a taxa média do Bondora ficou abaixo da do BC em todos os 125 meses (mediana de 0,41 da taxa do BC; cerca de 30% contra 72% ao ano), e o risco também difere (56,0% de default na base de modelagem do Bondora). Serve de contexto, não de veredito sobre preço justo.
 - Excluir gênero e idade do modelo não elimina proxies (variáveis que carregam a mesma informação). É isso que a auditoria de resíduos testa.
 - Gênero está muito ligado ao país (gênero indefinido é quase só da Espanha).
 - A codificação do gênero parece quebrada em 2017–2019 (proporção de mulheres na Estônia: 45% em 2016, 9% em 2018, 51% em 2020; 5.633 clientes com os dois valores). Gênero fica fora do treino e do teste. A análise será apresentada ao final como achado, com essa ressalva, e é relevante para a parte de governança, ética e equidade.
@@ -147,8 +161,8 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 - [ ] Desenho do teste e da validação: manter todo o 2016 tirando do treino os clientes do teste; validação por janela móvel; calibrar com o ano mais recente; comparar com e sem 2009–2012 (ver o documento "Avaliação do desenho de modelagem").
 - [ ] Euribor: o prazo (12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021; seção 9).
 - [ ] Selic: confirmar a série 4189 e que a leitura A é um cenário "modo Brasil", com o motor base na Euribor (seção 9).
-- [ ] Confirmar a série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (seção 9).
-- [ ] Combinar com a Yasmin e a Maria o campo da referência de mercado na API e no parecer (mudar o formato exige aviso a todos).
+- [x] Série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (documento de contextualização do Samuel, 31/10; seção 9).
+- [ ] Campo da referência de mercado: desenho proposto pela Maria (campo opcional `bc_credito_pessoal_aa` na entrada e `contexto_mercado` na saída, frase escrita pelo código, conversão para nominal; seção 9). Falta a Yasmin passar o valor da view e mostrar o campo, e avisar todos da mudança de formato.
 - [ ] Confirmar a fórmula da parcela ÷ renda sem juros.
 - [x] Marcos: incluir `divida_renda`, `caixa_livre` e `renda_empregador_principal` em `COLUNAS_INDISPONIVEIS_RECENTES` (feito na `carga_bondora.py`).
 - [ ] Marcos: conferir no dicionário o significado de `pagamentos_anteriores`, `quitacoes_antecipadas_valor` e de `novo_cliente` frente a `n_emprestimos_anteriores`.

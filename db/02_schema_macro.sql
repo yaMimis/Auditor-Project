@@ -5,7 +5,7 @@
 --   euribor_mensal             Euribor de 3 e de 12 meses (Portal de dados do BCE)
 --   selic_mensal               Selic da leitura A do "modo Brasil" (Banco Central)
 --   bc_credito_pessoal_mensal  Taxa média do crédito pessoal não consignado, pessoas físicas
---                              (Banco Central, SGS 20742): referência de mercado, 03/2011 em
+--                              (Banco Central, SGS 20742, % a.a. EFETIVA): referência de mercado, 03/2011 em
 --                              diante; 2009 a 02/2011 ficam sem benchmark de propósito
 --
 -- Chave: `mes` é sempre o 1º dia do mês. Os arquivos do BCE trazem o último
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS selic_mensal (
 
 CREATE TABLE IF NOT EXISTS bc_credito_pessoal_mensal (
     mes       DATE PRIMARY KEY,                -- 1º dia do mês
-    taxa_aa   NUMERIC(10,2)                    -- % a.a., taxa média das novas operações (BCB, SGS 20742); só referência, não calibra o preço
+    taxa_aa   NUMERIC(10,2)                    -- % a.a. EFETIVA (composta; 6,42% a.m. = 110,95% a.a.), taxa média das novas operações (BCB, SGS 20742); só referência, não calibra o preço; no parecer vira nominal: 12 x ((1 + taxa/100)^(1/12) - 1)
 );
 
 -- ---------------------------------------------------------------------
@@ -51,7 +51,7 @@ SELECT e.loan_id,
        t.euribor_3m,
        t.euribor_12m,
        s.selic_aa,
-       b.taxa_aa AS bc_credito_pessoal_aa     -- NULL antes de 03/2011 (sem benchmark)
+       b.taxa_aa AS bc_credito_pessoal_aa     -- % a.a. EFETIVA; NULL antes de 03/2011 (sem benchmark); o parecer a converte para nominal
 FROM emprestimo e
 LEFT JOIN euribor_mensal            t ON t.mes = date_trunc('month', e.data_emprestimo)::date
 LEFT JOIN selic_mensal              s ON s.mes = date_trunc('month', e.data_emprestimo)::date

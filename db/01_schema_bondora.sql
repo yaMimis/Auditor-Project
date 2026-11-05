@@ -20,7 +20,7 @@
 --                   no lugar de vazio (divida_renda, caixa_livre,
 --                   renda_empregador_principal). Fora do modelo.
 --
--- Valores monetários em euro. Juros em % ao ano, como vêm do Bondora.
+-- Valores monetários em euro. Juros em % ao ano, como taxa NOMINAL (a mensal é a anual ÷ 12).
 -- Exceção: renda e passivos dos contratos da Estônia até 31/12/2010 vinham em coroas (EEK)
 -- e a carga os converte para euros (÷ 15,6466; src/dados/moeda.py).
 -- A carga NÃO filtra nada (inclui contratos ativos): o recorte "encerrados

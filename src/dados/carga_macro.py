@@ -13,8 +13,8 @@ Por padrão lê estes arquivos de data/raw/ (use as opções --euribor-12m, --eu
                                                 (Banco Central, SGS 4189, % ao ano)
     BC-Meta_Selic_Mensal.csv                    meta Selic mensal (opcional, só conferência)
     bcdata.sgs.20742.csv                        taxa média do crédito pessoal não consignado,
-                                                pessoas físicas (Banco Central, SGS 20742, % ao ano,
-                                                desde 03/2011; opcional; também aceita o nome
+                                                pessoas físicas (Banco Central, SGS 20742, % ao ano
+                                                efetiva, desde 03/2011; opcional; também aceita o nome
                                                 bcdata_sgs_20742.csv)
 
 O que faz:

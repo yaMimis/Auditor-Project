@@ -105,6 +105,22 @@ def _tabela_ausente(t):
     del t["vw_base_modelagem"]
 
 
+def _recebido_nao_fecha(t):
+    t["vw_retorno_realizado"].loc[0, "recebido_total"] = 9999.0
+
+
+def _retorno_menor_que_menos_1(t):
+    t["vw_retorno_realizado"].loc[0, "retorno_realizado"] = -1.5
+
+
+def _recuperacao_maior_que_o_recebido(t):
+    t["vw_retorno_realizado"].loc[1, "recuperado_eur"] = 900.0
+
+
+def _retorno_com_contrato_a_menos(t):
+    t["vw_retorno_realizado"] = t["vw_retorno_realizado"].iloc[:-1]
+
+
 CASOS = [
     ("loan_id duplicado", _loan_id_duplicado, "emprestimo", "loan_id"),
     ("idade negativa", _idade_negativa, "cliente", "idade"),
@@ -126,6 +142,13 @@ CASOS = [
      "cliente no treino e no teste"),
     ("teste com concessão fora de 2016", _teste_fora_de_2016, "vw_base_modelagem", "teste so com concessoes de 2016"),
     ("view ausente no banco", _tabela_ausente, "vw_base_modelagem", "ausente"),
+    ("recebido_total não fecha com principal + juros", _recebido_nao_fecha, "vw_retorno_realizado",
+     "recebido_total = principal_recebido + juros_recebidos"),
+    ("retorno realizado menor que -100%", _retorno_menor_que_menos_1, "vw_retorno_realizado", "retorno_realizado"),
+    ("recuperação maior que o recebido", _recuperacao_maior_que_o_recebido, "vw_retorno_realizado",
+     "recuperado_eur <= recebido_total"),
+    ("view de retorno com contrato a menos", _retorno_com_contrato_a_menos, "(cruzamento)",
+     "vw_retorno_realizado com contratos diferentes"),
 ]
 
 

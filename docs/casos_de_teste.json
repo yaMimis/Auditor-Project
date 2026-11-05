@@ -1,0 +1,364 @@
+{
+  "acima_do_justo": [
+    {
+      "contrato_id": "413f66f6-3c73-49d6-8239-a5db00fe1f72",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.309,
+      "pd": 0.5666,
+      "pd_ic95": [
+        0.4753,
+        0.6688
+      ],
+      "faixa": "C",
+      "juro_justo": 0.2776,
+      "juro_justo_min": 0.2605,
+      "juro_justo_max": 0.3021,
+      "diferenca_pp": 3.1,
+      "situacao_preco": "acima_do_justo",
+      "motivos": [
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "aumenta_risco",
+          "valor": 60.0,
+          "peso": 0.276
+        },
+        {
+          "variavel": "tipo_moradia",
+          "rotulo": "tipo de moradia",
+          "efeito": "reduz_risco",
+          "valor": "8",
+          "peso": 0.123
+        },
+        {
+          "variavel": "divida_sobre_renda",
+          "rotulo": "dívidas em relação à renda",
+          "efeito": "aumenta_risco",
+          "valor": 1.3776470588235294,
+          "peso": 0.119
+        },
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "aumenta_risco",
+          "valor": "1",
+          "peso": 0.075
+        },
+        {
+          "variavel": "score_ee_mini",
+          "rotulo": "score de crédito (Estônia)",
+          "efeito": "reduz_risco",
+          "valor": 1000.0,
+          "peso": 0.075
+        }
+      ],
+      "alerta_dados": false
+    },
+    {
+      "contrato_id": "4579e2eb-1142-4c82-92d3-a5140156a40b",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.2368,
+      "pd": 0.5587,
+      "pd_ic95": [
+        0.4266,
+        0.588
+      ],
+      "faixa": "C",
+      "juro_justo": 0.1547,
+      "juro_justo_min": 0.1339,
+      "juro_justo_max": 0.1604,
+      "diferenca_pp": 8.2,
+      "situacao_preco": "acima_do_justo",
+      "motivos": [
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "aumenta_risco",
+          "valor": 60.0,
+          "peso": 0.287
+        },
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "aumenta_risco",
+          "valor": "1",
+          "peso": 0.134
+        },
+        {
+          "variavel": "tipo_moradia",
+          "rotulo": "tipo de moradia",
+          "efeito": "reduz_risco",
+          "valor": "8",
+          "peso": 0.105
+        },
+        {
+          "variavel": "score_ee_mini",
+          "rotulo": "score de crédito (Estônia)",
+          "efeito": "reduz_risco",
+          "valor": 1000.0,
+          "peso": 0.102
+        },
+        {
+          "variavel": "valor_sobre_renda",
+          "rotulo": "valor do empréstimo em relação à renda",
+          "efeito": "aumenta_risco",
+          "valor": 3.5576923076923075,
+          "peso": 0.058
+        }
+      ],
+      "alerta_dados": false
+    }
+  ],
+  "abaixo_do_justo": [
+    {
+      "contrato_id": "e788a0ba-caef-4152-874c-a3bd014a02b8",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.31,
+      "pd": 0.7698,
+      "pd_ic95": [
+        0.7361,
+        0.827
+      ],
+      "faixa": "E",
+      "juro_justo": 0.3832,
+      "juro_justo_min": 0.3485,
+      "juro_justo_max": 0.4594,
+      "diferenca_pp": -7.3,
+      "situacao_preco": "abaixo_do_justo",
+      "motivos": [
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "aumenta_risco",
+          "valor": "3",
+          "peso": 0.22
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "escolaridade",
+          "efeito": "aumenta_risco",
+          "valor": "2",
+          "peso": 0.186
+        },
+        {
+          "variavel": "pagamentos_anteriores",
+          "rotulo": "valor já pago em empréstimos anteriores",
+          "efeito": "aumenta_risco",
+          "valor": 0.0,
+          "peso": 0.099
+        },
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "reduz_risco",
+          "valor": 36.0,
+          "peso": 0.076
+        },
+        {
+          "variavel": "valor_concedido",
+          "rotulo": "valor do empréstimo",
+          "efeito": "aumenta_risco",
+          "valor": 3000.0,
+          "peso": 0.067
+        }
+      ],
+      "alerta_dados": false
+    },
+    {
+      "contrato_id": "33478f94-ab1d-44bd-9d78-a2a0014f6961",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.2,
+      "pd": 0.8655,
+      "pd_ic95": [
+        0.7564,
+        0.8553
+      ],
+      "faixa": "E",
+      "juro_justo": 0.3956,
+      "juro_justo_min": 0.2849,
+      "juro_justo_max": 0.3956,
+      "diferenca_pp": -19.6,
+      "situacao_preco": "abaixo_do_justo",
+      "motivos": [
+        {
+          "variavel": "score_fi_asiakastieto",
+          "rotulo": "score de crédito (Finlândia)",
+          "efeito": "aumenta_risco",
+          "valor": "outros",
+          "peso": 0.481
+        },
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "reduz_risco",
+          "valor": "4",
+          "peso": 0.132
+        },
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "aumenta_risco",
+          "valor": 48.0,
+          "peso": 0.087
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "escolaridade",
+          "efeito": "aumenta_risco",
+          "valor": "2",
+          "peso": 0.083
+        },
+        {
+          "variavel": "pagamentos_anteriores",
+          "rotulo": "valor já pago em empréstimos anteriores",
+          "efeito": "aumenta_risco",
+          "valor": 0.0,
+          "peso": 0.041
+        }
+      ],
+      "alerta_dados": false
+    }
+  ],
+  "dentro_da_margem": [
+    {
+      "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.3895,
+      "pd": 0.684,
+      "pd_ic95": [
+        0.5521,
+        0.7455
+      ],
+      "faixa": "D",
+      "juro_justo": 0.3703,
+      "juro_justo_min": 0.3178,
+      "juro_justo_max": 0.4048,
+      "diferenca_pp": 1.9,
+      "situacao_preco": "dentro_da_margem",
+      "motivos": [
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "aumenta_risco",
+          "valor": 60.0,
+          "peso": 0.274
+        },
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "reduz_risco",
+          "valor": "4",
+          "peso": 0.194
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "escolaridade",
+          "efeito": "aumenta_risco",
+          "valor": "3",
+          "peso": 0.087
+        },
+        {
+          "variavel": "pagamentos_anteriores",
+          "rotulo": "valor já pago em empréstimos anteriores",
+          "efeito": "aumenta_risco",
+          "valor": 0.0,
+          "peso": 0.073
+        },
+        {
+          "variavel": "passivos_existentes",
+          "rotulo": "número de dívidas em aberto",
+          "efeito": "reduz_risco",
+          "valor": 8.0,
+          "peso": 0.059
+        }
+      ],
+      "alerta_dados": false
+    },
+    {
+      "contrato_id": "feea06ab-752d-4011-b0e7-a50100c4def1",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.3056,
+      "pd": 0.8316,
+      "pd_ic95": [
+        0.7064,
+        0.8223
+      ],
+      "faixa": "E",
+      "juro_justo": 0.3306,
+      "juro_justo_min": 0.2504,
+      "juro_justo_max": 0.3306,
+      "diferenca_pp": -2.5,
+      "situacao_preco": "dentro_da_margem",
+      "motivos": [
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "aumenta_risco",
+          "valor": 60.0,
+          "peso": 0.319
+        },
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "aumenta_risco",
+          "valor": "3",
+          "peso": 0.175
+        },
+        {
+          "variavel": "score_fi_asiakastieto",
+          "rotulo": "score de crédito (Finlândia)",
+          "efeito": "aumenta_risco",
+          "valor": "RL2",
+          "peso": 0.089
+        },
+        {
+          "variavel": "pagamentos_anteriores",
+          "rotulo": "valor já pago em empréstimos anteriores",
+          "efeito": "aumenta_risco",
+          "valor": 0.0,
+          "peso": 0.075
+        },
+        {
+          "variavel": "tipo_moradia",
+          "rotulo": "tipo de moradia",
+          "efeito": "reduz_risco",
+          "valor": "8",
+          "peso": 0.069
+        }
+      ],
+      "alerta_dados": false
+    }
+  ],
+  "revisao_manual": [
+    {
+      "contrato_id": "1cb66730-5f46-4e16-9646-a60500b96a4e",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.1661,
+      "pd": null,
+      "pd_ic95": null,
+      "faixa": null,
+      "juro_justo": null,
+      "juro_justo_min": null,
+      "juro_justo_max": null,
+      "diferenca_pp": null,
+      "situacao_preco": "revisao_manual",
+      "motivos": [],
+      "alerta_dados": true
+    },
+    {
+      "contrato_id": "8f7e3059-3f4a-4d3a-87a3-a5ac014be73f",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.2826,
+      "pd": null,
+      "pd_ic95": null,
+      "faixa": null,
+      "juro_justo": null,
+      "juro_justo_min": null,
+      "juro_justo_max": null,
+      "diferenca_pp": null,
+      "situacao_preco": "revisao_manual",
+      "motivos": [],
+      "alerta_dados": true
+    }
+  ]
+}

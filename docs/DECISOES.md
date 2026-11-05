@@ -78,7 +78,6 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
   2009–2013 é outra época da plataforma. A do Bondora (0,75) é estimativa prévia, mais conservadora.
 - **Horizonte mínimo de 12 meses** para converter a PD em risco mensal
   (o default pode ocorrer depois do fim do contrato).
-
 - **Custos e margem:** calibrados para a média do juro justo igualar a média do juro cobrado.
 - **Sensibilidade:** margem ±1 pp e LGD ±10 pp.
 - `juro_aa` vem em porcentagem: dividir por 100.
@@ -89,6 +88,13 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
   3 meses só na sensibilidade. Piso em zero (mínimo −0,08% em 2016).
 - Euribor média de 0,9% contra juros de 20–30%: o custo do dinheiro pesa pouco;
   o juro justo depende sobretudo da perda esperada e de custos e margem.
+
+### 8.1 Custos + margem por safra (03/11)
+
+- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real): 2009 8,7% · 2010 14,3% · 2011 15,8% · 2012 16,8% · 2013 17,4% · 2014 5,0% · 2015 9,0% · 2016 20,5%. Ano sem safra usa 2016.
+- LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
+- Distribuição com ±2pp: acima 34–67%, abaixo 28–55%, dentro 4–27% por safra.
+- Pendente: avaliar calibração pela mediana junto com o bootstrap.
 
 ## 9. Regra de achado
 

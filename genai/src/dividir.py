@@ -1,7 +1,15 @@
 """
+<<<<<<< HEAD
 Divide as normas de genai/normas/*.md em trechos: um trecho por artigo.
 Artigos longos viram mais de um trecho, sempre quebrando entre linhas
 (incisos, parágrafos), nunca no meio de uma frase.
+=======
+Divide as normas de genai/normas/*.md em trechos.
+
+- Leis e resoluções (arquivos com "Art."): um trecho por artigo. Artigos longos
+  viram mais de um trecho, sempre quebrando entre linhas (incisos, parágrafos).
+- Relatórios sem artigos (ex.: ref.md): um trecho por parágrafo do texto.
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 
 Como rodar (na pasta raiz do repositório):
     python genai/src/dividir.py
@@ -17,11 +25,23 @@ TAMANHO_CAPUT = 150    # quanto do caput é repetido nas partes seguintes
 
 
 def ler_norma(caminho):
+<<<<<<< HEAD
     """Lê o arquivo e pega o nome da norma na 1ª linha ('# LGPD — ...' -> 'LGPD')."""
     texto = caminho.read_text(encoding="utf-8-sig")
     titulo = texto.strip().splitlines()[0].lstrip("#").strip()
     norma = titulo.split("—")[0].strip()
     return norma, texto
+=======
+    """Lê o arquivo e pega o nome da norma na 1ª linha ('# LGPD — ...' -> 'LGPD')
+    e o link oficial na linha que começa com 'URL:'."""
+    texto = caminho.read_text(encoding="utf-8-sig")
+    titulo = texto.strip().splitlines()[0].lstrip("#").strip()
+    norma = titulo.split("—")[0].strip()
+    achado = re.search(r"^URL:\s*(\S+)", texto, re.MULTILINE)
+    if not achado:
+        raise SystemExit(f"{caminho.name}: falta a linha 'URL: <link>' no cabeçalho.")
+    return norma, achado.group(1), texto
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 
 
 def separar_artigos(texto):
@@ -31,6 +51,17 @@ def separar_artigos(texto):
     return [p.strip() for p in partes if p.strip().startswith("Art.")]
 
 
+<<<<<<< HEAD
+=======
+def separar_paragrafos(texto):
+    """Para documentos sem artigos: devolve os parágrafos do corpo do texto,
+    pulando o título (#) e as linhas de cabeçalho 'URL:' e 'Fonte:'."""
+    blocos = re.split(r"\n\s*\n", texto.strip())
+    cabecalho = ("#", "URL:", "Fonte:")
+    return [b.strip() for b in blocos if b.strip() and not b.strip().startswith(cabecalho)]
+
+
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 def numero_do_artigo(artigo_texto):
     """'Art. 5º Para os fins...' -> 'Art. 5º';  'Art. 54-A. Este...' -> 'Art. 54-A'."""
     return re.match(r"Art\. \d+º?(?:-[A-Z])?", artigo_texto).group(0)
@@ -73,17 +104,34 @@ def dividir_normas():
     for caminho in sorted(PASTA_NORMAS.glob("*.md")):
         if caminho.name == "FONTES.md":
             continue
+<<<<<<< HEAD
         norma, texto = ler_norma(caminho)
         for artigo_texto in separar_artigos(texto):
             artigo = numero_do_artigo(artigo_texto)
             slug = re.sub(r"[^0-9a-z]", "", artigo.lower())  # 'Art. 54-A' -> 'art54a'
             for i, parte in enumerate(quebrar_artigo(artigo_texto), start=1):
+=======
+        norma, url, texto = ler_norma(caminho)
+        artigos = separar_artigos(texto)
+        if artigos:  # lei ou resolução: um bloco por artigo
+            blocos = [(numero_do_artigo(a), a) for a in artigos]
+        else:        # relatório: um bloco por parágrafo
+            blocos = [(f"parágrafo {n}", p) for n, p in enumerate(separar_paragrafos(texto), start=1)]
+        for artigo, bloco_texto in blocos:
+            # 'Art. 54-A' -> 'art54a';  'parágrafo 3' -> 'p3'
+            slug = re.sub(r"[^0-9a-z]", "", artigo.lower()) if artigo.startswith("Art.") else "p" + artigo.split()[-1]
+            for i, parte in enumerate(quebrar_artigo(bloco_texto), start=1):
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
                 trechos.append({
                     "trecho_id": f"{caminho.stem}-{slug}-{i}",
                     "norma": norma,
                     "artigo": artigo,
                     "parte": i,
                     "arquivo": caminho.name,
+<<<<<<< HEAD
+=======
+                    "url": url,
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
                     "texto": parte,
                 })
     return trechos

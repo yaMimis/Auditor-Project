@@ -1,5 +1,10 @@
 # Resolução CMN nº 4.881/2020 — Custo Efetivo Total (CET)
 
+<<<<<<< HEAD
+=======
+URL: https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?tipo=Resolu%C3%A7%C3%A3o%20CMN&numero=4881
+
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 Fonte: Resolução CMN nº 4.881, de 23 de dezembro de 2020, publicada pelo Banco Central do Brasil. Dispõe sobre o cálculo e a informação do Custo Efetivo Total (CET) relativo a operações de crédito e de arrendamento mercantil financeiro. Trechos selecionados para o RAG do Projeto Integrador: arts. 1º a 9º. Preâmbulo, títulos de capítulo e disposições de revogação e vigência foram removidos. A fórmula do art. 4º, publicada como imagem, foi transcrita em texto.
 
 Art. 1º Esta Resolução dispõe sobre o cálculo e a informação do Custo Efetivo Total (CET) pelas instituições financeiras e pelas sociedades de arrendamento mercantil na oferta ou na contratação de operação de crédito e de arrendamento mercantil financeiro com pessoas naturais, inclusive empresários individuais, ou com pessoas jurídicas classificadas como microempresas e empresas de pequeno porte, nos termos da Lei Complementar nº 123, de 14 de dezembro de 2006.

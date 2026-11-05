@@ -19,6 +19,13 @@ O que faz:
   * carrega via COPY, em uma única transação, e recarrega do zero a cada
     execução (TRUNCATE) — rodar duas vezes dá o mesmo resultado.
 
+Atenção: `renda_empregador_principal`, `divida_renda` e `caixa_livre` vêm com zero no lugar de
+vazio a partir de 2018 (70% a 72% em 2017). A carga as grava como vêm; elas estão em
+COLUNAS_INDISPONIVEIS_RECENTES e, portanto, fora do modelo.
+
+A renda e os passivos dos contratos da Estônia concedidos até 31/12/2010 estão em coroas no
+arquivo; a carga os converte para euros (÷ 15,6466) com src/dados/moeda.py.
+
 O que NÃO faz: filtrar contratos nem tratar outliers. O recorte "encerrados de
 coortes maduras" (DATA.md) e a limpeza estatística ficam em view/consulta e no
 pandera, para a tabela bruta continuar auditável.
@@ -43,6 +50,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+try:                                    # importado como pacote (pytest, a partir da raiz)
+    from src.dados.moeda import antes_do_euro, coroas_para_euros
+except ImportError:                     # executado como script: python src/dados/carga_bondora.py
+    from moeda import antes_do_euro, coroas_para_euros
+
 
 # --------------------------------------------------------------------------
 # Mapeamento CSV -> banco
@@ -63,7 +75,7 @@ def c(csv, db, tipo, uso=None, dominio=None) -> Col:
 
 LN = "lista_negra"
 SA = "so_auditoria"
-IND = "indisponivel"  # existe só até ~2017; fora do modelo
+IND = "indisponivel"  # some depois de 2017 (em branco ou com zero no lugar de vazio); fora do modelo
 CHAVE = c("LoanId", "loan_id", "id")
 
 # A ordem do dicionário é a ordem de carga (a tabela pai vem primeiro).
@@ -125,7 +137,7 @@ TABELAS: dict[str, list[Col]] = {
         c("WorkExperience", "experiencia_trabalho", "texto", IND),
         c("OccupationArea", "area_ocupacao", "cod", IND),
         c("HomeOwnershipType", "tipo_moradia", "cod"),
-        c("IncomeFromPrincipalEmployer", "renda_empregador_principal", "num"),
+        c("IncomeFromPrincipalEmployer", "renda_empregador_principal", "num", IND),
         c("IncomeFromPension", "renda_pensao", "num"),
         c("IncomeFromFamilyAllowance", "renda_auxilio_familiar", "num"),
         c("IncomeFromSocialWelfare", "renda_assistencia_social", "num"),
@@ -146,8 +158,8 @@ TABELAS: dict[str, list[Col]] = {
         c("ExistingLiabilities", "passivos_existentes", "int"),
         c("LiabilitiesTotal", "passivos_total", "num"),
         c("RefinanceLiabilities", "refinanciamento_passivos", "int"),
-        c("DebtToIncome", "divida_renda", "num"),
-        c("FreeCash", "caixa_livre", "num"),
+        c("DebtToIncome", "divida_renda", "num", IND),
+        c("FreeCash", "caixa_livre", "num", IND),
         c("CreditScoreEsMicroL", "score_es_microl", "texto"),
         c("CreditScoreEsEquifaxRisk", "score_es_equifax", "texto"),
         c("CreditScoreFiAsiakasTietoRiskGrade", "score_fi_asiakastieto", "texto"),
@@ -306,6 +318,9 @@ def carregar(csv: Path, dsn: str, ddl: Path | None = None,
     vistos: set[str] = set()
     virou_null: Counter = Counter()
     carregadas = Counter()
+    convertidos = 0          # contratos de 2009–2010 com renda e passivos convertidos de coroas
+    nome_data = next(n for col, n in presentes["emprestimo"] if col.db == "data_emprestimo")
+    nome_pais = next(n for col, n in presentes["cliente"] if col.db == "pais")
 
     conn = _conectar(dsn)
     try:
@@ -327,6 +342,10 @@ def carregar(csv: Path, dsn: str, ddl: Path | None = None,
                 pedaco = pedaco[manter]
                 if pedaco.empty:
                     continue
+                # renda e passivos da Estônia até 2010 estão em coroas (src/dados/moeda.py)
+                antes = antes_do_euro(pd.to_datetime(pedaco[nome_data].str[:10], format="%Y-%m-%d", errors="coerce"),
+                                      pedaco[nome_pais])
+                convertidos += int(antes.sum())
 
                 for tabela, lista in presentes.items():
                     saida = {}
@@ -336,7 +355,7 @@ def carregar(csv: Path, dsn: str, ddl: Path | None = None,
                             (original.notna() & convertido.isna()).sum()
                         )
                         saida[col.db] = convertido
-                    df = pd.DataFrame(saida)
+                    df = coroas_para_euros(pd.DataFrame(saida), antes)
                     _copy(cur, tabela, list(df.columns), df)
                     carregadas[tabela] += len(df)
 
@@ -359,6 +378,7 @@ def carregar(csv: Path, dsn: str, ddl: Path | None = None,
     for tabela, n in contagens.items():
         print(f"Linhas em {tabela:<19}    {n:>10,}")
     print(f"Clientes distintos:              {n_clientes:>10,}")
+    print(f"Contratos da Estônia até 31/12/2010, com renda e passivos convertidos de coroas (÷ 15,6466): {convertidos:,}")
     if ausentes:
         print("\nColunas do mapeamento ausentes no CSV (ficam NULL):")
         for a in ausentes:

@@ -14,10 +14,15 @@
 --                   com a PD do Bondora e o backtest.
 --   [SÓ AUDITORIA]  gênero, idade, estado civil e dependentes: usados apenas
 --                   na auditoria de equidade, nunca para prever risco.
---   [INDISPONÍVEL APÓS 2017]  preenchidas só nos contratos até ~2017 (cerca de
---                   81% em branco no período de teste): fora do modelo.
+--   [INDISPONÍVEL APÓS 2017]  somem depois de 2017 (82,6% da base é de 2017 em
+--                   diante): em branco (finalidade, situacao_emprego, area_ocupacao,
+--                   experiencia_trabalho, estado_civil, n_dependentes) ou com zero
+--                   no lugar de vazio (divida_renda, caixa_livre,
+--                   renda_empregador_principal). Fora do modelo.
 --
 -- Valores monetários em euro. Juros em % ao ano, como vêm do Bondora.
+-- Exceção: renda e passivos dos contratos da Estônia até 31/12/2010 vinham em coroas (EEK)
+-- e a carga os converte para euros (÷ 15,6466; src/dados/moeda.py).
 -- A carga NÃO filtra nada (inclui contratos ativos): o recorte "encerrados
 -- de coortes maduras" do DATA.md é aplicado depois, em view/consulta.
 -- =====================================================================
@@ -100,14 +105,14 @@ CREATE TABLE IF NOT EXISTS cliente (
     area_ocupacao              SMALLINT,                  -- OccupationArea (código)  [INDISPONÍVEL APÓS 2017]
     tipo_moradia               SMALLINT,                  -- HomeOwnershipType (código)
 
-    renda_empregador_principal NUMERIC(16,2),             -- IncomeFromPrincipalEmployer
-    renda_pensao               NUMERIC(16,2),             -- IncomeFromPension
-    renda_auxilio_familiar     NUMERIC(16,2),             -- IncomeFromFamilyAllowance
-    renda_assistencia_social   NUMERIC(16,2),             -- IncomeFromSocialWelfare
-    renda_licenca              NUMERIC(16,2),             -- IncomeFromLeavePay
-    renda_pensao_alimenticia   NUMERIC(16,2),             -- IncomeFromChildSupport
-    renda_outras               NUMERIC(16,2),             -- IncomeOther
-    renda_total                NUMERIC(16,2)              -- IncomeTotal
+    renda_empregador_principal NUMERIC(16,2),             -- IncomeFromPrincipalEmployer  [INDISPONÍVEL APÓS 2017] (zero a partir de 2018)  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_pensao               NUMERIC(16,2),             -- IncomeFromPension  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_auxilio_familiar     NUMERIC(16,2),             -- IncomeFromFamilyAllowance  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_assistencia_social   NUMERIC(16,2),             -- IncomeFromSocialWelfare  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_licenca              NUMERIC(16,2),             -- IncomeFromLeavePay  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_pensao_alimenticia   NUMERIC(16,2),             -- IncomeFromChildSupport  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_outras               NUMERIC(16,2),             -- IncomeOther  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
+    renda_total                NUMERIC(16,2)              -- IncomeTotal  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
 );
 
 CREATE INDEX IF NOT EXISTS ix_cliente_cliente_id ON cliente (cliente_id);
@@ -126,10 +131,10 @@ CREATE TABLE IF NOT EXISTS historico_credito (
     quitacoes_antecipadas_qtd      INTEGER,               -- PreviousEarlyRepaymentsCountBeforeLoan
 
     passivos_existentes            INTEGER,               -- ExistingLiabilities
-    passivos_total                 NUMERIC(16,2),         -- LiabilitiesTotal
+    passivos_total                 NUMERIC(16,2),         -- LiabilitiesTotal  (Estônia até 31/12/2010 vem em coroas; a carga divide por 15,6466)
     refinanciamento_passivos       INTEGER,               -- RefinanceLiabilities (qtd. de passivos refinanciados)
-    divida_renda                   DOUBLE PRECISION,      -- DebtToIncome
-    caixa_livre                    NUMERIC(16,2),         -- FreeCash
+    divida_renda                   DOUBLE PRECISION,      -- DebtToIncome  [INDISPONÍVEL APÓS 2017] (zero a partir de 2018)
+    caixa_livre                    NUMERIC(16,2),         -- FreeCash  [INDISPONÍVEL APÓS 2017] (zero a partir de 2018)
 
     score_es_microl                TEXT,                  -- CreditScoreEsMicroL
     score_es_equifax               TEXT,                  -- CreditScoreEsEquifaxRisk

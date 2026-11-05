@@ -1,6 +1,10 @@
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
+<<<<<<< HEAD
 > Versão 0.5 (rascunho) · 31/10/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+=======
+> Versão 0.6 (rascunho) · 02/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 > Itens marcados **[A CONFIRMAR]** dependem de decisão do Samuel. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (29/10/2026); onde o texto e o notebook dele divergem, a seção diz qual foi seguido. As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
@@ -63,9 +67,15 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
 - `estado_civil` e `n_dependentes` só têm dados nos contratos até 2017, então a auditoria delas cobre só esse período.
 
+<<<<<<< HEAD
 **Indisponíveis após 2017 (4): fora do modelo [A CONFIRMAR].** Estão preenchidas em 2009–2016 (no máximo 1,0% em branco no treino e no teste), mas 96,4% em branco nos contratos de 2017 a 2021, que são 82,6% da base e a carteira a pontuar. Um modelo treinado com elas perderia a informação justamente onde será usado.
+=======
+**Indisponíveis após 2017 (7): fora do modelo [A CONFIRMAR].** As quatro primeiras estão preenchidas em 2009–2016 (no máximo 1,0% em branco no treino e no teste), mas 96,4% em branco nos contratos de 2017 a 2021, que são 82,6% da base e a carteira a pontuar. As três últimas vêm com zero no lugar de vazio: zeros em no máximo 7% dos contratos até 2016, 70% a 72% em 2017 e 100% a partir de 2018, o que não é valor real. Um modelo treinado com elas perderia a informação justamente onde será usado.
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 
-`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho`
+`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho`, `divida_renda`, `caixa_livre`, `renda_empregador_principal`
+
+- A carga grava as três últimas como vêm (zero), e elas já estão em `COLUNAS_INDISPONIVEIS_RECENTES` (`carga_bondora.py`), então o teste antivazamento as barra. Em qualquer análise que as use, tratá-las como NULL a partir de 2018.
 
 **Identificadores e datas: servem para dividir e agrupar, não como variável.** O ano da concessão também não entra; o efeito de época vem da Euribor.
 
@@ -74,8 +84,14 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 **Candidatas a variáveis do modelo [A CONFIRMAR]:**
 
 - Contrato: `novo_cliente`, `valor_solicitado`, `valor_concedido`, `prazo_meses`, `tipo_verificacao`
+<<<<<<< HEAD
 - Cliente: `pais`, `escolaridade`, `tipo_moradia`, `tempo_emprego_atual`, as oito colunas `renda_*`
 - Histórico: `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `pagamentos_anteriores` (0% em branco no treino e no teste, mas 42% em 2017–2021), `quitacoes_antecipadas_valor`, `quitacoes_antecipadas_qtd`, `passivos_existentes`, `passivos_total`, `refinanciamento_passivos`, `divida_renda`, `caixa_livre`
+=======
+- Cliente: `pais`, `escolaridade`, `tipo_moradia`, `tempo_emprego_atual`, `renda_total` (os componentes `renda_*` não entram: o principal, `renda_empregador_principal`, vem zerado desde 2018)
+- Histórico: `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `pagamentos_anteriores` (0% em branco no treino e no teste, mas 42% em 2017–2021), `quitacoes_antecipadas_valor`, `quitacoes_antecipadas_qtd`, `passivos_existentes`, `passivos_total`, `refinanciamento_passivos`
+- Atenção: `pagamentos_anteriores` e `quitacoes_antecipadas_valor` mudam de regime. Os zeros vão de 84% e 99% dos contratos em 2014 para 11% e 89% em 2018, e para 0% nas duas a partir de 2019. Confirmar o significado no dicionário antes de usar.
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 - Scores externos (`score_es_microl`, `score_es_equifax`, `score_fi_asiakastieto`, `score_ee_mini`): a cobertura muda muito entre treino, teste e carteira (`score_es_microl` tem 81% em branco no treino e 4% em 2017–2021; `score_es_equifax` faz o contrário, com 81% e 96%) e varia por país. Sugestão: fora do modelo base, testar depois como sensibilidade.
 - `pais` entra no modelo. O default é 42% na Estônia, 73% na Finlândia e 78% na Espanha (base de modelagem); sem o país, a auditoria de preço marcaria como discriminação o que é diferença de risco.
 - A variável derivada parcela ÷ renda deve usar `valor_concedido / prazo_meses / renda_total` (parcela sem juros), porque `parcela_mensal` está na lista negra.
@@ -86,8 +102,12 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - Datas anteriores a 2000 (como `0001-01-01`) viram NULL. `n_dependentes` "10Plus" vira 10.
 - **Juros acima de 100% ao ano são legítimos** (Espanha 2.738 contratos, Finlândia 143, em 2016–2018; máximo de 264%). Não remover.
 - Idade menor que 18 (53 contratos, 48 deles com idade 0) e renda zero (64 contratos): regras de validação no pandera. Marcar ou excluir **[A CONFIRMAR]**.
+- Outros alertas, para registrar no relatório de qualidade sem falhar o teste: `valor_concedido` maior que `valor_solicitado` (249 contratos), `prazo_meses` menor que 3 (221; o mínimo é 1), vencimento original diferente de concessão mais prazo em mais de 2 meses (133), `Current` com `data_default` (163) e `caixa_livre` negativo (23).
+- **Zeros no lugar de vazio:** `divida_renda`, `caixa_livre` e `renda_empregador_principal` têm 100% de zeros a partir de 2018 (70% a 72% em 2017). A carga não os pega, porque só troca `-1` por NULL. Ver a seção 6.
 - Gênero 2 ("indefinido") é quase só da Espanha (12.164 de 12.180; cerca de 46% dos contratos espanhóis). Na auditoria, tratar como dado ausente e comparar só 0 e 1, de preferência dentro de cada país.
+- **Codificação do gênero em 2017–2019:** entre os contratos com gênero 0 ou 1, a proporção de mulheres na Estônia vai de 45% em 2016 para 26% em 2017 e 9% em 2018, e volta a 34% em 2019 e 51% em 2020 (Finlândia: 45%, 21%, 23%, 41% e 51%). Além disso, 5.633 clientes aparecem com os dois valores em contratos diferentes, e a idade deles é coerente entre os contratos (0 incoerências em 94.148 pares), ou seja, é a mesma pessoa. É um indício de erro de codificação nesse período; o dicionário do Bondora não o confirma. Gênero fica fora do treino e do teste, então o modelo não é afetado; a análise de gênero será apresentada ao final como achado, com essa ressalva.
 - `score_es_microl` tem o valor "M" em cerca de 136 mil linhas; confirmar o significado no dicionário.
+- `novo_cliente` e `n_emprestimos_anteriores` parecem medir coisas diferentes: 15.668 contratos têm `novo_cliente` verdadeiro e empréstimos anteriores, e 303 têm o caso oposto. Confirmar no dicionário antes de validar uma contra a outra.
 
 ## 8. Moeda e unidades
 
@@ -129,18 +149,30 @@ Valores em euro. Juros em % ao ano, como vêm do Bondora.
 - A referência de mercado do BC (série 20742) começa em 03/2011 e o risco dos dois mercados é muito diferente (56,0% de default na base de modelagem do Bondora): serve de contexto, não de veredito sobre preço justo.
 - Excluir gênero e idade do modelo não elimina proxies (variáveis que carregam a mesma informação). É isso que a auditoria de resíduos testa.
 - Gênero está muito ligado ao país (gênero indefinido é quase só da Espanha).
+- A codificação do gênero parece quebrada em 2017–2019 (proporção de mulheres na Estônia: 45% em 2016, 9% em 2018, 51% em 2020; 5.633 clientes com os dois valores). Gênero fica fora do treino e do teste. A análise será apresentada ao final como achado, com essa ressalva, e é relevante para a parte de governança, ética e equidade.
+- Várias colunas mudam de regime depois de 2017 (zeros no lugar de vazio e campos de histórico), então a carteira a pontuar difere da base de treino.
 - Quando o grupo compara contratos "parecidos" controlando por variáveis como renda, é preciso lembrar que a renda pode ser afetada pelo próprio gênero. Registrar isso na parte de ética.
 
 ## 12. Pendências com o Samuel
 
 - [ ] Reestruturados: excluir ou não do treino? O texto e o notebook do `DECISOES.md` divergem (seção 4).
+<<<<<<< HEAD
 - [ ] Variáveis indisponíveis após 2017 (`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho`): fora do modelo principal? (seção 6).
+=======
+- [ ] Variáveis indisponíveis após 2017 (`finalidade`, `situacao_emprego`, `area_ocupacao`, `experiencia_trabalho` e, com zero no lugar de vazio, `divida_renda`, `caixa_livre` e `renda_empregador_principal`): fora do modelo principal? (seção 6).
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 - [ ] Desenho do teste e da validação: manter todo o 2016 tirando do treino os clientes do teste; validação por janela móvel; calibrar com o ano mais recente; comparar com e sem 2009–2012 (ver o documento "Avaliação do desenho de modelagem").
 - [ ] Euribor: o prazo (12 meses como principal e 3 meses como sensibilidade, mensal, 01/2009 a 07/2021; seção 9).
 - [ ] Selic: confirmar a série 4189 e que a leitura A é um cenário "modo Brasil", com o motor base na Euribor (seção 9).
 - [ ] Confirmar a série 20742 como referência de mercado do BC, só como contexto, com 2009 a 02/2011 sem benchmark (seção 9).
 - [ ] Combinar com a Yasmin e a Maria o campo da referência de mercado na API e no parecer (mudar o formato exige aviso a todos).
 - [ ] Confirmar a fórmula da parcela ÷ renda sem juros.
+<<<<<<< HEAD
+=======
+- [x] Marcos: incluir `divida_renda`, `caixa_livre` e `renda_empregador_principal` em `COLUNAS_INDISPONIVEIS_RECENTES` (feito na `carga_bondora.py`).
+- [ ] Marcos: conferir no dicionário o significado de `pagamentos_anteriores`, `quitacoes_antecipadas_valor` e de `novo_cliente` frente a `n_emprestimos_anteriores`.
+- [ ] Gênero: só para registro, o período da análise final (por exemplo 2013–2016 contra todos os anos) e a ressalva sobre 2017–2019 (seção 7).
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 - [ ] Grupo: `estado_civil` e `n_dependentes` como só auditoria.
 - [ ] Decidir o tratamento dos scores externos.
 - [ ] Conferir a view `vw_base_modelagem` contra os números do `DECISOES.md` (20.011 no treino e 7.311 no teste).

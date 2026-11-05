@@ -1,5 +1,10 @@
 # LGPD — Lei nº 13.709/2018 (trechos selecionados)
 
+<<<<<<< HEAD
+=======
+URL: https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm
+
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 Fonte: Lei Geral de Proteção de Dados Pessoais (LGPD), texto compilado. Trechos selecionados para o RAG do Projeto Integrador: arts. 5º, 6º, 7º, 11, 12 e 20. Anotações legislativas (redação dada, vigência, revogados e vetados) foram removidas.
 
 Art. 5º Para os fins desta Lei, considera-se:

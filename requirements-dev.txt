@@ -1,0 +1,16 @@
+# Herda todas as dependencias da aplicação
+-r requirements.txt
+
+# Bateria de Testes
+pytest>=8.0.0
+pytest-cov>=4.1.0
+httpx>=0.26.0
+
+# Formatadores e Linters de Código
+black>=24.0.0
+flake8>=7.0.0
+
+# EDA e gráficos dos slides 
+matplotlib
+seaborn
+python-dotenv

@@ -1,7 +1,12 @@
 # REGRAS_PARECER.md — Regras para o parecer gerado pela IA
 
+<<<<<<< HEAD
 **Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.2 · **Data:** 31/10/2026
 **Status:** proposta; ajuste da seção 7 sugerido pelo Samuel em 31/10/2026, aguardando a Maria e o grupo.
+=======
+**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.3 · **Data:** 03/11/2026
+**Status:** v1.2 aprovada pela Maria em 03/11/2026; v1.3 acrescenta a regra sobre os números do REF (seção 5), aguardando o grupo.
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 
 ## 1. Finalidade
 
@@ -57,6 +62,10 @@ O LLM nunca calcula números, nunca escolhe a recomendação e nunca decide no l
 - Os campos extras do `prever()` (`pd_ic95`, `diferenca_pp`, `valor` e `peso` dos motivos) não aparecem no parecer.
 - Todo número citado no texto entra em `numeros_citados`, com o valor exato da entrada. Um campo que veio `null` nunca é citado.
 - O parecer não fala de CET, tarifas ou encargos: esses dados não existem na base.
+<<<<<<< HEAD
+=======
+- Os números dos trechos do Relatório de Estabilidade Financeira (REF) descrevem o mercado de crédito brasileiro, não o contrato, e nunca aparecem no parecer. Esses trechos servem só para explicar do que é feito o custo do crédito (custo de captação, inadimplência, despesas administrativas, tributos e margem).
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 
 ---
 
@@ -135,6 +144,11 @@ Nos 20 casos de avaliação (critérios em `genai/avaliacao/CRITERIOS.md`), alé
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1.0     | 29/10/2026 | Primeira versão.                                                                                                                                                                                                                                     |
 | 1.1     | 30/10/2026 | Revisão manual pelo template, sem LLM, quando `situacao_preco` é `revisao_manual` ou `alerta_dados` é verdadeiro. Motivos citados pelo `rotulo`. Campos extras do `prever()` fora do parecer. Checagem da entrada com `EntradaPrever`. |
+<<<<<<< HEAD
 | 1.2     | 31/10/2026 | Seção 7: acima do justo passa de `encaminhar_compliance` para `revisar_preco`, com encaminhamento ao compliance como decisão do analista; texto "não é explicada pelo risco estimado pelo modelo". (Proposta do Samuel, aguardando a Maria.) |
+=======
+| 1.2     | 31/10/2026 | Seção 7: acima do justo passa de `encaminhar_compliance` para `revisar_preco`, com encaminhamento ao compliance como decisão do analista; texto "não é explicada pelo risco estimado pelo modelo". (Proposta do Samuel em 31/10; aprovada pela Maria em 03/11.)
+| 1.3     | 03/11/2026 | Seção 5: números dos trechos do REF nunca aparecem no parecer; esses trechos só explicam a composição do custo do crédito. |
+>>>>>>> 1f820b3c914b802dbd014244569ce101f8323b73
 
 Qualquer mudança nestas regras gera nova versão do prompt (`parecer_v2`, `parecer_v3`...) com o motivo anotado.

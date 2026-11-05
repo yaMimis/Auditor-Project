@@ -135,7 +135,7 @@ Juros em % ao ano, como vêm do Bondora, e **nominais**: a parcela do Bondora ba
 - Só entram contratos encerrados. Os 609 de 2016 ainda em andamento ficam de fora e inflam um pouco o default de 2016.
 - O teste só tem clientes novos, com default maior que o do 2016 inteiro (67,1% contra 63,1%).
 - 2009–2012 tem só a Estônia, com default menor; o default sobe a partir de 2014, em boa parte pela entrada da Espanha e da Finlândia.
-- A referência de mercado do BC (série 20742) começa em 03/2011 e o risco dos dois mercados é muito diferente (56,0% de default na base de modelagem do Bondora): serve de contexto, não de veredito sobre preço justo.
+- A referência de mercado do BC (série 20742) começa em 03/2011, e os dois mercados são muito diferentes: na mesma base (nominal ao ano), a taxa média do Bondora ficou abaixo da do BC em todos os 125 meses (mediana de 0,41 da taxa do BC; cerca de 30% contra 72% ao ano), e o risco também difere (56,0% de default na base de modelagem do Bondora). Serve de contexto, não de veredito sobre preço justo.
 - Excluir gênero e idade do modelo não elimina proxies (variáveis que carregam a mesma informação). É isso que a auditoria de resíduos testa.
 - Gênero está muito ligado ao país (gênero indefinido é quase só da Espanha).
 - A codificação do gênero parece quebrada em 2017–2019 (proporção de mulheres na Estônia: 45% em 2016, 9% em 2018, 51% em 2020; 5.633 clientes com os dois valores). Gênero fica fora do treino e do teste. A análise será apresentada ao final como achado, com essa ressalva, e é relevante para a parte de governança, ética e equidade.

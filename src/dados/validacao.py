@@ -8,7 +8,8 @@ Uso (na raiz do projeto, com o banco no ar e o .env preenchido):
 
 O que faz:
   * lê do banco, com pd.read_sql, as tabelas emprestimo, cliente, historico_credito,
-    euribor_mensal, selic_mensal, bc_credito_pessoal_mensal e a view vw_base_modelagem;
+    euribor_mensal, selic_mensal, bc_credito_pessoal_mensal e as views vw_base_modelagem e
+    vw_retorno_realizado;
   * valida cada tabela com um esquema do pandera, com lazy=True: todas as violações
     saem de uma vez, em vez de parar na primeira;
   * separa as regras em dois níveis:
@@ -65,7 +66,8 @@ DATAS_BONDORA = ("data_referencia", "data_pedido", "data_emprestimo", "data_prim
                  "data_default", "data_ultimo_pagamento")
 CHAVES = {"emprestimo": "loan_id", "cliente": "loan_id", "historico_credito": "loan_id",
           "euribor_mensal": "mes", "selic_mensal": "mes",
-          "bc_credito_pessoal_mensal": "mes", "vw_base_modelagem": "loan_id"}
+          "bc_credito_pessoal_mensal": "mes", "vw_base_modelagem": "loan_id",
+          "vw_retorno_realizado": "loan_id"}
 
 
 # --------------------------------------------------------------------------
@@ -182,6 +184,25 @@ def _regras_erro() -> dict[str, dict[str, "pa.Column"]]:
             "reestruturado": _col(True),
             "conjunto": _col(False, False, pa.Check.isin(["treino", "teste", "fora_cliente_repetido"])),
         },
+        "vw_retorno_realizado": {
+            "loan_id": _col(False, True, pa.Check.str_matches(GUID)),
+            "ano": _col(False, False, pa.Check.in_range(2009, 2016)),
+            "pais": _col(False, False, pa.Check.isin(["EE", "ES", "FI"])),
+            "conjunto": _col(False, False, pa.Check.isin(["treino", "teste", "fora_cliente_repetido"])),
+            "reestruturado": _col(True),
+            "inadimplente": _col(False, False, pa.Check.isin([0, 1])),
+            "valor_concedido": _col(False, False, _maior_que(0)),
+            "prazo_meses": _col(False, False, pa.Check.in_range(1, 60)),
+            "juro_aa": _col(False, False, _maior_que(0)),
+            "duracao_meses": _col(True, False, ge0),
+            "principal_recebido": _col(False, False, ge0),
+            "juros_recebidos": _col(False, False, ge0),
+            "recebido_total": _col(False, False, ge0),
+            "resultado_eur": _col(False),
+            "retorno_realizado": _col(False, False, pa.Check.in_range(-1, 10)),
+            "principal_perdido": _col(False, False, ge0),
+            "recuperado_eur": _col(False, False, ge0),
+        },
     }
 
 
@@ -196,6 +217,20 @@ def _checks_linha_erro() -> dict[str, list]:
             _ate("data_default", "data_referencia"),
             _ate("data_emprestimo", "data_fim_contrato"),
             _ate("data_emprestimo", "data_ultimo_pagamento"),
+        ],
+        "vw_retorno_realizado": [
+            _linha("recebido_total = principal_recebido + juros_recebidos",
+                   ("recebido_total", "principal_recebido", "juros_recebidos"),
+                   lambda df: (df["recebido_total"] - df["principal_recebido"] - df["juros_recebidos"]).abs() <= 0.02),
+            _linha("resultado_eur = recebido_total - valor_concedido",
+                   ("resultado_eur", "recebido_total", "valor_concedido"),
+                   lambda df: (df["resultado_eur"] - (df["recebido_total"] - df["valor_concedido"])).abs() <= 0.02),
+            _linha("principal_perdido <= valor_concedido", ("principal_perdido", "valor_concedido"),
+                   lambda df: df["principal_perdido"] <= df["valor_concedido"] + 0.01),
+            # as recuperações já estão dentro dos pagamentos: se passarem do recebido, a definição quebrou
+            _linha("recuperado_eur <= recebido_total (recuperacao ja esta nos pagamentos)",
+                   ("recuperado_eur", "recebido_total"),
+                   lambda df: df["recuperado_eur"] <= df["recebido_total"] + 0.01),
         ],
         "vw_base_modelagem": [
             _linha("treino so com concessoes ate 2015", ("conjunto", "ano"),
@@ -388,6 +423,11 @@ def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
             precisa = meses_contrato[meses_contrato >= ini]
             erro(f"{tabela}: contratos sem o valor do mês da concessão",
                  int((~precisa.isin(com_valor)).sum()))
+    # retorno realizado: tem que cobrir exatamente os contratos da base de modelagem
+    vb, vr = t.get("vw_base_modelagem"), t.get("vw_retorno_realizado")
+    if vb is not None and vr is not None and "loan_id" in vb.columns and "loan_id" in vr.columns:
+        erro("vw_retorno_realizado com contratos diferentes da vw_base_modelagem",
+             len(set(vb["loan_id"]) ^ set(vr["loan_id"])))
     # base de modelagem
     v = t.get("vw_base_modelagem")
     if v is not None and {"conjunto", "cliente_id"} <= set(v.columns):

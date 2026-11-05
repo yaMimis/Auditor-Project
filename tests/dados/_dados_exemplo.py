@@ -83,5 +83,27 @@ def tabelas_validas() -> dict[str, pd.DataFrame]:
         "reestruturado": [False] * n,
         "conjunto": ["treino" if a <= 2015 else "teste" for a in ANOS],
     })
+    recebido_principal = [1000.0, 400.0, 1000.0, 1000.0]
+    recebido_juros = [200.0, 50.0, 150.0, 100.0]
+    retorno = pd.DataFrame({
+        "loan_id": ids,
+        "ano": ANOS,
+        "pais": c["pais"],
+        "conjunto": vw["conjunto"],
+        "reestruturado": [False] * n,
+        "inadimplente": [0, 1, 0, 0],
+        "valor_concedido": [1000.0] * n,
+        "prazo_meses": [12] * n,
+        "juro_aa": [30.0] * n,
+        "duracao_meses": [11.0, 20.0, 12.0, np.nan],
+        "principal_recebido": recebido_principal,
+        "juros_recebidos": recebido_juros,
+        "recebido_total": [a + b for a, b in zip(recebido_principal, recebido_juros)],
+        "resultado_eur": [a + b - 1000.0 for a, b in zip(recebido_principal, recebido_juros)],
+        "retorno_realizado": [(a + b - 1000.0) / 1000.0 for a, b in zip(recebido_principal, recebido_juros)],
+        "principal_perdido": [max(1000.0 - a, 0.0) for a in recebido_principal],
+        "recuperado_eur": [0.0, 150.0, 0.0, 0.0],
+    })
     return {"emprestimo": e, "cliente": c, "historico_credito": h, "euribor_mensal": euribor,
-            "selic_mensal": selic, "bc_credito_pessoal_mensal": bc, "vw_base_modelagem": vw}
+            "selic_mensal": selic, "bc_credito_pessoal_mensal": bc, "vw_base_modelagem": vw,
+            "vw_retorno_realizado": retorno}

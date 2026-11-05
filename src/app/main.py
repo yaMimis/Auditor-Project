@@ -651,8 +651,10 @@ with workspace_column:
                 with st.container(key="audit_form_stack_personal"):
                     audit_number("Idade do cliente", "age", min_value=18, max_value=100, step=1)
                     audit_select("Gênero", "gender", options=[0, 1, 2], format_func=lambda value: {0: "Feminino", 1: "Masculino", 2: "Não informado"}[value])
-                    audit_select("País de origem", "country", options=["EE", "FI", "ES"])
+                    audit_select("País de origem", "country", options=["EE(Estônia)", "FI(Finlândia)", "ES(Espanha)"])
                     audit_number("Renda total mensal (€)", "income_total", min_value=0.0, step=100.0, format="%.2f")
+                    # NOVO: Alerta sobre a conversão da moeda inserido aqui
+                    st.markdown('<div class="audit-note">Valores em Euro (€). Renda e passivos da Estônia até 2010 foram convertidos de coroas estonianas.</div>', unsafe_allow_html=True)
                     audit_review_checkbox("personal")
 
             elif active_step == "loan":
@@ -762,15 +764,33 @@ if resultado:
         st.markdown('<div class="audit-eyebrow">RESULTADO DA CONSULTA</div>', unsafe_allow_html=True)
         st.markdown('<div class="audit-panel-title">Resumo da avaliação</div>', unsafe_allow_html=True)
 
-        col_r1, col_r2, col_r3 = st.columns(3, gap="medium")
+        # 1. ATUALIZAÇÃO: 4 colunas para separar Risco (PD) do Benchmark de Mercado (Pares)
+        col_r1, col_r2, col_r3, col_r4 = st.columns(4, gap="medium")
         with col_r1:
             pd = resultado.get("pd", 0)
-            st.metric("Probabilidade de default", f"{pd * 100:.1f}%")
+            st.metric("Probab. Default (PD)", f"{pd * 100:.1f}%")
         with col_r2:
-            st.metric("Classificação de risco", resultado.get("faixa", "—"))
+            # Requer que a API retorne a chave 'juro_risco' baseada no modelo
+            juro_risco = resultado.get("juro_risco", 0) 
+            st.metric("Juro por Risco", f"{juro_risco * 100:.1f}% a.a.")
         with col_r3:
-            juro = resultado.get("juro_justo", 0)
-            st.metric("Juro Justo (Mercado)", f"{juro * 100:.1f}% a.a.")
+            # Rebaixado de 'Juro Justo' absoluto para indicador de mercado
+            juro_mercado = resultado.get("juro_justo", 0)
+            st.metric("Mediana dos Pares", f"{juro_mercado * 100:.1f}% a.a.")
+        with col_r4:
+            st.metric("Rating / Faixa", resultado.get("faixa", "—"))
+
+        # 2. ATUALIZAÇÃO: Cálculo das taxas real/nominal (Feedback do ponto 2)
+        st.markdown("#### 🧮 Conversão de Taxas (Parâmetros Bacen)")
+        taxa_anual_contrato = float(st.session_state.audit_interest)
+        taxa_mensal_nominal = taxa_anual_contrato / 12  # i/12 conforme Bondora
+        taxa_anual_efetiva = ((1 + (taxa_mensal_nominal / 100)) ** 12 - 1) * 100 # (1+i/12)^12 - 1
+
+        col_t1, col_t2, col_t3 = st.columns(3, gap="medium")
+        col_t1.metric("Taxa Anual Declarada", f"{taxa_anual_contrato:.2f}% a.a.")
+        col_t2.metric("Taxa Nominal ao Mês", f"{taxa_mensal_nominal:.2f}% a.m.")
+        col_t3.metric("Taxa Efetiva Anual", f"{taxa_anual_efetiva:.2f}% a.a.")
+
 
         st.markdown("#### 📜 Parecer técnico automatizado (GenAI)")
         parecer = resultado.get("parecer_ia")

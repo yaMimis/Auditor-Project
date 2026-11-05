@@ -25,24 +25,28 @@ def prever_juro_justo(dados: SolicitacaoEmprestimo):
     # CONVERSÃO (24.9) P/ (0.249) -> exigida pelo contrato
     juro_cobrado_frac = round(dados.interest_cobrado / 100, 3) 
     
-    juro_justo_frac = 0.162
+    # NOVAS MÉTRICAS SIMULADAS PARA O FRONTEND
+    juro_risco_mock = pd_mock + 0.05 # Lógica simples simulada: risco + margem
+    juro_mercado_mock = 0.162 # Antigo 'juro_justo' (mediana)
+    
     juro_min = 0.141
     juro_max = 0.183
     
-    # Regra da situação do preço
-    situacao = "acima_do_justo" if juro_cobrado_frac > juro_max else "dentro_da_margem"
+    # Regra da situação do preço (agora avaliada contra o Juro de Risco, e não mais contra a mediana)
+    situacao = "acima_do_justo" if juro_cobrado_frac > juro_risco_mock else "dentro_da_margem"
 
     # Formato de mock corrigido conforme o schemas.py e o Guia v2
     return {
         "contrato_id": dados.loan_id,
         "versao_modelo": "v1.0",
-        "pd": 0.15,
-        "faixa": "C",
-        "juro_cobrado": dados.interest_cobrado / 100, # Convertido para fração
-        "juro_justo": 0.19,
-        "juro_justo_min": 0.16,
-        "juro_justo_max": 0.22,
-        "situacao_preco": "abaixo_do_justo",
+        "pd": pd_mock, # Usando a variável gerada no mock em vez do 0.15 fixo
+        "faixa": faixa_mock,
+        "juro_cobrado": juro_cobrado_frac,
+        "juro_risco": juro_risco_mock, # <- NOVO CAMPO: Vai preencher o cartão "Juro por Risco" no Streamlit
+        "juro_justo": juro_mercado_mock, # Vai preencher o cartão "Mediana dos Pares" no Streamlit
+        "juro_justo_min": juro_min,
+        "juro_justo_max": juro_max,
+        "situacao_preco": situacao,
         "alerta_dados": False,
         "motivos": [
             {"variavel": "divida_renda", "efeito": "aumenta_risco"},
@@ -51,10 +55,10 @@ def prever_juro_justo(dados: SolicitacaoEmprestimo):
         "parecer_ia": {
             "contrato_id": dados.loan_id,
             "resumo": "Análise preliminar indica juro desfasado do risco.",
-            "pontos_de_atencao": ["Risco de fuga do cliente", "Diferença de 4 p.p."],
+            "pontos_de_atencao": ["Risco de fuga do cliente", "Diferença em relação à PD"],
             "recomendacao_texto": "Sugerida a revisão imediata do preço.",
             "fontes": [],
-            "numeros_citados": {"pd": 0.15, "juro_cobrado": 0.249},
+            "numeros_citados": {"pd": pd_mock, "juro_cobrado": juro_cobrado_frac, "juro_risco": juro_risco_mock},
             "recomendacao": "revisar_preco",
             "origem": "template",
             "versao_prompt": "v1",

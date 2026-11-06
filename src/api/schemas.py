@@ -13,7 +13,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from genai.src.checagem import EntradaPrever, Motivo, Parecer
 
-DATA_PADRAO = date(2021, 7, 1)  # combinado com o Samuel: data de concessão padrão do painel
+# Sem data, vale a de hoje (combinado com o Samuel em 05/11). A API sempre envia a data
+# ao prever(), para funcionar antes e depois do PR samuel-margem.
 
 
 # ---------- Entrada (o que o Streamlit envia) ----------
@@ -26,11 +27,18 @@ class SolicitacaoEmprestimo(BaseModel):
     country: str = Field(description="Sigla do país: EE, ES ou FI")
     interest_cobrado: float = Field(ge=0, le=500, description="Juro cobrado em % ao ano (ex.: 24.9)")
     liabilities_total: float | None = Field(default=None, ge=0, description="Total de dívidas, em euro")
-    data_emprestimo: date = DATA_PADRAO
+    data_emprestimo: date = Field(default_factory=date.today, description="Data de concessão")
 
     # Só auditoria de equidade: NUNCA vão para o modelo nem para o LLM.
     gender: int | None = Field(default=None, description="0 homem, 1 mulher, 2 indefinido")
     age: int | None = None
+
+    @field_validator("data_emprestimo")
+    @classmethod
+    def _data_nao_futura(cls, v: date) -> date:
+        if v > date.today():
+            raise ValueError("a data de concessão não pode ser no futuro")
+        return v
 
     @field_validator("country")
     @classmethod

@@ -105,6 +105,35 @@ def _tabela_ausente(t):
     del t["vw_base_modelagem"]
 
 
+def _decisao_fora_do_dominio(t):
+    t["decisao_analista"].loc[0, "decisao"] = "foo"
+
+
+def _justificativa_vazia(t):
+    t["decisao_analista"].loc[0, "justificativa"] = "   "
+
+
+def _json_com_genero_aninhado(t):
+    t["decisao_analista"].at[1, "prever_json"] = {"entrada": {"gender": 1}, "pd": 0.3}
+
+
+def _decisao_da_carteira_que_nao_existe(t):
+    t["decisao_analista"].loc[0, "contrato_id"] = "nao-existe-na-carteira"
+
+
+def _simulacao_com_contrato_da_carteira(t):
+    t["decisao_analista"].loc[1, "contrato_id"] = t["emprestimo"].loc[1, "loan_id"]
+
+
+def _view_da_decisao_atual_repetida(t):
+    v = t["vw_decisao_atual"]
+    t["vw_decisao_atual"] = pd.concat([v, v], ignore_index=True)
+
+
+def _decisao_registrada_no_futuro(t):
+    t["decisao_analista"].loc[0, "registrada_em"] = pd.Timestamp("2099-01-01", tz="UTC")
+
+
 def _recebido_nao_fecha(t):
     t["vw_retorno_realizado"].loc[0, "recebido_total"] = 9999.0
 
@@ -142,6 +171,17 @@ CASOS = [
      "cliente no treino e no teste"),
     ("teste com concessão fora de 2016", _teste_fora_de_2016, "vw_base_modelagem", "teste so com concessoes de 2016"),
     ("view ausente no banco", _tabela_ausente, "vw_base_modelagem", "ausente"),
+    ("decisão fora do domínio", _decisao_fora_do_dominio, "decisao_analista", "decisao"),
+    ("justificativa vazia", _justificativa_vazia, "decisao_analista", "justificativa"),
+    ("JSON da decisão com gênero em nível aninhado", _json_com_genero_aninhado, "decisao_analista",
+     "JSON sem genero nem idade"),
+    ("decisão da carteira com contrato inexistente", _decisao_da_carteira_que_nao_existe, "(cruzamento)",
+     "contrato 'carteira' que nao existe"),
+    ("simulação com contrato que existe na carteira", _simulacao_com_contrato_da_carteira, "(cruzamento)",
+     "contrato 'simulacao' que existe"),
+    ("decisão atual repetida na view", _view_da_decisao_atual_repetida, "vw_decisao_atual", "contrato_id"),
+    ("decisão registrada no futuro", _decisao_registrada_no_futuro, "decisao_analista",
+     "registrada_em nao esta no futuro"),
     ("recebido_total não fecha com principal + juros", _recebido_nao_fecha, "vw_retorno_realizado",
      "recebido_total = principal_recebido + juros_recebidos"),
     ("retorno realizado menor que -100%", _retorno_menor_que_menos_1, "vw_retorno_realizado", "retorno_realizado"),

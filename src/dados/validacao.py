@@ -8,8 +8,8 @@ Uso (na raiz do projeto, com o banco no ar e o .env preenchido):
 
 O que faz:
   * lê do banco, com pd.read_sql, as tabelas emprestimo, cliente, historico_credito,
-    euribor_mensal, selic_mensal, bc_credito_pessoal_mensal e as views vw_base_modelagem e
-    vw_retorno_realizado;
+    euribor_mensal, selic_mensal, bc_credito_pessoal_mensal, decisao_analista (decisões do
+    analista) e as views vw_base_modelagem, vw_retorno_realizado e vw_decisao_atual;
   * valida cada tabela com um esquema do pandera, com lazy=True: todas as violações
     saem de uma vez, em vez de parar na primeira;
   * separa as regras em dois níveis:
@@ -31,6 +31,7 @@ passar colunas a mais.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -60,6 +61,12 @@ BASE_ESPERADA = {"treino": 20_011, "teste": 7_311, "fora_cliente_repetido": 2_59
 GUID = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 HEX16 = r"^[0-9a-f]{16}$"
 FINALIDADES = list(range(0, 9)) + list(range(101, 111))
+# decisões do analista (db/05_decisoes_analista.sql; os mesmos valores de src/api/schemas.py)
+DECISOES_ANALISTA = ["manter_preco", "revisar_preco", "encaminhar_compliance"]
+RECOMENDACOES = DECISOES_ANALISTA + ["revisao_manual"]
+SITUACOES_PRECO = ["acima_do_justo", "abaixo_do_justo", "dentro_da_margem"]
+ORIGENS_DECISAO = ["carteira", "simulacao"]
+CHAVES_PROIBIDAS_NO_JSON = ("genero", "idade", "gender", "age")   # gênero e idade nunca entram no registro
 TABELAS_MACRO = ("euribor_mensal", "selic_mensal", "bc_credito_pessoal_mensal")
 DATAS_BONDORA = ("data_referencia", "data_pedido", "data_emprestimo", "data_primeira_parcela",
                  "data_vencimento_original", "data_vencimento_atual", "data_fim_contrato",
@@ -67,7 +74,9 @@ DATAS_BONDORA = ("data_referencia", "data_pedido", "data_emprestimo", "data_prim
 CHAVES = {"emprestimo": "loan_id", "cliente": "loan_id", "historico_credito": "loan_id",
           "euribor_mensal": "mes", "selic_mensal": "mes",
           "bc_credito_pessoal_mensal": "mes", "vw_base_modelagem": "loan_id",
-          "vw_retorno_realizado": "loan_id"}
+          "vw_retorno_realizado": "loan_id", "decisao_analista": "decisao_id",
+          "vw_decisao_atual": "contrato_id"}
+DATAS_EXTRAS = {"decisao_analista": ["registrada_em"], "vw_decisao_atual": ["registrada_em"]}
 
 
 # --------------------------------------------------------------------------
@@ -99,6 +108,25 @@ def _ate(a: str, b: str, tolerancia_dias: int = 0, nome: str | None = None) -> "
     tol = pd.Timedelta(days=tolerancia_dias)
     return _linha(nome or f"{a} <= {b}", (a, b),
                   lambda df: df[a].isna() | df[b].isna() | (df[a] <= df[b] + tol))
+
+
+def _nao_vazio() -> "pa.Check":
+    return pa.Check(lambda s: s.astype(str).str.strip().str.len() > 0, name="nao_vazio", error="nao_vazio")
+
+
+def _tem_chave_proibida(valor) -> bool:
+    """True se o JSON (dict, lista ou texto JSON) tem gênero ou idade em QUALQUER nível."""
+    if isinstance(valor, str):
+        try:
+            valor = json.loads(valor)
+        except ValueError:
+            return False
+    if isinstance(valor, dict):
+        return any(str(k).lower() in CHAVES_PROIBIDAS_NO_JSON or _tem_chave_proibida(v)
+                   for k, v in valor.items())
+    if isinstance(valor, (list, tuple)):
+        return any(_tem_chave_proibida(v) for v in valor)
+    return False
 
 
 def _inteiro() -> "pa.Check":
@@ -184,6 +212,41 @@ def _regras_erro() -> dict[str, dict[str, "pa.Column"]]:
             "reestruturado": _col(True),
             "conjunto": _col(False, False, pa.Check.isin(["treino", "teste", "fora_cliente_repetido"])),
         },
+        "decisao_analista": {
+            "decisao_id": _col(False, True),
+            "registrada_em": _col(False),
+            "requisicao_id": _col(True),                       # único no banco; vazio é permitido
+            "contrato_id": _col(False),
+            "origem": _col(False, False, pa.Check.isin(ORIGENS_DECISAO)),
+            "analista": _col(False, False, _nao_vazio()),
+            "decisao": _col(False, False, pa.Check.isin(DECISOES_ANALISTA)),
+            "justificativa": _col(False, False, _nao_vazio()),
+            "taxa_proposta": _col(True, False, _maior_que(0), pa.Check.less_than_or_equal_to(10)),
+            "recomendacao_sistema": _col(True, False, pa.Check.isin(RECOMENDACOES)),
+            "situacao_preco": _col(False, False, pa.Check.isin(SITUACOES_PRECO)),
+            "pd": _col(False, False, pa.Check.in_range(0, 1)),
+            "faixa": _col(False, False, pa.Check.isin(["A", "B", "C", "D", "E"])),
+            "juro_cobrado": _col(False, False, pa.Check.in_range(0, 10)),
+            "juro_justo": _col(False, False, pa.Check.in_range(0, 10)),
+            "juro_justo_min": _col(False, False, pa.Check.in_range(0, 10)),
+            "juro_justo_max": _col(False, False, pa.Check.in_range(0, 10)),
+            "versao_modelo": _col(False, False, _nao_vazio()),
+            "versao_parecer": _col(True),
+            "origem_parecer": _col(True, False, pa.Check.isin(["llm", "template"])),
+            "prever_json": _col(True),
+            "parecer_json": _col(True),
+        },
+        "vw_decisao_atual": {
+            "decisao_id": _col(False, True),
+            "contrato_id": _col(False, True),
+            "registrada_em": _col(False),
+            "analista": _col(False, False, _nao_vazio()),
+            "decisao": _col(False, False, pa.Check.isin(DECISOES_ANALISTA)),
+            "justificativa": _col(False, False, _nao_vazio()),
+            "taxa_proposta": _col(True, False, _maior_que(0), pa.Check.less_than_or_equal_to(10)),
+            "recomendacao_sistema": _col(True, False, pa.Check.isin(RECOMENDACOES)),
+            "situacao_preco": _col(False, False, pa.Check.isin(SITUACOES_PRECO)),
+        },
         "vw_retorno_realizado": {
             "loan_id": _col(False, True, pa.Check.str_matches(GUID)),
             "ano": _col(False, False, pa.Check.in_range(2009, 2016)),
@@ -217,6 +280,14 @@ def _checks_linha_erro() -> dict[str, list]:
             _ate("data_default", "data_referencia"),
             _ate("data_emprestimo", "data_fim_contrato"),
             _ate("data_emprestimo", "data_ultimo_pagamento"),
+        ],
+        "decisao_analista": [
+            _linha("JSON sem genero nem idade", ("prever_json", "parecer_json"),
+                   lambda df: ~df["prever_json"].map(_tem_chave_proibida).astype(bool)
+                   & ~df["parecer_json"].map(_tem_chave_proibida).astype(bool)),
+            _linha("registrada_em nao esta no futuro", ("registrada_em",),
+                   lambda df: pd.to_datetime(df["registrada_em"], utc=True)
+                   <= pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=1)),
         ],
         "vw_retorno_realizado": [
             _linha("recebido_total = principal_recebido + juros_recebidos",
@@ -266,7 +337,12 @@ def _regras_alerta() -> dict[str, dict[str, "pa.Column"]]:
 
 def _checks_linha_alerta() -> dict[str, list]:
     meses = pd.Timedelta(days=61)
-    return {"emprestimo": [
+    return {"decisao_analista": [
+        _linha("juro_justo entre juro_justo_min e juro_justo_max", ("juro_justo", "juro_justo_min", "juro_justo_max"),
+               lambda df: (df["juro_justo_min"] <= df["juro_justo"]) & (df["juro_justo"] <= df["juro_justo_max"])),
+        _linha("revisar_preco traz taxa_proposta", ("decisao", "taxa_proposta"),
+               lambda df: (df["decisao"] != "revisar_preco") | df["taxa_proposta"].notna()),
+    ], "emprestimo": [
         _linha("valor_concedido <= valor_solicitado", ("valor_concedido", "valor_solicitado"),
                lambda df: df["valor_concedido"].isna() | df["valor_solicitado"].isna()
                | (df["valor_concedido"] <= df["valor_solicitado"] + 0.015)),
@@ -423,6 +499,20 @@ def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
             precisa = meses_contrato[meses_contrato >= ini]
             erro(f"{tabela}: contratos sem o valor do mês da concessão",
                  int((~precisa.isin(com_valor)).sum()))
+    # decisões do analista: origem coerente com a carteira e view da decisão atual
+    d, va = t.get("decisao_analista"), t.get("vw_decisao_atual")
+    if d is not None and e is not None and {"contrato_id", "origem"} <= set(d.columns):
+        ids_carteira = set(e["loan_id"].dropna())
+        cart, simu = d[d["origem"] == "carteira"], d[d["origem"] == "simulacao"]
+        fora = cart.loc[~cart["contrato_id"].isin(ids_carteira), "contrato_id"]
+        erro("decisao_analista: contrato 'carteira' que nao existe em emprestimo", len(fora),
+             ", ".join(map(str, fora.head(3))))
+        erro("decisao_analista: contrato 'simulacao' que existe em emprestimo",
+             int(simu["contrato_id"].isin(ids_carteira).sum()))
+    if d is not None and va is not None and "contrato_id" in va.columns and {"contrato_id", "origem"} <= set(d.columns):
+        esperado = set(d.loc[d["origem"] == "carteira", "contrato_id"])
+        erro("vw_decisao_atual com contratos diferentes da decisao_analista (carteira)",
+             len(esperado ^ set(va["contrato_id"])))
     # retorno realizado: tem que cobrir exatamente os contratos da base de modelagem
     vb, vr = t.get("vw_base_modelagem"), t.get("vw_retorno_realizado")
     if vb is not None and vr is not None and "loan_id" in vb.columns and "loan_id" in vr.columns:
@@ -511,7 +601,8 @@ def ler_tabelas(conexao) -> dict[str, pd.DataFrame]:
     O que não existir no banco fica de fora e vira erro na validação."""
     tabelas: dict[str, pd.DataFrame] = {}
     for nome in _regras_erro():
-        datas = list(DATAS_BONDORA) if nome in TABELAS else (["mes"] if nome in TABELAS_MACRO else [])
+        datas = (list(DATAS_BONDORA) if nome in TABELAS else (["mes"] if nome in TABELAS_MACRO
+                 else DATAS_EXTRAS.get(nome, [])))
         try:
             df = pd.read_sql(f"SELECT * FROM {nome}", conexao, parse_dates=datas or None)
         except Exception as exc:                      # tabela/view inexistente

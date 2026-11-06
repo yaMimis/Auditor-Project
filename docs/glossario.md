@@ -114,6 +114,8 @@ Siglas e termos usados no projeto, com o significado geral e como cada um aparec
 | **EDA**                           | Olhar os dados com tabelas e gráficos antes de modelar.                                                          | `notebooks/dados/01_eda.ipynb` e as figuras de `docs/figuras/`.                                                  |
 | **Relatório de qualidade**       | Resumo dos problemas encontrados nos dados.                                                                       | `docs/qualidade_dados.md`.                                                                                         |
 | **Datasheet dos dados**           | Ficha que descreve origem, composição, usos e limites de um conjunto de dados.                                  | Entrega da frente de Dados.                                                                                          |
+| **Só inclusão** (append-only) | Tabela em que só se acrescentam linhas: nenhuma é alterada nem apagada. | Vale para `decisao_analista`. Para corrigir, registra-se outra decisão. |
+| **Gatilho** (trigger) | Regra do banco que roda sozinha quando uma linha é inserida, alterada ou apagada. | Define a data e a origem das decisões e bloqueia alterações. |
 
 ## 4. Modelagem
 
@@ -177,6 +179,7 @@ Siglas e termos usados no projeto, com o significado geral e como cada um aparec
 | **Compliance**                          | Área que cuida de cumprir leis e normas internas.                                             | O analista pode encaminhar um caso.                                               |
 | **Governança**                         | Regras e responsabilidades para usar a IA com segurança.                                      | Seção própria da apresentação.                                               |
 | **Decisão humana**                     | A decisão final é de uma pessoa, não do sistema.                                            | O analista mantém o preço, recomenda ajustar a taxa ou encaminha ao compliance. |
+| **Trilha de auditoria** | Registro de quem decidiu o quê, quando e com base em quê, que não pode ser alterado depois. | Tabela `decisao_analista`: cada decisão do analista, com o parecer, a justificativa e os números do momento. |
 
 ## 7. Processo e engenharia
 

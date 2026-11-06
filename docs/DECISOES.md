@@ -1,6 +1,7 @@
+
 # DECISOES.md — Modelo de risco e juro justo
 
-**Responsável:** Samuel · **Atualizado:** 31/10/2026
+**Responsável:** Samuel · **Atualizado:** 05/11/2026
 
 Registro das decisões da frente de modelos e do motivo de cada uma.
 
@@ -20,12 +21,14 @@ Registro das decisões da frente de modelos e do motivo de cada uma.
 
 ## 3. Colunas proibidas como variável
 
-| Grupo                          | Origem                                         | Colunas                                                                           |
-| ------------------------------ | ---------------------------------------------- | --------------------------------------------------------------------------------- |
-| Lista negra                    | `COLUNAS_LISTA_NEGRA` (`carga_bondora.py`) | pós-concessão, juro, `parcela_mensal`, saídas do modelo do Bondora           |
-| Só auditoria                  | `COLUNAS_SO_AUDITORIA`                       | `genero`, `idade`, `estado_civil`, `n_dependentes`                        |
-| Indisponíveis depois de ~2017 | `COLUNAS_INDISPONIVEIS_RECENTES`             | `situacao_emprego`, `finalidade`, `experiencia_trabalho`, `area_ocupacao` |
-| Identificadores                | `variaveis.py`                               | `loan_id`, `numero`, `cliente_id`                                           |
+| Grupo                          | Origem                                         | Colunas                                                                                                                                              |
+| ------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lista negra                    | `COLUNAS_LISTA_NEGRA` (`carga_bondora.py`) | pós-concessão, juro, `parcela_mensal`, saídas do modelo do Bondora                                                                              |
+| Só auditoria                  | `COLUNAS_SO_AUDITORIA`                       | `genero`, `idade`, `estado_civil`, `n_dependentes`                                                                                           |
+| Indisponíveis depois de ~2017 | `COLUNAS_INDISPONIVEIS_RECENTES`             | `situacao_emprego`, `finalidade`, `experiencia_trabalho`, `area_ocupacao`, `divida_renda`, `caixa_livre`, `renda_empregador_principal` |
+| Identificadores                | `variaveis.py`                               | `loan_id`, `numero`, `cliente_id`                                                                                                              |
+
+As três últimas indisponíveis vêm com zero no lugar de vazio a partir de 2018 (`DATA.md`, seção 7).
 
 Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 
@@ -40,20 +43,22 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - 1.874 clientes de 2016 que já estavam no treino foram tirados do teste.
 - **Escolha de variáveis e parâmetros: só com validação temporal dentro do treino** (ajuste até 2014, validação em 2015, clientes novos). O teste de 2016 não é usado para ajustar nada.
 
-## 5. Variáveis do modelo (v3: 23 variáveis)
+## 5. Variáveis do modelo (21 variáveis desde 05/11; v3 tinha 23)
 
-| Grupo                    | Variáveis                                                                                                                                                |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pedido                   | `valor_concedido`, `prazo_meses`, `pais`                                                                                                            |
-| Renda e dívidas         | `renda_total`, `parcela_neutra_sobre_renda`, `valor_sobre_renda`, `divida_sobre_renda`, `renda_relativa`, `passivos_existentes`               |
-| Perfil                   | `novo_cliente`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `tipo_verificacao`                                                       |
-| Histórico na plataforma | `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `pagamentos_anteriores`, `quitacoes_antecipadas_qtd`, `quitacoes_antecipadas_valor` |
-| Scores de bureau         | `score_ee_mini`, `score_fi_asiakastieto`, `score_es_equifax`, `score_es_microl` (fora do próprio país: "sem_info")                              |
+| Grupo                    | Variáveis                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pedido                   | `valor_concedido`, `prazo_meses`, `pais`                                                                                              |
+| Renda e dívidas         | `renda_total`, `parcela_neutra_sobre_renda`, `valor_sobre_renda`, `divida_sobre_renda`, `renda_relativa`, `passivos_existentes` |
+| Perfil                   | `novo_cliente`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `tipo_verificacao`                                         |
+| Histórico na plataforma | `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `quitacoes_antecipadas_qtd`                                               |
+| Scores de bureau         | `score_ee_mini`, `score_fi_asiakastieto`, `score_es_equifax`, `score_es_microl` (fora do próprio país: "sem_info")                |
 
 - **Parcela neutra:** valor ÷ prazo, **sem o juro** (o juro é vazamento).
 - **Renda zero** vira vazio, nunca infinito.
 - **Renda relativa:** mediana por país e ano calculada só no treino.
 - **Testadas e descartadas** (validação em 2015): `fracao_concedida` (piorava o AUC e reflete decisão do Bondora); orçamento (`caixa_livre_sobre_renda`, `divida_renda_bondora`, `refinanciamento_passivos`) e composição da renda (`renda_assistencial_sobre_renda`, `renda_pensao_sobre_renda`), que não melhoravam.
+- **Retiradas em 05/11:** `pagamentos_anteriores` e `quitacoes_antecipadas_valor`. Mudam de regime em 2018–2019 (zeros de ~89% para 0%), justamente na carteira de 2017–2021 que será pontuada. O teste de 2016 não mostra o problema; sem elas, o AUC do teste cai pouco (0,727 → 0,721), e o modelo fica mais estável onde será usado.
+- **Moeda:** renda e passivos da Estônia até 2010 vêm em coroas; o `ler_base()` converte para euros com `src/dados/moeda.py`, como a carga do banco (05/11).
 
 ## 6. Modelo
 
@@ -73,7 +78,7 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - **Método:** fluxo de caixa (PD convertida em taxa mensal, amortização, desconto).
 - **Custo do dinheiro:** Euribor do mês de concessão, com piso em zero.
 - **LGD:** realizada por país, com defaults de 2014–2015 (cobrança madura, mesma época do treino):
-  EE ~0,34 · ES ~0,76 · FI ~0,55 (troque pelos valores do notebook 07).
+  EE 0,34 · ES 0,76 · FI 0,55 (notebook 07). Outros países: 0,60.
   Defaults de 2016–2017 ainda em cobrança em 2021 (LGD subindo na EE e na FI);
   2009–2013 é outra época da plataforma. A do Bondora (0,75) é estimativa prévia, mais conservadora.
 - **Horizonte mínimo de 12 meses** para converter a PD em risco mensal
@@ -81,15 +86,19 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - **Custos e margem:** calibrados para a média do juro justo igualar a média do juro cobrado.
 - **Sensibilidade:** margem ±1 pp e LGD ±10 pp.
 - `juro_aa` vem em porcentagem: dividir por 100.
+- **Convenção da taxa (05/11):** o juro do Bondora é **nominal** (taxa mensal = juro ÷ 12; conferido na parcela). O juro justo usa a mesma convenção, para comparar na mesma base. Para comparar com o BC (efetiva): (1 + i/12)^12 − 1.
 - Reestruturados ficam fora da comparação de preço.
 - Taxas: CSVs do Marcos em data/raw/ (Euribor 3m e 12m do BCE; Selic SGS 4189).
-  Completas de 2009 a 2016 (96 meses), em % ao ano → dividir por 100.
+  Em % ao ano → dividir por 100. A série guardada no pacote vai de 01/1994 a 09/2026.
+- **Contratos novos (API):** sem data, usa a data de hoje; mês além da série usa o último disponível; ano além do treino usa o último ano do país na renda relativa e a última safra na margem.
 - Custo do dinheiro: Euribor 12 meses (a mais próxima do prazo dos contratos);
   3 meses só na sensibilidade. Piso em zero (mínimo −0,08% em 2016).
 - Euribor média de 0,9% contra juros de 20–30%: o custo do dinheiro pesa pouco;
   o juro justo depende sobretudo da perda esperada e de custos e margem.
 
 ### 8.1 Custos + margem por safra (03/11)
+
+> ⚠️ Valores calibrados com a fórmula anterior (taxa efetiva) e o modelo de 03/11. **A recalibrar** com a taxa nominal e o modelo de 05/11 (notebook 08).
 
 - Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real): 2009 8,7% · 2010 14,3% · 2011 15,8% · 2012 16,8% · 2013 17,4% · 2014 5,0% · 2015 9,0% · 2016 20,5%. Ano sem safra usa 2016.
 - LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
@@ -155,6 +164,18 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
   Teste: AUC 0,727 (EE 0,709 · ES 0,647 · FI 0,572), Brier 0,199, previsto 56,6% × real 67,1%.
 - Desvio de nível em 2016 (safra mais arriscada que o treino): tratado no juro justo,
   calibrando custos e margem por safra.
+- **05/11, retreino do XGBoost:**
+
+  | Versão                                         | AUC validação 2015 | AUC teste       | EE · ES · FI          | KS    | Brier | Previsto × real |
+  | ----------------------------------------------- | -------------------- | --------------- | ----------------------- | ----- | ----- | ---------------- |
+  | Coroas corrigidas, com as 2 variáveis          | 0,722                | 0,727           | 0,710 · 0,643 · 0,573 | 0,341 | 0,200 | 55,9% × 67,1%   |
+  | **Coroas corrigidas, sem as 2 (oficial)** | 0,716                | **0,721** | 0,700 · 0,638 · 0,564 | 0,330 | 0,204 | 55,2% × 67,1%   |
+  | PD do Bondora (mesmo teste)                     | —                   | 0,670           | —                      | 0,249 | —    | não comparável |
+
+
+  - A correção das coroas não mudou o resultado (os contratos afetados são de 2009–2010 e pesam pouco nas árvores).
+  - A retirada das 2 variáveis custa 0,006 de AUC, de forma consistente na validação e no teste. O modelo continua 0,05 acima da PD do Bondora.
+  - O modelo subestima o default do teste em todas as faixas (55% × 67%): o juro justo tende a sair baixo. A calibração da margem por safra compensa em parte; registrar como limitação.
 
 ### Escolha das variáveis v3 (validação em 2015, 5.943 contratos, default real 66,6%)
 
@@ -175,6 +196,8 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - O salto de inadimplência a partir de 2014 vem em boa parte da entrada de Espanha e Finlândia.
 - O teste é mais arriscado que o treino (só clientes novos e mais Espanha e Finlândia).
 - Valores extremos (renda de até 133 mil, empréstimo de €6, prazo de 1 mês) são poucos; a logística usa log e o XGBoost não é afetado.
+- Renda e passivos da Estônia até 2010 estavam em coroas (1.822 contratos, 9% do treino; achado do Marcos). Corrigido no treino em 05/11.
+- `pagamentos_anteriores` e `quitacoes_antecipadas_valor` mudam de regime em 2018–2019 (`docs/qualidade_dados.md`); retiradas do modelo em 05/11.
 
 ## 14. Pendências
 
@@ -183,9 +206,16 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - [X] Marcos: `parcela_mensal` na lista negra, chave obrigatória no hash
 - [X] `estado_civil` e `n_dependentes` só para auditoria (decidido no script do Marcos)
 - [X] Baseline (adiantado de 01/11 para 31/10)
-- [ ] Preencher os resultados da v3
-- [ ] Maria: responder a proposta da v1.2 (acima do justo → `revisar_preco`)
+- [X] Preencher os resultados da v3
+- [X] Maria: proposta da v1.2 aceita (acima do justo → `revisar_preco`; `REGRAS_PARECER.md` v1.2)
 - [ ] Yasmin: aprovar o formato para as telas
-- [ ] Marcos: Euribor e taxas do BC até 01/11; view das coortes
-- [ ] 03/11: XGBoost + calibração + SHAP
-- [ ] **04/11: entregar o `prever()`**
+- [X] Marcos: Euribor e taxas do BC até 01/11; view das coortes
+- [X] 03/11: XGBoost + calibração + SHAP
+- [X] **04/11: entregar o `prever()`**
+- [X] 05/11: correção das coroas, retirada das 2 variáveis com mudança de regime, taxa nominal, contratos novos
+- [ ] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
+- [ ] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
+- [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
+- [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
+- [ ] 08/11: `carteira_auditoria.csv` (formato em `src/app/carteira.py`)
+- [ ] 09/11: `equidade.json` (gênero 2013–2016 dentro do país; idade 18–25 × 35–44) e backtest do retorno realizado

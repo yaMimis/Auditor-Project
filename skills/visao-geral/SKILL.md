@@ -46,7 +46,7 @@ Em paralelo, um **processo em lote** pontua a carteira inteira, estima a diferen
 | Parecer | Gemini (`google-genai`), sentence-transformers multilíngue, prompts versionados em Markdown |
 | Serviço e app | FastAPI + uvicorn, Streamlit |
 | Infra e qualidade | Docker + Docker Compose, pytest, GitHub Actions |
-| Linguagem | Python (versão **[A DECIDIR]**, ver `ambiente-e-infra`) |
+| Linguagem | Python 3.14 (ver `ambiente-e-infra`) |
 
 ## Frentes da equipe (donos de cada setor)
 

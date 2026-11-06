@@ -43,7 +43,7 @@ Cada frente trabalha sozinha sabendo **exatamente** o que recebe e o que entrega
 - `situacao_preco ∈ {acima_do_justo, abaixo_do_justo, dentro_da_margem, revisao_manual}`; `faixa ∈ {A,…,E}`.
 - **Revisão manual:** `pd`, `pd_ic95`, `faixa`, `juro_justo`, `juro_justo_min`, `juro_justo_max`, `diferenca_pp` = `null`; `motivos = []`; `alerta_dados = true`. Fora da revisão manual, `pd`, `faixa` e os três juros justos são obrigatórios.
 - **Extras** ignorados pela GenAI (`extra="ignore"`): `pd_ic95`, `diferenca_pp`, `valor` e `peso` dos motivos, `juro_pares_mediana`.
-- **[EM ANDAMENTO] (Samuel)** `juro_pares_mediana: float | null` — segunda opinião; não altera a situação.
+- **[EM ANDAMENTO] (Samuel, até 09/11)** `juro_pares_mediana: float | null`: mediana do juro cobrado no treino para a mesma faixa × país × ano (mínimo 30; ano novo → último disponível; `null` sem grupo). Segunda opinião; não altera a situação.
 - Exemplos: `docs/exemplos_prever.json` (ilustrativos, 1 por situação) e `docs/casos_de_teste.json` (reais, 2 por situação, gerados por `casos_de_teste()`).
 
 ## 2. Modelos pydantic (`genai/src/checagem.py`)
@@ -137,7 +137,11 @@ O dicionário enviado ao `prever()` **precisa conter** também, com `None`: `pas
 
 **`carteira_auditoria.csv`** — uma linha por contrato pontuado (juros em fração):
 - obrigatórias: `contrato_id`, `ano`, `pais`, `pd`, `faixa`, `juro_cobrado`, `juro_justo`, `juro_justo_min`, `juro_justo_max`, `situacao_preco`
-- opcionais: `valor_concedido`, `prazo_meses`, `excesso_eur` (acima do justo), `perda_nao_coberta_eur` (abaixo do justo), `rentabilidade_realizada` (encerrados, backtest), `fora_da_auditoria`, `versao_modelo`
+- opcionais: `valor_concedido`, `prazo_meses`, `fora_da_auditoria`, `versao_modelo` e os valores calculados pelo Samuel:
+  - `excesso_eur`: **só `acima_do_justo`**; `prazo × (parcela no juro cobrado − parcela no juro_justo_max)`, com i/12: o que o cliente paga acima do teto da margem se pagar até o fim;
+  - `perda_nao_coberta_eur`: **só encerrados**; `max(0, −resultado_eur)` da `vw_retorno_realizado`: o prejuízo que os juros não cobriram;
+  - `rentabilidade_realizada`: `retorno_realizado` da mesma view; vazio em 2017–2021 (sem desfecho).
+- Contratos: 2016 (teste) e 2017–2021, pontuados pelo `prever()`. **Formato aprovado pelo Samuel em 06/11.**
 
 **`equidade.json`** — só gênero e idade (país nunca):
 ```json
@@ -158,9 +162,3 @@ Campos: `registrado_em`, `analista`, `contrato_id`, `situacao_preco`, `pd`, `jur
 ## Estado dos documentos
 
 - `FORMATO_JSON.md` v1.4: entrada aprovada (Samuel, 30/10); recomendação v1.2 aprovada (Maria, 03/11); **saída aguardando aprovação da Yasmin** (o painel já usa exatamente esses campos).
-
-## Armadilhas
-
-- API com schema próprio divergente (motivos sem `rotulo`, campos não nulos, `juro_risco` inventado): quebra a checagem do parecer.
-- `numeros_citados` com valor diferente do `juro_cobrado` da entrada.
-- Campo novo adicionado só de um lado do contrato.

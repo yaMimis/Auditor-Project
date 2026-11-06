@@ -28,18 +28,18 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
 ├── .github/workflows/ci.yml   CI com serviço pgvector e pytest
 ├── data/raw/                  CSVs (FORA do Git) + diretorio.md
 ├── db/                        SQL que roda sozinho na 1ª criação do banco
-│   ├── 01_schema_bondora.sql           emprestimo, cliente, historico_credito + CREATE EXTENSION vector
-│   ├── 02_schema_macro.sql             euribor_mensal, selic_mensal, bc_credito_pessoal_mensal + vw_custo_do_dinheiro
-│   ├── 03_view_modelagem.sql           vw_base_modelagem (recorte + alvo + conjunto)
-│   ├── 04_view_retorno_realizado.sql   vw_retorno_realizado (backtest e ROI)
-│   └── 05_decisoes_analista.sql        tabela das decisões do analista
+│   ├── 01_schema_bondora.sql     emprestimo, cliente, historico_credito + CREATE EXTENSION vector
+│   ├── 02_schema_macro.sql       euribor_mensal, selic_mensal, bc_credito_pessoal_mensal + vw_custo_do_dinheiro
+│   ├── 03_view_modelagem.sql     vw_base_modelagem (recorte + alvo + conjunto)
+│   ├── 04_view_retorno_realizado.sql  vw_retorno_realizado (backtest e ROI)
+│   └── 05_…sql                   [EM ANDAMENTO] (Marcos) tabela das decisões do analista; nome do arquivo a confirmar
 ├── docs/
 │   ├── DECISOES.md              decisões de modelagem numeradas, com o porquê
 │   ├── glossario.md             siglas e termos
 │   ├── qualidade_dados.md       relatório gerado por script (erros × alertas)
 │   ├── exemplos_prever.json     exemplos ilustrativos da saída do prever(), um por situação
 │   ├── casos_de_teste.json      casos REAIS da saída do prever(), 2 por situação (casos_de_teste())
-│   ├── bpmn/                    processo em BPMN (.bpmn + imagem), manter só a versão vigente
+│   ├── bpmn/                    processo em BPMN: auditor_preco_justo_v2 (.bpmn + .jpeg)
 │   ├── figuras/                 gráficos da EDA (PNG numerados 01_, 02_ ...)
 │   └── resultados/              métricas versionadas (JSON) + arquivos do lote da carteira
 ├── genai/
@@ -59,6 +59,7 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
 │   └── modelos/   dados, variaveis, treino, xgb, prever, incerteza, segmentacao
 ├── modelos_salvos/              pacote_prever_v1.joblib (FORA do Git) + .gitkeep
 ├── infra/                       (reservado)
+├── skills/                      guia do projeto por setor (este conjunto)
 └── tests/
     ├── api/       test_api
     ├── app/       test_componentes, test_carteira
@@ -79,16 +80,11 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
    - regras dos dados → `DATA.md`.
    Os outros arquivos **importam** ou **citam**; não copiam.
 5. Notebooks numerados por etapa; figuras da EDA numeradas em `docs/figuras/`; métricas em `docs/resultados/<nome>_vN.json`.
-6. Arquivo removido não deixa órfão: não existem mais `src/api/security.py` nem `src/db/` (pseudonimização fica só na carga; a conexão da API com o banco volta junto com a tabela de decisões).
+6. **Uma versão vigente por artefato.** Versão antiga sai do repositório (o Git guarda o histórico); nada de `_v1` e `_v2` lado a lado sem dizer qual vale.
+7. **Nada sem uso.** Arquivo, função, constante ou dependência que ninguém usa sai no mesmo PR que a tornou inútil. A pseudonimização existe só na carga; a conexão da API com o banco volta junto com a tabela de decisões.
 
 ## Pronto quando
 
 - `pytest tests/` coleta todos os testes sem erro de import.
 - `streamlit run src/app/main.py` e `uvicorn src.api.main:app` sobem a partir da raiz.
 - `git status` não mostra `.env`, CSVs nem `.joblib`.
-
-## Armadilhas
-
-- Copiar os modelos pydantic para a API em vez de importá-los da GenAI (as cópias divergiram e quebraram o parecer).
-- Deixar duas versões do mesmo artefato (ex.: BPMN v1 e v2) sem dizer qual vale.
-- Arquivo de documentação que contradiz o do dono do setor: corrija o seu, não crie um terceiro.

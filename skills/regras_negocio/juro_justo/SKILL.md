@@ -58,12 +58,5 @@ Custo total no fluxo: `euribor + margem_da_safra`. Sensibilidade documentada: ma
 
 - **[PRONTO]** convenção nominal, LGD por país, margem por safra, contratos sem data.
 - **[EM ANDAMENTO] (Samuel, até 09/11)** margem de incerteza por **bootstrap por cliente** (`incerteza.py`: 20 reamostras, IC 95% da PD e do juro justo) no lugar do ±2 pp; preencher `pd_ic95`.
-- **[EM ANDAMENTO] (Samuel)** `juro_pares_mediana`: mediana do juro cobrado dos **pares** (faixa × país × ano, mínimo de 30 contratos), como **segunda opinião**. Não muda a `situacao_preco`.
+- **[EM ANDAMENTO] (Samuel, até 09/11)** `juro_pares_mediana`: mediana do juro cobrado **no treino** dos pares (mesma faixa A–E × país × ano, mínimo de 30 contratos por grupo); ano mais novo que o treino → último disponível; em fração; `null` sem grupo. É **segunda opinião**: não muda a `situacao_preco`.
 - **[A DECIDIR]** a margem de 2016 (31,66%) é alta porque absorve a subestimação do default nesse ano. Aplicá-la a 2017–2021 e aos contratos novos pode empurrar quase toda a carteira para "abaixo do justo". Padrão até a decisão: manter e declarar como limitação; conferir a distribuição acima/dentro/abaixo da carteira antes da demo.
-
-## Armadilhas
-
-- Misturar convenções: juro justo efetivo comparado com juro cobrado nominal (corrigido em 05/11).
-- Esquecer de dividir `juro_aa` por 100.
-- Usar a série do BC para calibrar preço (ela é só contexto, e é efetiva).
-- Euribor negativa sem piso em zero.

@@ -25,7 +25,8 @@ from src.app.componentes import (PAISES, RECOMENDACOES, SITUACOES, badge, badge_
                                  html_tabela_equidade, kpis_revisao, pct)
 
 FUSO = timezone(timedelta(hours=-3))
-EXEMPLOS_PREVER = RAIZ / "docs" / "exemplos_prever.json"
+CASOS_REAIS = RAIZ / "docs" / "casos_de_teste.json"          # saídas reais do prever() (Samuel)
+EXEMPLOS_PREVER = RAIZ / "docs" / "exemplos_prever.json"     # reserva: exemplos ilustrativos
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA E API
@@ -336,10 +337,14 @@ def guardar_resultado(resultado: dict, contexto: dict) -> None:
 
 
 @st.cache_data(show_spinner=False)
-def carregar_exemplos() -> list[dict]:
-    if not EXEMPLOS_PREVER.exists():
-        return []
-    return json.loads(EXEMPLOS_PREVER.read_text(encoding="utf-8"))
+def carregar_exemplos() -> tuple[list[dict], bool]:
+    """(casos, reais). Usa os casos reais do prever(); se não houver, os ilustrativos."""
+    if CASOS_REAIS.exists():
+        por_situacao = json.loads(CASOS_REAIS.read_text(encoding="utf-8"))
+        return [caso for lista in por_situacao.values() for caso in lista], True
+    if EXEMPLOS_PREVER.exists():
+        return json.loads(EXEMPLOS_PREVER.read_text(encoding="utf-8")), False
+    return [], False
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -427,7 +432,7 @@ with area:
         status = status_api()
         if status is None:
             md(f'<span class="ap-status"><i class="ap-dot" style="background:#d9825b"></i>'
-               f'API fora do ar ({esc(API_BASE)}). Os exemplos ilustrativos continuam disponíveis.</span>')
+               f'API fora do ar ({esc(API_BASE)}). Os casos de exemplo continuam disponíveis.</span>')
         elif not status.get("modelo_carregavel", True):
             md('<span class="ap-status"><i class="ap-dot" style="background:#e8a462"></i>'
                'API no ar, mas o arquivo do modelo não está em modelos_salvos/.</span>')
@@ -689,7 +694,9 @@ def render_revisao(r: dict, ctx: dict) -> None:
                         eur(ctx["valor"]) if ctx.get("valor") else None,
                         f"{ctx['prazo']} meses" if ctx.get("prazo") else None) if p]
     chips = []
-    if ctx.get("ilustrativo"):
+    if ctx.get("caso_real"):
+        chips.append('<span class="ap-chip ap-chip-gold">Caso real da base</span>')
+    elif ctx.get("ilustrativo"):
         chips.append('<span class="ap-chip ap-chip-gold">Exemplo ilustrativo</span>')
     if ctx.get("origem") == "carteira":
         chips.append('<span class="ap-chip ap-chip-gold">Aberto da carteira</span>')
@@ -744,7 +751,7 @@ def render_revisao(r: dict, ctx: dict) -> None:
 # 6.3 Aba: revisão de contrato
 # ------------------------------------------
 with aba_revisao:
-    modo = st.radio("Origem do contrato", ["Novo contrato (formulário)", "Exemplo ilustrativo"],
+    modo = st.radio("Origem do contrato", ["Novo contrato (formulário)", "Caso de exemplo"],
                     horizontal=True, key="modo_revisao", label_visibility="collapsed")
 
     if modo == "Novo contrato (formulário)":
@@ -759,23 +766,24 @@ with aba_revisao:
                 guardar_resultado(resposta, {"pais": payload["country"], "data": payload["data_emprestimo"],
                                              "valor": payload["amount"], "prazo": payload["loan_duration"]})
     else:
-        exemplos = carregar_exemplos()
+        exemplos, reais = carregar_exemplos()
         if not exemplos:
-            st.info("Arquivo docs/exemplos_prever.json não encontrado.")
+            st.info("Nenhum caso encontrado em docs/casos_de_teste.json nem em docs/exemplos_prever.json.")
         else:
+            origem = ("Contratos reais da base, já pontuados pelo prever() (docs/casos_de_teste.json), dois por situação."
+                      if reais else "Saídas ilustrativas do prever() (docs/exemplos_prever.json), uma por situação.")
             with st.container(border=True):
-                md("""<div class="audit-eyebrow">MODO DEMONSTRAÇÃO</div>
-                    <div class="ap-card-sub">Saídas de exemplo do prever() (docs/exemplos_prever.json), uma por situação de preço.
-                    Útil para a demo e para conferir a tela sem o modelo carregado.</div>""")
-                opcoes = {f'{e["contrato_id"]} · {SITUACOES[e["situacao_preco"]]["rotulo"]}': e for e in exemplos}
-                escolha = st.selectbox("Exemplo", list(opcoes), key="exemplo_escolhido")
-                if st.button("Abrir exemplo", key="abrir_exemplo", type="primary"):
+                md(f"""<div class="audit-eyebrow">MODO DEMONSTRAÇÃO</div>
+                    <div class="ap-card-sub">{origem} Útil para a demo e para conferir a tela sem o modelo carregado.</div>""")
+                opcoes = {f'{SITUACOES[e["situacao_preco"]]["rotulo"]} · {e["contrato_id"][:13]}': e for e in exemplos}
+                escolha = st.selectbox("Caso", list(opcoes), key="exemplo_escolhido")
+                if st.button("Abrir caso", key="abrir_exemplo", type="primary"):
                     exemplo = dict(opcoes[escolha])
                     parecer, erro = chamar_api("/parecer", exemplo)
                     exemplo["parecer_ia"] = parecer  # sem API: abre só com os números
                     if erro:
                         st.caption(f"Parecer indisponível: {erro}")
-                    guardar_resultado(exemplo, {"ilustrativo": True})
+                    guardar_resultado(exemplo, {"ilustrativo": True, "caso_real": reais})
 
     if st.session_state.audit_last_error:
         st.error(st.session_state.audit_last_error)
@@ -799,7 +807,7 @@ def kpis_carteira(res: dict | None) -> None:
         ("Pago a mais pelos clientes", "€ [VALOR]" if vazio else eur(res["pago_a_mais_eur"]),
          "soma acima da margem de incerteza", None),
         ("Perda não coberta", "€ [VALOR]" if vazio else eur(res["perda_nao_coberta_eur"]),
-         "contratos baratos para o risco", None),
+         "abaixo do justo · só contratos encerrados", None),
     ]
     for coluna, (rotulo, valor, sub, cor) in zip(st.columns(5, gap="small"), cartoes):
         with coluna:

@@ -17,6 +17,7 @@ import pandas as pd
 
 # Ajuste este import para onde o script do Marcos estiver no repositório.
 from src.dados.carga_bondora import TABELAS, _carregar_env, _converter
+from src.dados.moeda import antes_do_euro, coroas_para_euros
 
 RAIZ = Path(__file__).resolve().parents[2]
 CSV_PADRAO = RAIZ / "data" / "raw" / "LoanData_Bondora.csv"
@@ -30,7 +31,8 @@ def ler_base(caminho: Path = CSV_PADRAO) -> pd.DataFrame:
     """Uma linha por contrato, com os nomes e tipos das tabelas do banco.
 
     Precisa da CLIENTE_ID_SAL (a mesma do grupo) no .env da raiz do projeto,
-    para o cliente_id sair igual ao do banco.
+    para o cliente_id sair igual ao do banco. Renda e passivos da Estônia até
+    31/12/2010 são convertidos de coroas para euros (src/dados/moeda.py), como na carga.
     """
     _carregar_env(str(RAIZ / ".env"))
     bruto = pd.read_csv(caminho, dtype=str, keep_default_na=False,
@@ -47,6 +49,9 @@ def ler_base(caminho: Path = CSV_PADRAO) -> pd.DataFrame:
             colunas[col.db] = convertido
     df = pd.DataFrame(colunas)
     df["data_emprestimo"] = pd.to_datetime(df["data_emprestimo"], errors="coerce")
+    # coroas → euros (Estônia até 2010), igual à carga do banco          ← NOVO
+    antes = antes_do_euro(df["data_emprestimo"], df["pais"])               # ← NOVO
+    df = coroas_para_euros(df, antes)                                      # ← NOVO
     return df
 
 

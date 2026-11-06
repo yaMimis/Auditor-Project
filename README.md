@@ -1,6 +1,6 @@
 # Auditor de Preço Justo
 
-Projeto integrador do bootcamp de IA aplicada (segmento BFSI, TCS). Para cada contrato de crédito, o sistema estima o risco de inadimplência, diz se o juro cobrado é justo para esse risco e verifica se clientes com o mesmo risco pagam juros diferentes por gênero, idade ou país. Um parecer gerado por IA, apoiado em normas brasileiras, explica o resultado ao analista, que decide.
+Projeto integrador do bootcamp de IA aplicada (segmento BFSI, TCS). Para cada contrato de crédito, o sistema estima o risco de inadimplência, diz se o juro cobrado é justo para esse risco e verifica se clientes com o mesmo risco pagam juros diferentes por gênero ou idade (país entra no modelo como controle, não como grupo auditado). Um parecer gerado por IA, apoiado em normas brasileiras, explica o resultado ao analista, que decide.
 
 Status: em desenvolvimento. Entrega dos arquivos em 19/11/2026 e apresentação em 21/11/2026.
 
@@ -14,34 +14,35 @@ Status: em desenvolvimento. Entrega dos arquivos em 19/11/2026 e apresentação 
 
 Contrato → modelo de risco (PD, probabilidade de default) → juro justo por fluxo de caixa → comparação com o juro cobrado → busca das normas (RAG, geração aumentada por recuperação) → parecer em JSON → checagem dos números contra a API → painel do analista → decisão humana.
 
-| Camada | Tecnologias previstas |
+| Camada | Tecnologias |
 | --- | --- |
 | Dados | pandas, pandera, PostgreSQL, SQLAlchemy |
 | Vetores | pgvector, no mesmo PostgreSQL |
-| Modelo | scikit-learn, XGBoost, SHAP, statsmodels, fairlearn |
-| Parecer | LangChain, API de LLM, embeddings multilíngues |
+| Modelo | scikit-learn, XGBoost, SHAP, scipy |
+| Parecer | Gemini (`google-genai`), sentence-transformers multilíngue, prompts versionados |
 | Serviço e app | FastAPI, Streamlit |
-| Infra e qualidade | Docker Compose, pytest, ruff, GitHub Actions |
+| Infra e qualidade | Docker Compose, pytest, black, flake8, GitHub Actions |
 
 ## Estrutura
 
 ```
 data/raw/     arquivos de dados (fora do Git)
 db/           esquemas SQL; rodam sozinhos na primeira criação do banco
-docs/         decisões de modelagem (DECISOES.md)
-genai/        formato JSON e regras do parecer
-notebooks/    análises exploratórias e de coortes
+docs/         decisões de modelagem (DECISOES.md), glossário, BPMN, resultados
+genai/        formato JSON, regras, normas, prompts e código do parecer
+notebooks/    EDA e etapas do modelo (coortes, variáveis, XGBoost, LGD, margem)
 src/api/      API FastAPI
 src/app/      painel Streamlit
 src/dados/    cargas do Bondora e das séries de juros
-src/db/       conexão e modelos do banco
-src/modelos/  modelo de risco e juro justo
+src/modelos/  modelo de risco e juro justo (prever())
+modelos_salvos/  pacote do modelo (.joblib, fora do Git)
+skills/       guia do projeto por setor, para pessoas e para IA
 tests/        testes
 ```
 
 ## Como rodar
 
-Pré-requisitos: Git, Python 3.11 e Docker Desktop.
+Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
 1. Clone o repositório e instale as dependências:
    ```
@@ -49,7 +50,7 @@ Pré-requisitos: Git, Python 3.11 e Docker Desktop.
    cd Auditor-Project
    python -m venv .venv
    .venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
    No Mac ou Linux, ative com `source .venv/bin/activate`.
 
@@ -69,7 +70,7 @@ Pré-requisitos: Git, Python 3.11 e Docker Desktop.
 
 4. **Banco.** Suba o PostgreSQL com pgvector:
    ```
-   docker compose up -d db
+   docker compose up -d postgres
    ```
    Na primeira criação, os arquivos de `db/` rodam sozinhos e criam a extensão, as tabelas e as views. Em um banco já existente, aplique-os à mão ou use `--ddl` nas cargas.
 
@@ -80,17 +81,24 @@ Pré-requisitos: Git, Python 3.11 e Docker Desktop.
    ```
    Esperado: 179.235 contratos e 85.087 clientes distintos.
 
-6. **API.** `docker compose up --build api` e abra http://localhost:8000/docs. O painel Streamlit ainda está em desenvolvimento.
+6. **API e painel.** Coloque `pacote_prever_v1.joblib` em `modelos_salvos/` (fora do Git; peça ao Samuel) e suba:
+   ```
+   docker compose up --build api streamlit
+   ```
+   - Painel: http://localhost:8501 (sem o modelo, use os exemplos da aba de revisão)
+   - API: http://localhost:8000/docs (`GET /` informa se o modelo foi carregado)
+   - Para os dados da carteira, o painel lê `docs/resultados/carteira_auditoria.csv` e `equidade.json`.
 
 ## Documentação
 
 - [`DATA.md`](DATA.md): regras dos dados (alvo, recorte, divisão treino e teste, colunas proibidas, fontes externas, privacidade e limitações).
 - [`docs/DECISOES.md`](docs/DECISOES.md): decisões de modelagem.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
+- [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 
 ## Governança e ética
 
-- Gênero e idade (e estado civil e dependentes, se aprovado) servem só para auditar, nunca para decidir.
+- Gênero, idade, estado civil e dependentes servem só para auditar, nunca para decidir. País entra no modelo como controle e não é grupo auditado.
 - O sistema nunca decide sozinho: o analista decide e pode encaminhar ao compliance (direito de revisão, LGPD art. 20).
 - O parecer fala em indício e ponto de atenção, nunca em ilegalidade, e seus números são checados contra a API.
 - Identificadores não vão para o LLM nem para os slides; o `cliente_id` é pseudonimizado.
@@ -110,4 +118,5 @@ Pré-requisitos: Git, Python 3.11 e Docker Desktop.
 Cada frente registra aqui como usou assistentes de IA (agentic coding) e como revisou o resultado.
 
 - **Dados:** os scripts de carga, os esquemas SQL e a documentação foram escritos com apoio do Claude e revisados e testados pelo responsável da frente.
-- **Modelo, GenAI e App:** a completar por cada frente.
+- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas.
+- **Modelo e GenAI:** a completar por cada frente.

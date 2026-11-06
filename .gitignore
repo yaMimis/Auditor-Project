@@ -7,6 +7,7 @@ myenv/
 .VSCode/
 data/raw/*.csv
 data/raw/*.md
+!data/raw/diretorio.md
 data/clean/*.csv
 docker-compose.override.yml
 *.joblib

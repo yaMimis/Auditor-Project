@@ -66,7 +66,7 @@ O modelo **subestima o default de 2016 em todas as faixas**: registrar como limi
 - Faixas por PD: `< 0,30 → A`, `< 0,45 → B`, `< 0,60 → C`, `< 0,75 → D`, senão `E`.
 - **Revisão manual** quando os dados estão fora da faixa de treino: país não visto, ou `valor_concedido`, `prazo_meses`, `renda_total` vazios ou fora dos quantis 0,5%–99,5% do treino. Aí `pd`, `faixa` e juros justos vêm `null`, `motivos = []`, `alerta_dados = true` (sempre juntos).
 - **Motivos:** top 5 fatores SHAP `{variavel, rotulo, efeito ∈ {aumenta_risco, reduz_risco}, valor, peso}`; **nunca** país, gênero ou idade.
-- Pacote salvo (`modelos_salvos/pacote_prever_v1.joblib`): modelo, referência do treino (renda relativa e categorias), faixas do treino, países conhecidos e série Euribor 12m.
+- Pacote salvo (`modelos_salvos/pacote_prever_v1.joblib`): modelo, referência do treino (renda relativa e categorias), faixas do treino, países conhecidos, série Euribor 12m e os modelos do bootstrap. **LGD, margem por safra e a convenção i/12 ficam no código do `prever.py`, não no pacote.** O pacote só muda quando o modelo é retreinado ou a Euribor é atualizada; o Samuel avisa o grupo.
 
 ## Segmentação (K-Means, descritiva)
 
@@ -82,11 +82,6 @@ O modelo **subestima o default de 2016 em todas as faixas**: registrar como limi
 ## Estado em 06/11/2026
 
 - **[PRONTO]** XGBoost oficial de 05/11, `prever()` v2, `casos_de_teste()` (`docs/casos_de_teste.json`, 2 casos reais por situação).
-- **[PENDENTE] (Samuel)** teste do `prever()` real com modelo pequeno treinado no próprio teste, cobrindo as 4 situações.
+- **[EM ANDAMENTO] (Samuel, próximo PR)** teste do `prever()` real com um modelo pequeno treinado no próprio teste, rodando `casos_de_teste()` e cobrindo as 4 situações (a CI não tem o `.joblib`). No mesmo PR: a tabela do `DECISOES.md` passa a listar as 7 colunas indisponíveis.
+- `prever()` v2 no PR #41.
 - **[A DECIDIR]** nome da versão: o modelo foi retreinado em 05/11, mas `VERSAO` continua `"xgboost_v2"`. Como a versão é gravada em pareceres e decisões, a escolha padrão é usar uma versão nova a cada retreino.
-
-## Armadilhas
-
-- Usar o ano como variável (o efeito de época vem da Euribor e da margem por safra).
-- Calcular medianas, quantis ou categorias com a base inteira em vez de só o treino.
-- Ajustar calibração ou escolher variável olhando o teste de 2016.

@@ -203,28 +203,53 @@ TEMPO_EMPREGO = {
     "UpTo3Years": "até 3 anos", "UpTo4Years": "até 4 anos", "UpTo5Years": "até 5 anos",
     "MoreThan5Years": "mais de 5 anos", "Retiree": "aposentado", "Other": "outro",
 }
-EM_EURO = {"valor_concedido", "renda_total", "valor_emprestimos_anteriores", "pagamentos_anteriores",
-           "quitacoes_antecipadas_valor"}
+# Códigos do dicionário do Bondora (conferir com o glossário do Marcos).
+CODIGOS = {
+    "escolaridade": {"1": "fundamental", "2": "básico", "3": "técnico", "4": "médio", "5": "superior"},
+    "tipo_verificacao": {"1": "renda não verificada", "2": "renda conferida por telefone",
+                         "3": "renda verificada", "4": "renda e despesas verificadas"},
+    "tipo_moradia": {"0": "sem moradia", "1": "própria", "2": "com os pais", "3": "aluguel mobiliado",
+                     "4": "aluguel sem mobília", "5": "moradia social", "6": "aluguel compartilhado",
+                     "7": "propriedade conjunta", "8": "financiada", "9": "própria com ônus", "10": "outra"},
+}
+EM_EURO = {"valor_concedido", "renda_total", "valor_emprestimos_anteriores"}
+VEZES_A_RENDA = {"valor_sobre_renda", "divida_sobre_renda"}  # podem passar de 1: "6,1× a renda"
+QUANTIDADES = {"passivos_existentes", "n_emprestimos_anteriores", "quitacoes_antecipadas_qtd"}
+
+
+def _codigo(valor) -> str:
+    """'5', 5, 5.0 e '5.0' viram '5'."""
+    try:
+        return str(int(float(valor)))
+    except (TypeError, ValueError):
+        return str(valor)
 
 
 def valor_legivel(variavel: str, valor) -> str | None:
     """Valor do motivo como o analista lê (None = não mostrar)."""
     if valor is None or str(valor) in ("", "sem_info", "outros", "nan", "None", "<NA>"):
         return None
-    if variavel.endswith("_sobre_renda"):
-        return pct(float(valor), 0)
+    if variavel in VEZES_A_RENDA:
+        return f"{_num(float(valor), 1)}× a renda mensal"
+    if variavel == "parcela_neutra_sobre_renda":
+        return f"{pct(float(valor), 0)} da renda"
     if variavel == "renda_relativa":
         return f"{_num(float(valor), 1)}× a mediana do país"
     if variavel in EM_EURO:
         return eur(float(valor))
     if variavel == "prazo_meses":
-        return f"{int(float(valor))} meses"
+        return f"{_codigo(valor)} meses"
+    if variavel in QUANTIDADES:
+        return _codigo(valor)
     if variavel == "tempo_emprego_atual":
         return TEMPO_EMPREGO.get(str(valor), str(valor))
+    if variavel in CODIGOS:
+        return CODIGOS[variavel].get(_codigo(valor), _codigo(valor))
     if variavel == "novo_cliente":
         return "sim" if str(valor).lower() in ("true", "1", "sim") else "não"
-    if isinstance(valor, float):
-        return _num(valor, 2 if abs(valor) < 10 else 0)
+    if isinstance(valor, float) or variavel == "score_ee_mini":
+        numero = float(valor)
+        return _num(numero, 0 if numero.is_integer() or abs(numero) >= 10 else 2)
     return str(valor)
 
 

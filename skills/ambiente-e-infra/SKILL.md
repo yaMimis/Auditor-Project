@@ -13,8 +13,7 @@ Qualquer pessoa do grupo sobe banco, API e painel com os mesmos comandos e as me
 
 ## Versão do Python e dependências
 
-- **[A DECIDIR]** Versão do Python. Hoje: Dockerfile e CI em **3.11**, Yasmin em **3.12.10**, notebooks do Samuel em **3.14.5**. As versões abaixo exigem **Python ≥ 3.12** (o NumPy 2.5 não instala em 3.11).
-  - Escolha padrão: **3.12** no Dockerfile, na CI e no README, desde que o `.joblib` abra no 3.12 com as versões fixas. Se não abrir, usar a versão do Samuel (3.14).
+- **Python 3.14** (`python:3.14-slim`) no Dockerfile, na CI e no README: é o do Samuel (3.14.5), onde o `.joblib` foi gerado. Recomendado também na `.venv` local.
 - Versões **fixas** no `requirements.txt` (as mesmas com que o `.joblib` foi gerado; sem elas o modelo pode não carregar):
   ```
   joblib==1.6.0
@@ -26,8 +25,10 @@ Qualquer pessoa do grupo sobe banco, API e painel com os mesmos comandos e as me
   xgboost==3.4.1
   ```
 - `requirements-dev.txt`: `-r requirements.txt` + pytest, pytest-cov, `httpx` **e `httpx2`** (o TestClient do Starlette atual exige o `httpx2`), linters.
-- `requirements-genai.txt`: `-r requirements.txt` + sentence-transformers e torch CPU (`--extra-index-url https://download.pytorch.org/whl/cpu`). **[PENDENTE]** acrescentar `google-genai` (cliente do Gemini).
-- Toda mudança de versão de biblioteca usada pelo modelo exige gerar o `.joblib` de novo.
+- `requirements-genai.txt`: `-r requirements.txt` + sentence-transformers, torch CPU (`--extra-index-url https://download.pytorch.org/whl/cpu`) e `google-genai` (cliente do Gemini).
+- **Documentação e requirements alinhados:** toda biblioteca citada no README está nos requirements, e todo requirement é importado por algum arquivo ou é ferramenta (pytest, linters, uvicorn).
+- O `.joblib` só abre com numpy 2.5.4, pandas 3.1.0, scikit-learn 1.9.1 e xgboost 3.4.1. Toda mudança de versão dessas bibliotecas exige gerar o `.joblib` de novo.
+- Na CI basta `pip install -r requirements-dev.txt` (ele já inclui o `requirements.txt`).
 
 ## Ambiente local
 
@@ -47,7 +48,7 @@ Porta 5432 ocupada → `docker-compose.override.yml` local com 5433 e ajustar a 
 
 ## Docker
 
-- `Dockerfile`: `python:<versão decidida>-slim` + `build-essential` + `libpq-dev`; instala `requirements.txt`; `COPY . .`; `CMD uvicorn src.api.main:app --host 0.0.0.0 --port 8000`.
+- `Dockerfile`: `python:3.14-slim` + `build-essential` + `libpq-dev`; instala `requirements.txt`; `COPY . .`; `CMD uvicorn src.api.main:app --host 0.0.0.0 --port 8000`.
 - **[PENDENTE]** Para o parecer com IA, a imagem da API precisa também de `requirements-genai.txt` (busca nas normas + Gemini). Sem isso, o `gerar_parecer()` sempre cai para o template.
 - `.dockerignore`: `.env`, `.venv`, `data/raw/*`, `*.joblib`, caches.
 
@@ -75,7 +76,7 @@ Os SQL de `db/` só rodam sozinhos na **primeira criação** do volume. Em banco
 
 - Em push e PR para `main`.
 - Serviço `pgvector/pgvector:pg16` com healthcheck `pg_isready`.
-- Python na versão decidida, com cache de pip; instala `requirements.txt` + `requirements-dev.txt`.
+- Python 3.14 com cache de pip; instala `requirements-dev.txt`.
 - `pytest tests/ -v` com `DATABASE_URL` do banco temporário.
 - Testes que exigem CSV ou `.joblib` se pulam sozinhos.
 
@@ -84,10 +85,3 @@ Os SQL de `db/` só rodam sozinhos na **primeira criação** do volume. Em banco
 - `pytest tests/ -v` passa localmente e na CI.
 - `docker compose up --build api streamlit` sobe sem erro; `GET /` mostra `modelo_carregavel: true`; o painel roda uma auditoria pelo formulário.
 - O README descreve exatamente esses comandos.
-
-## Armadilhas
-
-- README mandando subir `db` enquanto o compose chama o serviço de `postgres`.
-- Versões soltas (`>=`) no `requirements.txt`: o Docker instala versões mais novas que as do `.joblib` e o modelo não abre.
-- Dependência citada na documentação e ausente nos requirements (aconteceu com LangChain e ruff).
-- Esquecer `httpx2`: o teste da API passa num computador e quebra em outro.

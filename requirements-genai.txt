@@ -1,6 +1,7 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-# requirements-genai.txt
+# requirements-genai.txt: busca nas normas (RAG) e chamada ao LLM do parecer
 -r requirements.txt
 sentence-transformers>=2.3.0
 torch>=2.0.0
+google-genai      # cliente do Gemini (genai/src/testar_llm.py e gerar_parecer)

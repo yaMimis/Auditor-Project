@@ -70,6 +70,16 @@ def test_parecer_de_saida_pronta(cliente, situacao):
     assert r.json()["recomendacao"] == esperado[situacao]
 
 
+def test_data_padrao_hoje_e_sem_futuro(cliente, monkeypatch):
+    from datetime import date, timedelta
+    enviado = {}
+    _troca_prever(monkeypatch, POR_SITUACAO["dentro_da_margem"], enviado)
+    assert cliente.post("/prever", json=PAYLOAD).status_code == 200
+    assert enviado["data_emprestimo"] == date.today().isoformat()
+    futuro = (date.today() + timedelta(days=1)).isoformat()
+    assert cliente.post("/prever", json={**PAYLOAD, "data_emprestimo": futuro}).status_code == 422
+
+
 def test_sem_modelo_responde_503(cliente, monkeypatch):
     def sem_arquivo(contrato):
         raise FileNotFoundError

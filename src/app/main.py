@@ -38,7 +38,7 @@ st.set_page_config(
 )
 
 API_BASE = os.getenv("API_URL", "http://localhost:8000")
-TIMEOUT_S = 15
+TIMEOUT_S = 30  # cobre a busca nas normas + LLM (20 s) + queda para o template
 
 # ==========================================
 # 2. ESTILIZAÇÃO CSS CUSTOMIZADA (FINTECH / LEGAL-TECH)
@@ -268,7 +268,7 @@ DEFAULT_INPUTS = {
     "amount": 5000.0,
     "interest": 24.5,
     "loan_duration": 36,
-    "data_emprestimo": date(2021, 7, 1),
+    "data_emprestimo": date.today(),
     "liabilities_total": 450.0,
 }
 for field_name, default_value in DEFAULT_INPUTS.items():
@@ -549,8 +549,9 @@ def formulario() -> bool:
                 audit_number("Juro cobrado (% a.a.)", "interest", min_value=0.0, max_value=500.0, step=0.5, format="%.2f")
                 audit_slider("Prazo do contrato (meses)", "loan_duration", min_value=3, max_value=60, step=1)
                 audit_date("Data de concessão", "data_emprestimo", min_value=date(2009, 1, 1),
-                           max_value=date(2021, 7, 31), format="DD/MM/YYYY")
-                st.markdown('<div class="audit-note">A Euribor disponível vai de 01/2009 a 07/2021. '
+                           max_value=date.today(), format="DD/MM/YYYY")
+                st.markdown('<div class="audit-note">O custo do dinheiro é a Euribor 12 meses do mês da concessão. '
+                            'Para meses após o fim da série, o modelo usa o último valor disponível. '
                             'Juros acima de 100% a.a. existem na base e são legítimos.</div>', unsafe_allow_html=True)
                 audit_review_checkbox("loan")
 

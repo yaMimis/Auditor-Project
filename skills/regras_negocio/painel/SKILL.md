@@ -27,24 +27,24 @@ Dar ao analista, em uma tela, **o risco, o preço, o porquê e o parecer** de ca
 
 ### Aba 1 — Revisão de contrato
 
-- Origem: **Novo contrato (formulário)** ou **Exemplo ilustrativo** (`docs/exemplos_prever.json` via `/parecer`).
+- Origem: **Novo contrato (formulário)** ou **Caso de exemplo**: os 8 casos reais de `docs/casos_de_teste.json` (reserva: `docs/exemplos_prever.json`), abertos com parecer via `/parecer`.
 - **Formulário em 3 etapas**, com "Confirmo que revisei" por etapa, barra de progresso REVISADO/PENDENTE e resumo do pedido:
   - 01 Dados pessoais: idade, gênero (0 Masculino · 1 Feminino · 2 Não informado; só auditoria), país (EE/FI/ES), renda mensal (€)
   - 02 Empréstimo: ID, valor (€), juro cobrado (% a.a.), prazo (3–60 meses), data de concessão (01/01/2009 até hoje; padrão hoje)
   - 03 Dívidas & histórico: total de dívidas (€); os demais campos seguem "sem informação"
   - Botão "⚖️ EXECUTAR AUDITORIA DE PREÇO".
 - **Resultado:**
-  - cabeçalho: contrato, país, data, valor, prazo, etiqueta da situação, chips ("Custo do dinheiro: Euribor da época", "Parecer: análise hipotética pela lei brasileira", versão do modelo, "Exemplo ilustrativo" ou "Aberto da carteira");
+  - cabeçalho: contrato, país, data, valor, prazo, etiqueta da situação, chips ("Custo do dinheiro: Euribor da época", "Parecer: análise hipotética pela lei brasileira", versão do modelo, "Caso real da base", "Exemplo ilustrativo" ou "Aberto da carteira");
   - 4 cartões: risco de inadimplência (PD, IC 95% quando houver, faixa) · juro cobrado · juro justo com margem · situação do preço (cor da situação, pp além da margem);
   - **régua** "Juro cobrado × juro justo": faixa da margem, marca do justo acima, marca do cobrado abaixo, escala que cresce com juros > 100%; some em revisão manual (aparece um aviso no lugar);
-  - **motivos** (SHAP): barras com o peso relativo, cor pelo efeito, rótulo + valor legível;
+  - **motivos** (SHAP): barras com o peso relativo, cor pelo efeito, rótulo + valor legível (`valor_legivel`: códigos viram texto, proporções da renda viram "6,1× a renda mensal", parcela vira "12% da renda", euros com ponto de milhar);
   - **parecer**: resumo, pontos de atenção, recomendação do sistema, fontes em chips (ou "Não encontrei base normativa para este caso."), origem ("Gerado por IA · revise antes de decidir" ou "Template de reserva · sem IA"), versão do texto;
   - **decisão do analista**; expander "Dados técnicos da consulta" (JSON enviado e recebido).
 
 ### Aba 2 — Auditoria da carteira
 
 - Lê `docs/resultados/carteira_auditoria.csv` e `equidade.json` (`contratos_dados`, seção 5); reestruturados fora; país nunca como grupo.
-- Filtros: período, país, faixa. Cartões: contratos auditados (+ revisão manual), % acima, % abaixo, pago a mais (€), perda não coberta (€).
+- Filtros: período, país, faixa. Cartões: contratos auditados (+ revisão manual), % acima, % abaixo, pago a mais (€, soma de `excesso_eur`), perda não coberta (€, soma de `perda_nao_coberta_eur` dos abaixo do justo; só encerrados).
 - Barras empilhadas da situação por faixa; tabela de equidade (diferença, IC 95%, leitura "Sem indício" / "Indício · investigar" e ressalvas); backtest por faixa × situação quando houver `rentabilidade_realizada`.
 - Fila de revisão ordenada pela distância da margem, 50 na tela, exportação CSV completa, "Revisar" abre o contrato na aba 1 com parecer.
 - Sem arquivos: campos entre colchetes (`[N]`, `[X%]`, `€ [VALOR]`) e a lista mostra os contratos auditados na sessão.
@@ -77,14 +77,7 @@ Tema do Streamlit (`.streamlit/config.toml`): `base="dark"`, `primaryColor="#D4A
 
 ## Estado em 06/11/2026 e pendências
 
-- **[PRONTO]** as três abas, formulário corrigido, exemplos, decisão na sessão.
-- **[PENDENTE] (Yasmin)** trocar os exemplos ilustrativos pelos **casos reais** de `docs/casos_de_teste.json`; mostrar "a.a. nominal"; rótulos legíveis para códigos (escolaridade, moradia, verificação; dependem do glossário do Marcos) e proporções da renda como "6,1× a renda".
-- **[PENDENTE] (depende de outras frentes)** `juro_pares_mediana` como referência ao lado do juro justo; `contexto_mercado` do BC no parecer; decisões gravadas no banco e marcação "já decidido" na fila; dados reais da carteira (08/11 e 09/11).
-
-## Armadilhas
-
-- Mapear gênero invertido (no banco, 0 = masculino).
-- Mandar o rótulo do país ("EE(Estônia)") em vez da sigla.
-- Fazer conta com PD nula na revisão manual.
-- Coletar campo que o modelo não pode usar (rating do Bondora, comprometimento da renda) ou que não é enviado à API.
-- Textos que prometem mais do que o sistema faz ("pareceres legais", "custo médio do BC" como base do preço).
+- **[PRONTO]** as três abas, formulário, casos reais, valores legíveis dos motivos, decisão na sessão.
+- **[A CONFIRMAR] (Marcos)** rótulos dos códigos de escolaridade, moradia e verificação (`CODIGOS` em `componentes.py`, tirados do dicionário do Bondora).
+- **[PENDENTE] (Yasmin)** mostrar "a.a. nominal" ao lado dos juros.
+- **[PENDENTE] (depende de outras frentes)** `juro_pares_mediana` como referência ao lado do juro justo ("Mediana dos pares: X%", oculto quando `null`; até 09/11); `contexto_mercado` do BC no parecer; decisões gravadas no banco e marcação "já decidido" na fila; dados reais da carteira (08/11 e 09/11).

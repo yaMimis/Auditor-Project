@@ -6,9 +6,12 @@ Arquivos esperados (pasta CARTEIRA_DIR, padrão docs/resultados/):
 carteira_auditoria.csv — uma linha por contrato pontuado
     obrigatórias: contrato_id, ano, pais, pd, faixa, juro_cobrado, juro_justo,
                   juro_justo_min, juro_justo_max, situacao_preco   (juros em fração)
-    opcionais:    valor_concedido, prazo_meses, excesso_eur, perda_nao_coberta_eur,
-                  rentabilidade_realizada (contratos encerrados, para o backtest),
-                  fora_da_auditoria (reestruturados)
+    opcionais:    valor_concedido, prazo_meses, fora_da_auditoria (reestruturados),
+                  excesso_eur: só acima_do_justo; prazo × (parcela no juro cobrado − parcela
+                      no juro_justo_max), com i/12: o que o cliente paga acima do teto da margem
+                  perda_nao_coberta_eur: só encerrados; max(0, −resultado_eur) da vw_retorno_realizado
+                  rentabilidade_realizada: retorno_realizado da vw_retorno_realizado (vazio em 2017–2021)
+    Contratos: 2016 (teste) e 2017–2021, pontuados pelo prever(). Formato aprovado pelo Samuel em 06/11.
 
 equidade.json — lista de comparações (só gênero e idade; país é controle, não grupo)
     [{"atributo": "Gênero", "comparacao": "feminino × masculino", "diferenca_pp": 0.4,

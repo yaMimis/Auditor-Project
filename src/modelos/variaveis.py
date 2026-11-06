@@ -43,9 +43,7 @@ NUMERICAS = [
     "passivos_existentes",
     # v3 (31/10): histórico e bureau. Testado com validação em 2015 (docs/DECISOES.md, seção 12):
     # saíram fracao_concedida (piorava), orçamento e composição da renda (não ajudavam).
-    "pagamentos_anteriores",
     "quitacoes_antecipadas_qtd",
-    "quitacoes_antecipadas_valor",
     "score_ee_mini",
 ]
 
@@ -57,6 +55,8 @@ TESTADAS_E_DESCARTADAS = [
     "refinanciamento_passivos",
     "renda_assistencial_sobre_renda",
     "renda_pensao_sobre_renda",
+    "pagamentos_anteriores",
+    "quitacoes_antecipadas_valor",
 ]
 CATEGORICAS = [
     "pais",

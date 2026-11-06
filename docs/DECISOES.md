@@ -1,4 +1,3 @@
-
 # DECISOES.md — Modelo de risco e juro justo
 
 **Responsável:** Samuel · **Atualizado:** 05/11/2026
@@ -96,14 +95,13 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - Euribor média de 0,9% contra juros de 20–30%: o custo do dinheiro pesa pouco;
   o juro justo depende sobretudo da perda esperada e de custos e margem.
 
-### 8.1 Custos + margem por safra (03/11)
 
-> ⚠️ Valores calibrados com a fórmula anterior (taxa efetiva) e o modelo de 03/11. **A recalibrar** com a taxa nominal e o modelo de 05/11 (notebook 08).
+### 8.1 Custos + margem por safra (recalibrada em 05/11)
 
-- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real): 2009 8,7% · 2010 14,3% · 2011 15,8% · 2012 16,8% · 2013 17,4% · 2014 5,0% · 2015 9,0% · 2016 20,5%. Ano sem safra usa 2016.
+- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real), com taxa nominal (i/12) e o modelo de 05/11: 2009 13,5% · 2010 19,7% · 2011 19,2% · 2012 19,3% · 2013 20,8% · 2014 10,8% · 2015 15,3% · 2016 31,7%. Ano sem safra usa 2016.
+- A margem de 2016 é alta porque absorve a subestimação do default nesse ano (previsto 55% × real 67%).
 - LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
-- Distribuição com ±2pp: acima 34–67%, abaixo 28–55%, dentro 4–27% por safra.
-- Pendente: avaliar calibração pela mediana junto com o bootstrap.
+- Pendente: atualizar a distribuição acima/dentro/abaixo com a margem nova e avaliar a calibração pela mediana junto com o bootstrap.
 
 ## 9. Regra de achado
 
@@ -213,7 +211,7 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - [X] 03/11: XGBoost + calibração + SHAP
 - [X] **04/11: entregar o `prever()`**
 - [X] 05/11: correção das coroas, retirada das 2 variáveis com mudança de regime, taxa nominal, contratos novos
-- [ ] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
+- [X] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
 - [ ] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
 - [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
 - [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações

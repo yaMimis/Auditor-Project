@@ -36,11 +36,12 @@ SEMENTE = 42
 N_FOLDS = 5
 
 # Variáveis de valor muito assimétrico: log antes de padronizar.
-NUMERICAS_LOG = [
+# Só as que estão em NUMERICAS (variáveis retiradas do modelo saem daqui sozinhas).
+NUMERICAS_LOG = [c for c in [
     "valor_concedido", "renda_total", "valor_emprestimos_anteriores",
     "parcela_neutra_sobre_renda", "valor_sobre_renda", "divida_sobre_renda", "renda_relativa",
     "pagamentos_anteriores", "quitacoes_antecipadas_valor",
-]
+] if c in NUMERICAS]
 NUMERICAS_LINEARES = [c for c in NUMERICAS if c not in NUMERICAS_LOG]
 
 

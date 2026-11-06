@@ -76,8 +76,25 @@ def test_leitura_equidade_pelo_intervalo():
 
 
 def test_valores_dos_motivos_legiveis():
-    assert valor_legivel("divida_sobre_renda", 0.48) == "48%"
+    assert valor_legivel("valor_sobre_renda", 6.098) == "6,1× a renda mensal"
+    assert valor_legivel("divida_sobre_renda", 0.48) == "0,5× a renda mensal"
+    assert valor_legivel("parcela_neutra_sobre_renda", 0.12) == "12% da renda"
     assert valor_legivel("tempo_emprego_atual", "MoreThan5Years") == "mais de 5 anos"
-    assert valor_legivel("prazo_meses", 60) == "60 meses"
+    assert valor_legivel("prazo_meses", 60.0) == "60 meses"
     assert valor_legivel("renda_total", 2500.0) == "€ 2.500"
+    assert valor_legivel("escolaridade", "5") == "superior"
+    assert valor_legivel("tipo_verificacao", 1) == "renda não verificada"
+    assert valor_legivel("tipo_moradia", "8") == "financiada"
+    assert valor_legivel("passivos_existentes", "4.0") == "4"
+    assert valor_legivel("score_ee_mini", 1000.0) == "1.000"
     assert valor_legivel("escolaridade", "sem_info") is None
+
+
+def test_casos_reais_mostram_motivos_sem_codigo_cru():
+    casos = json.loads((Path(__file__).resolve().parents[2] / "docs" / "casos_de_teste.json")
+                       .read_text(encoding="utf-8"))
+    for lista in casos.values():
+        for caso in lista:
+            html = html_motivos(caso["motivos"])
+            assert "escolaridade</span>" not in html  # rótulo sem valor cru
+            assert ".0<" not in html                   # nada de "4.0"

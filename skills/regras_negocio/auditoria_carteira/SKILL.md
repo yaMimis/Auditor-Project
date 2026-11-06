@@ -13,11 +13,12 @@ Responder para a carteira inteira: **o preço acompanha o risco?**, **clientes d
 
 ## Etapas
 
-1. **Pontuar:** rodar o `prever()` em cada contrato da carteira (2017 em diante; e encerrados para o backtest). Reestruturados com `fora_da_auditoria = true` ficam fora da comparação de preço.
+1. **Pontuar:** rodar o `prever()` nos contratos de **2016 (teste, encerrados)** e de **2017–2021**, depois de recalibrar a margem com a taxa nominal. Reestruturados com `fora_da_auditoria = true` ficam fora da comparação de preço.
 2. **Gravar** `docs/resultados/carteira_auditoria.csv` no formato de `contratos_dados`, seção 5, incluindo, quando possível:
-   - `excesso_eur`: quanto o cliente pagou acima da margem do juro justo, em euros;
-   - `perda_nao_coberta_eur`: quanto o juro abaixo da margem deixou de cobrir, em euros;
-   - `rentabilidade_realizada`: da `vw_retorno_realizado`, para os encerrados.
+   - `excesso_eur` (só acima do justo): `prazo × (parcela no juro cobrado − parcela no juro_justo_max)`, com i/12;
+   - `perda_nao_coberta_eur` (só encerrados): `max(0, −resultado_eur)` da `vw_retorno_realizado`;
+   - `rentabilidade_realizada` (só encerrados): `retorno_realizado` da mesma view.
+   No painel, "Pago a mais" soma `excesso_eur` dos acima do justo e "Perda não coberta" soma `perda_nao_coberta_eur` dos abaixo do justo; por isso a perda só aparece para contratos com desfecho (2016).
 3. **Equidade:** estimar a diferença de juro **entre clientes de mesmo risco** (auditoria de resíduos: `juro cobrado − juro justo`, controlando por risco, país, ano, valor e prazo), com IC 95%:
    - **Gênero:** só 0 × 1 (gênero 2 = ausente), **dentro de cada país**, janela 2013–2016 (codificação suspeita em 2017–2019).
    - **Idade:** 18–25 × 35–44 anos; contratos com idade < 18 ficam fora.
@@ -44,5 +45,5 @@ K-Means de perfis (`regras_negocio/modelo_risco`), só para descrever a carteira
 ## Estado em 06/11/2026
 
 - **[PRONTO]** `vw_retorno_realizado` e `test_view_retorno` (Marcos); leitura, filtros, resumo, fila de revisão e backtest no painel (`src/app/carteira.py`).
-- **[EM ANDAMENTO] (Samuel)** `carteira_auditoria.csv` até **08/11**; `equidade.json` e backtest até **09/11**.
+- **[EM ANDAMENTO] (Samuel)** `carteira_auditoria.csv` até **08/11** (formato aprovado em 06/11); `equidade.json` e backtest até **09/11**.
 - **[A DECIDIR]** conferir a distribuição acima/dentro/abaixo com a margem de 2016 aplicada à carteira de 2017–2021 (ver `juro_justo`).

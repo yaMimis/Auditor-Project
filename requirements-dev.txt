@@ -1,17 +1,16 @@
-# Herda todas as dependencias da aplicação
+# Herda todas as dependências da aplicação
 -r requirements.txt
 
-# Bateria de Testes
+# Bateria de testes
 pytest>=8.0.0
 pytest-cov>=4.1.0
 httpx>=0.26.0
-httpx2
+httpx2        # exigido pelo TestClient do Starlette atual
 
-# Formatadores e Linters de Código
+# Formatadores e linters de código
 black>=24.0.0
 flake8>=7.0.0
 
-# EDA e gráficos dos slides 
+# EDA e gráficos dos slides
 matplotlib
 seaborn
-python-dotenv

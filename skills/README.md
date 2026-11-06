@@ -8,8 +8,7 @@ Esta pasta descreve o projeto **por setor**, para que uma IA (ou uma pessoa nova
 4. **Regras**: requisitos. Número, nome de campo ou regra escrita aqui **é requisito, não sugestão**.
 5. **Como construir**: ordem dos passos.
 6. **Pronto quando**: testes e conferências que provam que está certo.
-7. **Estado atual e pendências**: o que já existe e o que falta (com a escolha padrão até a decisão).
-8. **Armadilhas**: erros que já aconteceram no projeto e não devem se repetir.
+7. **Estado atual e pendências**: o que já existe e o que falta (com a escolha padrão até a decisão). É a única parte que muda a cada entrega: atualize no mesmo PR que entregar ou decidir algo.
 
 Marcadores usados: **[PRONTO]** já existe e funciona · **[EM ANDAMENTO]** alguém está fazendo (nome entre parênteses) · **[PENDENTE]** ainda não começou · **[A DECIDIR]** depende de decisão do grupo (o texto diz a escolha padrão).
 

@@ -36,7 +36,7 @@ Ser a **única porta** entre o painel e o motor: recebe o formulário, converte 
 
 - `pytest.importorskip("fastapi")` e `("xgboost")`; `TestClient` (exige `httpx2`).
 - O `prever()` é trocado com `monkeypatch` por saídas de `docs/exemplos_prever.json`, então os testes rodam sem o `.joblib`.
-- Cobrem: dicionário enviado (sigla do país, prazo, juro em %, passivos, chaves presentes, sem gênero/idade); as 4 situações passam no schema; `/parecer` devolve a recomendação certa por situação; data padrão hoje e futuro → 422; sem modelo → 503.
+- Cobrem: dicionário enviado (sigla do país, prazo, juro em %, passivos, chaves presentes, sem gênero/idade); as 4 situações passam no schema; `/parecer` devolve a recomendação certa por situação; data padrão hoje e futuro → 422; sem modelo → 503; os 8 casos reais de `docs/casos_de_teste.json` passam em `/prever` e `/parecer`.
 
 ## Pronto quando
 
@@ -51,9 +51,3 @@ Ser a **única porta** entre o painel e o motor: recebe o formulário, converte 
   - `POST /decisoes` e `GET /decisoes` (gravar e listar decisões do analista; formato em `contratos_dados`, seção 6);
   - buscar `bc_credito_pessoal_aa` do mês da concessão na `vw_custo_do_dinheiro` e repassar ao `gerar_parecer()` para o `contexto_mercado`.
 - **[A DECIDIR]** rota para buscar um contrato da carteira pelo ID (o protótipo da tela tem busca por ID). Padrão: não existe; o painel usa a fila da carteira e os exemplos.
-
-## Armadilhas
-
-- Schema próprio da API divergindo do `FORMATO_JSON.md` (aconteceu: motivos sem `rotulo`, `juro_risco` inventado, campos não nulos).
-- Mock no lugar do `prever()` real esquecido no código.
-- Chave do dicionário faltando: o `prever()` quebra com `KeyError`.

@@ -22,8 +22,8 @@ LGD_PADRAO = 0.60
 LGD_POR_PAIS = {"EE": 0.34, "ES": 0.76, "FI": 0.55}   # LGD realizada, defaults 2014–2015 (notebook 07)    
 MARGEM_PADRAO = 0.05       # custos + margem ao ano, provisório
 # custos + margem ao ano por safra: média do justo = média do cobrado (notebook 08)
-MARGEM_POR_SAFRA = {2009: 0.0873, 2010: 0.1427, 2011: 0.1583, 2012: 0.1684,
-                    2013: 0.1738, 2014: 0.0497, 2015: 0.0896, 2016: 0.2046}
+MARGEM_POR_SAFRA = {2009: 0.1347, 2010: 0.1968, 2011: 0.1915, 2012: 0.1927,
+                    2013: 0.2078, 2014: 0.1076, 2015: 0.1527, 2016: 0.3166}
 MARGEM_INCERTEZA_PP = 2.0  # provisório: ± pontos percentuais
 CHECAR_FAIXA = ["valor_concedido", "prazo_meses", "renda_total"]
 

@@ -32,8 +32,8 @@ def test_prompt_tem_as_duas_mensagens_e_nao_envia_as_notas():
 
 def test_mensagem_tem_numeros_formatados_e_valores_para_numeros_citados():
     _, usuario = montar_mensagens(ENTRADA, "revisar_preco", TRECHOS)
-    assert "24,9% ao ano (juro_cobrado: 0.249)" in usuario
-    assert "18,4% (pd: 0.184)" in usuario
+    assert "24,9% ao ano (nominal) [juro_cobrado: 0.249]" in usuario
+    assert "18,4% [pd: 0.184]" in usuario
     assert "14,1% ao ano" in usuario and "18,3% ao ano" in usuario
 
 

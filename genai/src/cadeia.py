@@ -19,7 +19,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
 
-from genai.src.checagem import EntradaPrever, Fonte, Parecer, RespostaLLM, conferir_parecer
+from genai.src.checagem import (EntradaPrever, Fonte, Parecer, RespostaLLM, conferir_parecer,
+                                montar_contexto_mercado)
 from genai.src.prompt import VERSAO_PROMPT, montar_mensagens
 from genai.src.template import FUSO, escolher_recomendacao, montar_template
 
@@ -187,6 +188,7 @@ def gerar_parecer(saida_prever: dict) -> dict:
         origem="llm",
         versao_prompt=VERSAO_PROMPT,
         gerado_em=datetime.now(FUSO),
+        contexto_mercado=montar_contexto_mercado(entrada),
     ).model_dump()
 
 

@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.modelos.prever import (ARQ_MARGEM, FAIXAS, LGD_PADRAO, LGD_POR_PAIS,
+from src.modelos.prever import (ARQ_MARGEM, ARQ_PARES, MIN_PARES, _tabela_pares, FAIXAS, LGD_PADRAO, LGD_POR_PAIS,
                                 MARGEM_INCERTEZA_PP, MARGEM_POR_SAFRA, VERSAO, _pacote)
 from src.modelos.incerteza import faixa_pd
 from src.modelos.treino import _para_modelo
@@ -140,6 +140,34 @@ def calibrar_margem_mediana(base: pd.DataFrame, pacote: dict | None = None,
     return margens
 
 
+def tabela_pares(treino: pd.DataFrame, pacote: dict | None = None) -> pd.DataFrame:
+    """Mediana do juro cobrado no TREINO por país × faixa × ano (30+ contratos).
+    Faixa pela PD do modelo; reestruturados e revisão manual ficam fora."""
+    pac = pacote or _pacote()
+    df, ano_contrato, fora = _preparar(treino, pac)
+    ok = ~fora & ~df.get("fora_da_auditoria", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+    pd_, *_ = _risco_e_custos(df[ok], pac)
+    t = pd.DataFrame({"pais": df.loc[ok, "pais"].to_numpy(), "ano": ano_contrato[ok].to_numpy(),
+                      "faixa": [next(l for lim, l in FAIXAS if p < lim) for p in pd_],
+                      "juro": pd.to_numeric(df.loc[ok, "juro_aa"]).to_numpy() / 100})
+    g = t.groupby(["pais", "faixa", "ano"])["juro"].agg(juro_pares_mediana="median", n="size").reset_index()
+    g = g[g["n"] >= MIN_PARES]
+    g["juro_pares_mediana"] = g["juro_pares_mediana"].round(4)
+    return g.reset_index(drop=True)
+
+
+def _com_pares(out: pd.DataFrame, tabela: pd.DataFrame | None) -> pd.Series:
+    """Mesma regra de prever.mediana_pares, para a carteira inteira."""
+    if tabela is None:
+        return pd.Series(np.nan, index=out.index)
+    ultimo = tabela.groupby("pais")["ano"].max()
+    chave = pd.DataFrame({"pais": out["pais"], "faixa": out["faixa"],
+                          "ano": np.minimum(out["ano"], out["pais"].map(ultimo).fillna(-1)).astype(int)})
+    m = chave.merge(tabela[["pais", "faixa", "ano", "juro_pares_mediana"]], how="left",
+                    on=["pais", "faixa", "ano"])
+    return pd.Series(m["juro_pares_mediana"].to_numpy(), index=out.index)
+
+
 def pontuar_lote(base: pd.DataFrame, pacote: dict | None = None,
                  margens: dict | None = None) -> pd.DataFrame:
     """Uma linha por contrato com as colunas de carteira_auditoria.csv."""
@@ -184,6 +212,8 @@ def pontuar_lote(base: pd.DataFrame, pacote: dict | None = None,
             [jc > out.loc[ok, "juro_justo_max"], jc < out.loc[ok, "juro_justo_min"]],
             ["acima_do_justo", "abaixo_do_justo"], "dentro_da_margem")
 
+    out["juro_pares_mediana"] = _com_pares(out, _tabela_pares(pac)).where(out["pd"].notna())
+
     # o que o cliente paga acima do teto da margem, se pagar até o fim (i/12)
     acima = out["situacao_preco"] == "acima_do_justo"
     excesso = out["prazo_meses"] * (_parcela(out["valor_concedido"], out["juro_cobrado"], out["prazo_meses"])
@@ -204,15 +234,22 @@ def pontuar_lote(base: pd.DataFrame, pacote: dict | None = None,
 
 
 def main(saida: Path = SAIDA_PADRAO) -> pd.DataFrame:
-    from src.modelos.dados import ler_base
-    base = selecionar(ler_base())
-    margens = calibrar_margem_mediana(base)
+    from src.modelos.dados import ler_base, preparar, ANOS_TREINO
+    bruto = ler_base()
+    base = selecionar(bruto)
+    treino = preparar(bruto)
+    pares = tabela_pares(treino[treino["ano"].isin(ANOS_TREINO)])
+    pares.to_csv(ARQ_PARES, index=False)
+    print(f"pares: {len(pares)} grupos país × faixa × ano (30+ contratos) → {ARQ_PARES}")
+    pac = {**_pacote(), "pares": pares}
+
+    margens = calibrar_margem_mediana(base, pac)
     ARQ_MARGEM.parent.mkdir(parents=True, exist_ok=True)
     ARQ_MARGEM.write_text(json.dumps(margens, indent=2), encoding="utf-8")
     MARGEM_POR_SAFRA.update(margens)       # o prever() desta sessão também passa a usar
     print("margem por safra (mediana):", margens, "→", ARQ_MARGEM)
 
-    carteira = pontuar_lote(base)
+    carteira = pontuar_lote(base, pac)
     carteira.to_csv(saida, index=False)
     print(f"{len(carteira)} contratos → {saida}")
     larg = (carteira["juro_justo_max"] - carteira["juro_justo_min"]) * 100

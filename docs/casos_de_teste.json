@@ -15,6 +15,7 @@
       "juro_justo_max": 0.3684,
       "diferenca_pp": 5.0,
       "situacao_preco": "acima_do_justo",
+      "juro_pares_mediana": 0.2676,
       "motivos": [
         {
           "variavel": "prazo_meses",
@@ -69,6 +70,7 @@
       "juro_justo_max": 0.2818,
       "diferenca_pp": 3.6,
       "situacao_preco": "acima_do_justo",
+      "juro_pares_mediana": 0.3233,
       "motivos": [
         {
           "variavel": "prazo_meses",
@@ -125,6 +127,7 @@
       "juro_justo_max": 0.4357,
       "diferenca_pp": -9.1,
       "situacao_preco": "abaixo_do_justo",
+      "juro_pares_mediana": 0.31,
       "motivos": [
         {
           "variavel": "tipo_verificacao",
@@ -179,6 +182,7 @@
       "juro_justo_max": 0.3583,
       "diferenca_pp": -3.1,
       "situacao_preco": "abaixo_do_justo",
+      "juro_pares_mediana": 0.2717,
       "motivos": [
         {
           "variavel": "prazo_meses",
@@ -235,6 +239,7 @@
       "juro_justo_max": 0.6592,
       "diferenca_pp": -9.5,
       "situacao_preco": "dentro_da_margem",
+      "juro_pares_mediana": 0.4866,
       "motivos": [
         {
           "variavel": "prazo_meses",
@@ -289,6 +294,7 @@
       "juro_justo_max": 0.3595,
       "diferenca_pp": -0.8,
       "situacao_preco": "dentro_da_margem",
+      "juro_pares_mediana": 0.2717,
       "motivos": [
         {
           "variavel": "prazo_meses",
@@ -342,6 +348,7 @@
       "juro_justo_max": null,
       "diferenca_pp": null,
       "situacao_preco": "revisao_manual",
+      "juro_pares_mediana": null,
       "motivos": [],
       "alerta_dados": true
     },
@@ -357,6 +364,7 @@
       "juro_justo_max": null,
       "diferenca_pp": null,
       "situacao_preco": "revisao_manual",
+      "juro_pares_mediana": null,
       "motivos": [],
       "alerta_dados": true
     }

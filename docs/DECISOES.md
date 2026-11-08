@@ -1,6 +1,7 @@
+
 # DECISOES.md — Modelo de risco e juro justo
 
-**Responsável:** Samuel · **Atualizado:** 05/11/2026
+**Responsável:** Samuel · **Atualizado:** 08/11/2026
 
 Registro das decisões da frente de modelos e do motivo de cada uma.
 
@@ -82,7 +83,7 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
   2009–2013 é outra época da plataforma. A do Bondora (0,75) é estimativa prévia, mais conservadora.
 - **Horizonte mínimo de 12 meses** para converter a PD em risco mensal
   (o default pode ocorrer depois do fim do contrato).
-- **Custos e margem:** calibrados para a média do juro justo igualar a média do juro cobrado.
+- **Custos e margem:** calibrados por safra; 2016–2021 pela mediana (seção 8.1).
 - **Sensibilidade:** margem ±1 pp e LGD ±10 pp.
 - `juro_aa` vem em porcentagem: dividir por 100.
 - **Convenção da taxa (05/11):** o juro do Bondora é **nominal** (taxa mensal = juro ÷ 12; conferido na parcela). O juro justo usa a mesma convenção, para comparar na mesma base. Para comparar com o BC (efetiva): (1 + i/12)^12 − 1.
@@ -97,13 +98,13 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 
 ### 8.1 Custos + margem por safra (recalibrada em 05/11)
 
-- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real), com taxa nominal (i/12) e o modelo de 05/11: 2009 13,5% · 2010 19,7% · 2011 19,2% · 2012 19,3% · 2013 20,8% · 2014 10,8% · 2015 15,3% · 2016 31,7% (trocada em 08/11, abaixo). Ano sem safra usa 2016.
+- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real), com taxa nominal (i/12) e o modelo de 05/11: 2009 13,5% · 2010 19,7% · 2011 19,2% · 2012 19,3% · 2013 20,8% · 2014 10,8% · 2015 15,3% · 2016 31,7% (trocada em 08/11, abaixo). Ano sem safra usa a última do json (2021).
 - A margem de 2016 é alta porque absorve a subestimação do default nesse ano (previsto 55% × real 67%).
 - **08/11: 2016–2021 calibradas pela MEDIANA** (`calibrar_margem_mediana` em `src/modelos/carteira.py`; valores em `docs/resultados/margem_por_safra.json`, que o `prever()` lê). Em cada safra, metade dos contratos fica acima do justo e metade abaixo: o juro justo passa a ser **relativo à safra** ("dentro da safra, quem paga mais do que o risco justifica?"). Usa só o juro cobrado, nunca o desfecho, então vale para 2017–2021.
   - Por quê: o modelo erra o **nível** de risco de 2016 (previsto 55% × real 67%), e qualquer margem fixa empurrava a carteira toda para um lado. Com 31,7% (média): 65% de 2016 "abaixo do justo", mas as faixas A e B "abaixo" deram lucro (+5,7% e +2,5%). Com 15,6% (média 2013–2015): 60% "acima do justo", numa safra que deu prejuízo nas faixas C a E.
 - **Limitação (backtest 2016, 08/11):** dentro da faixa, "acima do justo" **não** rendeu mais que "abaixo" (E: −54% × −29%). Quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado: o rating dele vê risco que o modelo não vê. Por isso "acima do justo" é indício para revisão, nunca conclusão.
 - LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
-- Pendente: **08/11: margem de incerteza por bootstrap** (20 reamostras por cliente, IC 95%): a dispersão das reamostras em logit, centrada na PD do modelo final; `juro_justo_min`/`max` = juro justo nas pontas do IC da PD. Largura na carteira: mediana 5,2 p.p. (p10 2,8; p90 17,6), contra 4,0 p.p. fixos antes. “Dentro da margem”: 11–18% por ano. Limite: só mede a incerteza da PD, não a da LGD nem a da margem.
+- **08/11: margem de incerteza por bootstrap** (20 reamostras por cliente, IC 95%): a dispersão das reamostras em logit, centrada na PD do modelo final; `juro_justo_min`/`max` = juro justo nas pontas do IC da PD. Largura na carteira: mediana 5,2 p.p. (p10 2,8; p90 17,6), contra 4,0 p.p. fixos antes. “Dentro da margem”: 11–18% por ano. Limite: só mede a incerteza da PD, não a da LGD nem a da margem.
 
 ## 9. Regra de achado
 
@@ -116,9 +117,9 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 
 ## 10. Formato do `prever()`
 
-- Segue o `FORMATO_JSON.md` da Maria (v1.1 aprovada em 30/10; v1.2 proposta em 31/10).
+- Segue o `FORMATO_JSON.md` da Maria (v1.1 aprovada em 30/10; v1.2 aprovada em 03/11).
 - **Campos:** `contrato_id`, `versao_modelo`, `pd`, `faixa`, `juro_cobrado`, `juro_justo`, `juro_justo_min`, `juro_justo_max`, `situacao_preco`, `motivos[{variavel, rotulo, efeito}]`, `alerta_dados`.
-- **Extras (a GenAI ignora):** `pd_ic95`, `diferenca_pp`, e `valor` e `peso` nos motivos.
+- **Extras (a GenAI ignora):** `pd_ic95` (IC 95% do bootstrap), `juro_pares_mediana` (segunda opinião), `diferenca_pp`, e `valor` e `peso` nos motivos.
 - **Unidades:** juros e PD sempre em fração (0.249 = 24,9%).
 - **Revisão manual:** `alerta_dados = true` ⇔ `situacao_preco = "revisao_manual"`, com os números em `null`.
 - **Motivos:** sem `pais`; gênero e idade nunca aparecem, porque não entram no modelo. Rótulos legíveis em `ROTULOS` (`variaveis.py`).
@@ -238,8 +239,8 @@ Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano,
 - [X] 05/11: correção das coroas, retirada das 2 variáveis com mudança de regime, taxa nominal, contratos novos
 - [X] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
 - [X] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
-- [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
-- [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
+- [X] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
+- [X] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
 - [X] 08/11: `carteira_auditoria.csv` (`src/modelos/carteira.py`, `python -m src.modelos.carteira`)
 - [X] 09/11 (adiantado para 08/11): `equidade.json` e backtest (seção 12)
 - [X] Preencher o teste "default realizado − PD" da idade (seção 12) e decidir a leitura do achado de idade

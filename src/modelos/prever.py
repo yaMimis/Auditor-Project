@@ -34,6 +34,10 @@ MARGEM_POR_SAFRA = {2009: 0.1347, 2010: 0.1968, 2011: 0.1915, 2012: 0.1927,
 if ARQ_MARGEM.exists():
     MARGEM_POR_SAFRA.update({int(a): float(m) for a, m in
                              json.loads(ARQ_MARGEM.read_text(encoding="utf-8")).items()})
+# juro_pares_mediana (segunda opinião, não muda a situação): mediana do juro cobrado no
+# TREINO (2009–2015) por país × faixa × ano, grupos com 30+ contratos (src/modelos/carteira.py)
+ARQ_PARES = RAIZ / "docs" / "resultados" / "pares_mediana.csv"
+MIN_PARES = 30
 MARGEM_INCERTEZA_PP = 2.0  # só quando o pacote não tem as reamostras do bootstrap
 CHECAR_FAIXA = ["valor_concedido", "prazo_meses", "renda_total"]
 
@@ -87,6 +91,26 @@ def juro_justo(prazo: int, pd_total: float, lgd: float, custo_anual: float) -> f
         return 5.0
 
 
+def _tabela_pares(pac: dict) -> pd.DataFrame | None:
+    if "pares" in pac:
+        return pac["pares"]
+    if "pares" not in _CACHE:
+        _CACHE["pares"] = pd.read_csv(ARQ_PARES) if ARQ_PARES.exists() else None
+    return _CACHE["pares"]
+
+
+def mediana_pares(tabela: pd.DataFrame | None, pais: str, faixa: str, ano: int) -> float | None:
+    """Ano além do treino → último ano do país na tabela; grupo sem 30+ contratos → None."""
+    if tabela is None:
+        return None
+    do_pais = tabela[tabela["pais"] == pais]
+    if do_pais.empty:
+        return None
+    ano_ref = min(int(ano), int(do_pais["ano"].max()))
+    linha = do_pais[(do_pais["faixa"] == faixa) & (do_pais["ano"] == ano_ref)]
+    return None if linha.empty else round(float(linha["juro_pares_mediana"].iloc[0]), 4)
+
+
 def _faixa(pd_: float) -> str:
     return next(letra for limite, letra in FAIXAS if pd_ < limite)
 
@@ -122,7 +146,8 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
     if _fora_da_faixa(df, pac):
         return {**base, "pd": None, "pd_ic95": None, "faixa": None, "juro_justo": None,
                 "juro_justo_min": None, "juro_justo_max": None, "diferenca_pp": None,
-                "situacao_preco": "revisao_manual", "motivos": [], "alerta_dados": True}
+                "situacao_preco": "revisao_manual", "juro_pares_mediana": None,
+                "motivos": [], "alerta_dados": True}
 
     df = criar_variaveis(df, referencia=pac["referencia"])
     X = _para_modelo(df)
@@ -161,6 +186,8 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
             "juro_justo": justo, "juro_justo_min": jmin, "juro_justo_max": jmax,
             "diferenca_pp": round((juro_cobrado - justo) * 100, 1),
             "situacao_preco": situacao,
+            "juro_pares_mediana": mediana_pares(_tabela_pares(pac), df["pais"].iloc[0],
+                                                _faixa(pd_), ano_contrato),
             "motivos": motivos(pac["modelo"], X)[0],
             "alerta_dados": False}
 

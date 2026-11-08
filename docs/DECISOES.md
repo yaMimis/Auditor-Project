@@ -238,7 +238,7 @@ Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano,
 - [X] 05/11: correção das coroas, retirada das 2 variáveis com mudança de regime, taxa nominal, contratos novos
 - [X] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
 - [X] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
-- [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
+- [X] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
 - [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
 - [X] 08/11: `carteira_auditoria.csv` (`src/modelos/carteira.py`, `python -m src.modelos.carteira`)
 - [X] 09/11 (adiantado para 08/11): `equidade.json` e backtest (seção 12)

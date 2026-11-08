@@ -17,6 +17,7 @@ import pandas as pd
 
 from src.modelos.prever import (ARQ_MARGEM, FAIXAS, LGD_PADRAO, LGD_POR_PAIS,
                                 MARGEM_INCERTEZA_PP, MARGEM_POR_SAFRA, VERSAO, _pacote)
+from src.modelos.incerteza import faixa_pd
 from src.modelos.treino import _para_modelo
 from src.modelos.variaveis import criar_variaveis
 
@@ -96,15 +97,16 @@ def _preparar(base: pd.DataFrame, pac: dict):
 
 
 def _risco_e_custos(sub: pd.DataFrame, pac: dict):
-    """PD, LGD por país e Euribor 12m do mês do contrato (fração)."""
+    """PD, LGD por país, Euribor 12m do mês do contrato (fração) e a matriz do modelo."""
     var = criar_variaveis(sub, referencia=pac["referencia"])
-    pd_ = pac["modelo"].predict_proba(_para_modelo(var))[:, 1]
+    X = _para_modelo(var)
+    pd_ = pac["modelo"].predict_proba(X)[:, 1]
     mes = pd.to_datetime(var["data_emprestimo"]).dt.to_period("M").dt.to_timestamp()
     e12 = pac["euribor_12m"].sort_index()
     euribor = pd.Series(e12.asof(pd.DatetimeIndex(mes)).values, index=sub.index)
     euribor = (euribor.fillna(e12.iloc[0]) / 100).clip(lower=0).to_numpy()
     lgd = sub["pais"].map(LGD_POR_PAIS).fillna(LGD_PADRAO).to_numpy()
-    return pd_, lgd, euribor
+    return pd_, lgd, euribor, X
 
 
 def _margem(anos: pd.Series, margens: dict | None = None) -> np.ndarray:
@@ -124,7 +126,7 @@ def calibrar_margem_mediana(base: pd.DataFrame, pacote: dict | None = None,
     for ano in sorted(ano_contrato[ok].unique()):
         idx = ano_contrato[ok & (ano_contrato == ano)].index
         sub = df.loc[idx].sample(min(len(idx), amostra), random_state=semente)
-        pd_, lgd, euribor = _risco_e_custos(sub, pac)
+        pd_, lgd, euribor, _ = _risco_e_custos(sub, pac)
         cobrado = pd.to_numeric(sub["juro_aa"]).to_numpy() / 100
 
         def gap(m):   # decresce com a margem
@@ -160,14 +162,23 @@ def pontuar_lote(base: pd.DataFrame, pacote: dict | None = None,
     ok = ~fora
     if ok.any():
         sub = df[ok]
-        pd_, lgd, euribor = _risco_e_custos(sub, pac)
+        pd_, lgd, euribor, X = _risco_e_custos(sub, pac)
         margem = _margem(ano_contrato[ok], margens)
         justo = np.round(juro_justo_vetor(sub["prazo_meses"], pd_, lgd, euribor + margem), 4)
         out.loc[ok, "pd"] = np.round(pd_, 4)
         out.loc[ok, "faixa"] = [next(l for lim, l in FAIXAS if p < lim) for p in pd_]
         out.loc[ok, "juro_justo"] = justo
-        out.loc[ok, "juro_justo_min"] = np.round(np.maximum(justo - MARGEM_INCERTEZA_PP / 100, 0), 4)
-        out.loc[ok, "juro_justo_max"] = np.round(justo + MARGEM_INCERTEZA_PP / 100, 4)
+        if pac.get("bootstrap"):      # IC 95% por bootstrap, como no prever()
+            lo, hi = faixa_pd(pac["bootstrap"], X, pd_)
+            lo, hi = np.round(lo, 4), np.round(hi, 4)
+            out.loc[ok, "pd_ic95_min"], out.loc[ok, "pd_ic95_max"] = lo, hi
+            jmin = juro_justo_vetor(sub["prazo_meses"], lo, lgd, euribor + margem)
+            jmax = juro_justo_vetor(sub["prazo_meses"], hi, lgd, euribor + margem)
+            out.loc[ok, "juro_justo_min"] = np.round(np.minimum(jmin, justo), 4)
+            out.loc[ok, "juro_justo_max"] = np.round(np.maximum(jmax, justo), 4)
+        else:
+            out.loc[ok, "juro_justo_min"] = np.round(np.maximum(justo - MARGEM_INCERTEZA_PP / 100, 0), 4)
+            out.loc[ok, "juro_justo_max"] = np.round(justo + MARGEM_INCERTEZA_PP / 100, 4)
         jc = out.loc[ok, "juro_cobrado"]
         out.loc[ok, "situacao_preco"] = np.select(
             [jc > out.loc[ok, "juro_justo_max"], jc < out.loc[ok, "juro_justo_min"]],
@@ -204,6 +215,9 @@ def main(saida: Path = SAIDA_PADRAO) -> pd.DataFrame:
     carteira = pontuar_lote(base)
     carteira.to_csv(saida, index=False)
     print(f"{len(carteira)} contratos → {saida}")
+    larg = (carteira["juro_justo_max"] - carteira["juro_justo_min"]) * 100
+    print(f"largura da margem de incerteza (p.p.): mediana {larg.median():.1f}, "
+          f"p10 {larg.quantile(.1):.1f}, p90 {larg.quantile(.9):.1f}")
     print(carteira.groupby("ano")["situacao_preco"].value_counts(normalize=True)
           .unstack().round(3).to_string())
     return carteira

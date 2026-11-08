@@ -103,7 +103,7 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
   - Por quê: o modelo erra o **nível** de risco de 2016 (previsto 55% × real 67%), e qualquer margem fixa empurrava a carteira toda para um lado. Com 31,7% (média): 65% de 2016 "abaixo do justo", mas as faixas A e B "abaixo" deram lucro (+5,7% e +2,5%). Com 15,6% (média 2013–2015): 60% "acima do justo", numa safra que deu prejuízo nas faixas C a E.
 - **Limitação (backtest 2016, 08/11):** dentro da faixa, "acima do justo" **não** rendeu mais que "abaixo" (E: −54% × −29%). Quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado: o rating dele vê risco que o modelo não vê. Por isso "acima do justo" é indício para revisão, nunca conclusão.
 - LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
-- Pendente: a margem de incerteza por bootstrap (hoje ±2 pp fixo) define quantos ficam "dentro".
+- Pendente: **08/11: margem de incerteza por bootstrap** (20 reamostras por cliente, IC 95%): a dispersão das reamostras em logit, centrada na PD do modelo final; `juro_justo_min`/`max` = juro justo nas pontas do IC da PD. Largura na carteira: mediana 5,2 p.p. (p10 2,8; p90 17,6), contra 4,0 p.p. fixos antes. “Dentro da margem”: 11–18% por ano. Limite: só mede a incerteza da PD, não a da LGD nem a da margem.
 
 ## 9. Regra de achado
 
@@ -237,7 +237,7 @@ Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano,
 - [X] **04/11: entregar o `prever()`**
 - [X] 05/11: correção das coroas, retirada das 2 variáveis com mudança de regime, taxa nominal, contratos novos
 - [X] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
-- [ ] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
+- [X] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
 - [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
 - [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
 - [X] 08/11: `carteira_auditoria.csv` (`src/modelos/carteira.py`, `python -m src.modelos.carteira`)

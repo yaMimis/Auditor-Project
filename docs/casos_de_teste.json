@@ -5,11 +5,14 @@
       "versao_modelo": "xgboost_v2",
       "juro_cobrado": 0.3895,
       "pd": 0.6982,
-      "pd_ic95": null,
+      "pd_ic95": [
+        0.6332,
+        0.7644
+      ],
       "faixa": "D",
       "juro_justo": 0.3397,
-      "juro_justo_min": 0.3197,
-      "juro_justo_max": 0.3597,
+      "juro_justo_min": 0.3172,
+      "juro_justo_max": 0.3684,
       "diferenca_pp": 5.0,
       "situacao_preco": "acima_do_justo",
       "motivos": [
@@ -56,11 +59,14 @@
       "versao_modelo": "xgboost_v2",
       "juro_cobrado": 0.309,
       "pd": 0.6235,
-      "pd_ic95": null,
+      "pd_ic95": [
+        0.5345,
+        0.6675
+      ],
       "faixa": "D",
       "juro_justo": 0.2728,
-      "juro_justo_min": 0.2528,
-      "juro_justo_max": 0.2928,
+      "juro_justo_min": 0.2574,
+      "juro_justo_max": 0.2818,
       "diferenca_pp": 3.6,
       "situacao_preco": "acima_do_justo",
       "motivos": [
@@ -109,11 +115,14 @@
       "versao_modelo": "xgboost_v2",
       "juro_cobrado": 0.31,
       "pd": 0.7882,
-      "pd_ic95": null,
+      "pd_ic95": [
+        0.7592,
+        0.8226
+      ],
       "faixa": "E",
       "juro_justo": 0.4012,
-      "juro_justo_min": 0.3812,
-      "juro_justo_max": 0.4212,
+      "juro_justo_min": 0.3762,
+      "juro_justo_max": 0.4357,
       "diferenca_pp": -9.1,
       "situacao_preco": "abaixo_do_justo",
       "motivos": [
@@ -160,11 +169,14 @@
       "versao_modelo": "xgboost_v2",
       "juro_cobrado": 0.3056,
       "pd": 0.8153,
-      "pd_ic95": null,
+      "pd_ic95": [
+        0.7583,
+        0.8465
+      ],
       "faixa": "E",
       "juro_justo": 0.3368,
-      "juro_justo_min": 0.3168,
-      "juro_justo_max": 0.3568,
+      "juro_justo_min": 0.3058,
+      "juro_justo_max": 0.3583,
       "diferenca_pp": -3.1,
       "situacao_preco": "abaixo_do_justo",
       "motivos": [
@@ -209,15 +221,72 @@
   ],
   "dentro_da_margem": [
     {
+      "contrato_id": "59b9cecb-3335-4950-a766-a63a01221b33",
+      "versao_modelo": "xgboost_v2",
+      "juro_cobrado": 0.4565,
+      "pd": 0.3566,
+      "pd_ic95": [
+        0.2644,
+        0.4367
+      ],
+      "faixa": "B",
+      "juro_justo": 0.5515,
+      "juro_justo_min": 0.4441,
+      "juro_justo_max": 0.6592,
+      "diferenca_pp": -9.5,
+      "situacao_preco": "dentro_da_margem",
+      "motivos": [
+        {
+          "variavel": "prazo_meses",
+          "rotulo": "prazo do empréstimo",
+          "efeito": "reduz_risco",
+          "valor": 9.0,
+          "peso": 0.556
+        },
+        {
+          "variavel": "tipo_verificacao",
+          "rotulo": "verificação da renda",
+          "efeito": "reduz_risco",
+          "valor": "4",
+          "peso": 0.142
+        },
+        {
+          "variavel": "novo_cliente",
+          "rotulo": "primeiro empréstimo na plataforma",
+          "efeito": "reduz_risco",
+          "valor": "False",
+          "peso": 0.061
+        },
+        {
+          "variavel": "passivos_existentes",
+          "rotulo": "número de dívidas em aberto",
+          "efeito": "reduz_risco",
+          "valor": 7.0,
+          "peso": 0.058
+        },
+        {
+          "variavel": "valor_sobre_renda",
+          "rotulo": "valor do empréstimo em relação à renda",
+          "efeito": "reduz_risco",
+          "valor": 1.0772833723653397,
+          "peso": 0.029
+        }
+      ],
+      "alerta_dados": false
+    },
+    {
       "contrato_id": "785c0424-9d39-4e3c-b15c-a51400ba072e",
       "versao_modelo": "xgboost_v2",
       "juro_cobrado": 0.3332,
       "pd": 0.8219,
-      "pd_ic95": null,
+      "pd_ic95": [
+        0.782,
+        0.8481
+      ],
       "faixa": "E",
       "juro_justo": 0.3411,
-      "juro_justo_min": 0.3211,
-      "juro_justo_max": 0.3611,
+      "juro_justo_min": 0.3177,
+      "juro_justo_max": 0.3595,
       "diferenca_pp": -0.8,
       "situacao_preco": "dentro_da_margem",
       "motivos": [
@@ -255,57 +324,6 @@
           "efeito": "aumenta_risco",
           "valor": null,
           "peso": 0.05
-        }
-      ],
-      "alerta_dados": false
-    },
-    {
-      "contrato_id": "28b99714-66b4-4e4a-8d79-2305c94a812f",
-      "versao_modelo": "xgboost_v2",
-      "juro_cobrado": 0.1966,
-      "pd": 0.2446,
-      "pd_ic95": null,
-      "faixa": "A",
-      "juro_justo": 0.1779,
-      "juro_justo_min": 0.1579,
-      "juro_justo_max": 0.1979,
-      "diferenca_pp": 1.9,
-      "situacao_preco": "dentro_da_margem",
-      "motivos": [
-        {
-          "variavel": "escolaridade",
-          "rotulo": "escolaridade",
-          "efeito": "reduz_risco",
-          "valor": "5",
-          "peso": 0.204
-        },
-        {
-          "variavel": "score_ee_mini",
-          "rotulo": "score de crédito (Estônia)",
-          "efeito": "reduz_risco",
-          "valor": 1000.0,
-          "peso": 0.178
-        },
-        {
-          "variavel": "tipo_verificacao",
-          "rotulo": "verificação da renda",
-          "efeito": "aumenta_risco",
-          "valor": "1",
-          "peso": 0.136
-        },
-        {
-          "variavel": "novo_cliente",
-          "rotulo": "primeiro empréstimo na plataforma",
-          "efeito": "reduz_risco",
-          "valor": "False",
-          "peso": 0.066
-        },
-        {
-          "variavel": "divida_sobre_renda",
-          "rotulo": "dívidas em relação à renda",
-          "efeito": "reduz_risco",
-          "valor": 0.5614352941176471,
-          "peso": 0.066
         }
       ],
       "alerta_dados": false

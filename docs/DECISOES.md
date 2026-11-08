@@ -98,10 +98,13 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 
 ### 8.1 Custos + margem por safra (recalibrada em 05/11)
 
-- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real), com taxa nominal (i/12) e o modelo de 05/11: 2009 13,5% · 2010 19,7% · 2011 19,2% · 2012 19,3% · 2013 20,8% · 2014 10,8% · 2015 15,3% · 2016 31,7%. Ano sem safra usa 2016.
+- Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real), com taxa nominal (i/12) e o modelo de 05/11: 2009 13,5% · 2010 19,7% · 2011 19,2% · 2012 19,3% · 2013 20,8% · 2014 10,8% · 2015 15,3% · 2016 31,7% (trocada em 08/11, abaixo). Ano sem safra usa 2016.
 - A margem de 2016 é alta porque absorve a subestimação do default nesse ano (previsto 55% × real 67%).
+- **08/11: 2016–2021 calibradas pela MEDIANA** (`calibrar_margem_mediana` em `src/modelos/carteira.py`; valores em `docs/resultados/margem_por_safra.json`, que o `prever()` lê). Em cada safra, metade dos contratos fica acima do justo e metade abaixo: o juro justo passa a ser **relativo à safra** ("dentro da safra, quem paga mais do que o risco justifica?"). Usa só o juro cobrado, nunca o desfecho, então vale para 2017–2021.
+  - Por quê: o modelo erra o **nível** de risco de 2016 (previsto 55% × real 67%), e qualquer margem fixa empurrava a carteira toda para um lado. Com 31,7% (média): 65% de 2016 "abaixo do justo", mas as faixas A e B "abaixo" deram lucro (+5,7% e +2,5%). Com 15,6% (média 2013–2015): 60% "acima do justo", numa safra que deu prejuízo nas faixas C a E.
+- **Limitação (backtest 2016, 08/11):** dentro da faixa, "acima do justo" **não** rendeu mais que "abaixo" (E: −54% × −29%). Quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado: o rating dele vê risco que o modelo não vê. Por isso "acima do justo" é indício para revisão, nunca conclusão.
 - LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
-- Pendente: atualizar a distribuição acima/dentro/abaixo com a margem nova e avaliar a calibração pela mediana junto com o bootstrap.
+- Pendente: a margem de incerteza por bootstrap (hoje ±2 pp fixo) define quantos ficam "dentro".
 
 ## 9. Regra de achado
 
@@ -215,5 +218,5 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - [ ] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
 - [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
 - [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
-- [ ] 08/11: `carteira_auditoria.csv` (formato em `src/app/carteira.py`)
+- [X] 08/11: `carteira_auditoria.csv` (`src/modelos/carteira.py`, `python -m src.modelos.carteira`)
 - [ ] 09/11: `equidade.json` (gênero 2013–2016 dentro do país; idade 18–25 × 35–44) e backtest do retorno realizado

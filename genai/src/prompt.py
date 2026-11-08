@@ -1,6 +1,6 @@
 """
 Monta as mensagens enviadas ao LLM a partir do prompt versionado
-(genai/prompts/parecer_v1.md) e da saída do prever().
+(genai/prompts/parecer_v2.md; a v1 continua no repositório) e da saída do prever().
 
 O que vai para o LLM (FORMATO_JSON.md, seção 4): números já formatados, faixa,
 situação do preço, recomendação já escolhida, motivos pelo rótulo e os trechos
@@ -16,7 +16,8 @@ from genai.src.checagem import (EntradaPrever, formatar_juro, formatar_percentua
                                 motivos_permitidos)
 
 PASTA_PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
-VERSAO_PROMPT = "parecer_v1"
+VERSAO_PROMPT = "parecer_v2"
+MAXIMO_FATORES = 3  # v2: menos fatores, menos chance de o LLM listar ou alterar nomes
 
 SITUACOES = {
     "acima_do_justo": "acima do juro justo, além da margem de incerteza",
@@ -48,7 +49,7 @@ def _numeros(entrada: EntradaPrever) -> str:
         ("limite inferior da margem do juro justo", "juro_justo_min", formatar_juro(entrada.juro_justo_min)),
         ("limite superior da margem do juro justo", "juro_justo_max", formatar_juro(entrada.juro_justo_max)),
     ]
-    return "\n".join(f"- {nome}: {texto} ({chave}: {getattr(entrada, chave)})"
+    return "\n".join(f"- {nome}: {texto} [{chave}: {getattr(entrada, chave)}]"
                      for nome, chave, texto in linhas)
 
 
@@ -56,7 +57,7 @@ def _fatores(entrada: EntradaPrever) -> str:
     permitidos = motivos_permitidos(entrada)
     if not permitidos:
         return "(nenhum fator informado)"
-    return "\n".join(f"- {m.rotulo} ({EFEITOS[m.efeito]})" for m in permitidos)
+    return "\n".join(f"- {m.rotulo} ({EFEITOS[m.efeito]})" for m in permitidos[:MAXIMO_FATORES])
 
 
 def _trechos(trechos: list[dict]) -> str:

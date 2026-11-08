@@ -1,7 +1,7 @@
 # FORMATO_JSON.md — Contrato de dados do parecer (GenAI)
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.4 · **Data:** 03/11/2026
-**Status:** entrada aprovada pelo Samuel em 30/10/2026; recomendação v1.2 (acima do justo → revisar_preco) aprovada pela Maria em 03/11/2026; saída aguardando aprovação da Yasmin.
+**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.5 · **Data:** 08/11/2026
+**Status:** entrada aprovada pelo Samuel em 30/10/2026; recomendação v1.2 (acima do justo → revisar_preco) aprovada pela Maria em 03/11/2026; saída aprovada pela Yasmin em 05/11/2026 (painel usa a seção 5); v1.5 (unidade nominal e referência de mercado do BC) aguardando o grupo.
 
 ## 1. Finalidade
 
@@ -26,7 +26,8 @@ Exemplos reais da saída do `prever()`: `docs/exemplos_prever.json` (mantido pel
 | Item | No JSON | No texto do parecer |
 |---|---|---|
 | Probabilidade de inadimplência (`pd`) | fração de 0 a 1 (ex.: `0.184`) | percentual com vírgula e uma casa (ex.: "18,4%") |
-| Juros | fração **ao ano** (ex.: `0.249`), já convertida pelo `prever()` | percentual ao ano com vírgula e uma casa (ex.: "24,9% ao ano") |
+| Juros | fração **ao ano, nominal** (ex.: `0.249`; a taxa ao mês é o anual ÷ 12, como no Bondora), já convertida pelo `prever()` | percentual com vírgula e uma casa, seguido de "ao ano (nominal)" (ex.: "24,9% ao ano (nominal)") |
+| Média do BC (`bc_credito_pessoal_aa`) | **percentual** ao ano, **efetiva** (ex.: `126.2`), como vem da view | só na frase do `contexto_mercado`, convertida para nominal (ex.: "84,5% ao ano (nominal) (126,2% efetiva, como o BC divulga)") |
 | Faixa de risco | letra de `A` a `E` | "faixa C" |
 | Datas e horas | ISO 8601 (ex.: `2026-11-05T14:30:00-03:00`) | não aparecem no texto |
 
@@ -93,12 +94,13 @@ Nesse caso o LLM não é chamado: o parecer sai do template de reserva com `reco
 | `situacao_preco` | `acima_do_justo`, `abaixo_do_justo`, `dentro_da_margem` ou `revisao_manual` | não | Calculada pelo Samuel: só é "acima" ou "abaixo" quando o juro cobrado sai da margem de incerteza. |
 | `motivos` | lista de `{variavel, rotulo, efeito}` | não (pode ser vazia) | Principais fatores do risco (SHAP). `rotulo` é o nome legível que vai para o texto; `efeito` é `aumenta_risco` ou `reduz_risco`. |
 | `alerta_dados` | verdadeiro/falso | não | `true` quando os dados do contrato estão fora da faixa de treino do modelo. Sempre vem junto com `situacao_preco = "revisao_manual"`. |
+| `bc_credito_pessoal_aa` | número (% ao ano, **efetiva**) | sim (opcional; vazio antes de 03/2011) | Média do BC (série 20742) no mês da concessão, da `vw_custo_do_dinheiro`. **Não vem do `prever()`**: a API acrescenta. **Nunca é enviada ao LLM**; o código a converte para nominal e escreve o `contexto_mercado`. |
 
 **Campos extras ignorados:** o `prever()` também envia `pd_ic95`, `diferenca_pp` e, em cada motivo, `valor` e `peso`. A frente de GenAI não os usa; o modelo pydantic os descarta.
 
 **Nomes em `variavel`:** seguem as colunas do banco (ex.: `tempo_emprego_atual`) e podem mudar. O texto do parecer usa sempre o `rotulo`.
 
-**Nunca fazem parte da entrada:** `UserName` ou qualquer identificador do cliente, gênero, idade e país. Gênero e idade não são variáveis do modelo; o país é variável do modelo, mas foi retirado da lista de motivos pelo Samuel.
+**Nunca fazem parte da entrada:** `UserName` ou qualquer identificador do cliente, gênero, idade e país. Gênero e idade não são variáveis do modelo; o país é variável do modelo, mas foi retirado da lista de motivos pelo Samuel. Se um `rotulo` trouxer o país entre parênteses (ex.: "score de crédito (Estônia)"), o código retira o país antes de usar o rótulo.
 
 ---
 
@@ -107,11 +109,11 @@ Nesse caso o LLM não é chamado: o parecer sai do template de reserva com `reco
 O código monta o pedido ao LLM com:
 
 - as regras de `REGRAS_PARECER.md`;
-- os números **já formatados para o texto** (ex.: `"juro_cobrado": "24,9% ao ano"`);
-- `faixa`, `situacao_preco`, a recomendação já escolhida pelo código e os `motivos` pelo `rotulo` e pelo `efeito`;
+- os números **já formatados para o texto** (ex.: `"juro_cobrado": "24,9% ao ano (nominal)"`);
+- `faixa`, `situacao_preco`, a recomendação já escolhida pelo código e os **3 principais** `motivos` pelo `rotulo` e pelo `efeito` (sem gênero, idade e país);
 - os 3 a 5 trechos de normas recuperados no pgvector, cada um com `norma`, `artigo` e `trecho_id`.
 
-O LLM **não** recebe `contrato_id`, `versao_modelo`, os campos extras nem dados pessoais. Em revisão manual, o LLM não recebe nada, porque não é chamado.
+O LLM **não** recebe `contrato_id`, `versao_modelo`, os campos extras, a média do BC (`bc_credito_pessoal_aa`) nem dados pessoais. Em revisão manual, o LLM não recebe nada, porque não é chamado.
 
 ---
 
@@ -208,7 +210,8 @@ O LLM **não** recebe `contrato_id`, `versao_modelo`, os campos extras nem dados
 | `numeros_citados` | objeto | LLM ou template | Todo número do texto aparece aqui, com o valor exato da entrada. Chaves permitidas: `pd`, `juro_cobrado`, `juro_justo`, `juro_justo_min`, `juro_justo_max`. Nunca inclui um campo que veio `null`. |
 | `origem` | `llm` ou `template` | código | `template` quando o parecer veio da reserva ou da revisão manual. |
 | `versao_prompt` | texto | código | `parecer_v1`, `parecer_v2`... para o LLM; `template_v1` para o template. |
-| `gerado_em` | data e hora ISO 8601 | código | Momento da geração. |
+| `gerado_em` | data e hora ISO 8601 | código | Momento da geração (fuso −03:00). |
+| `contexto_mercado` | texto ou `null` | código | Frase fixa com a média do BC convertida para nominal e a efetiva entre parênteses: "Referência de mercado: no mês da concessão, a taxa média do crédito pessoal no Brasil era de 84,5% ao ano (nominal) (126,2% efetiva, como o BC divulga). É um dado de contexto do mercado brasileiro, não uma medida do preço justo deste contrato." `null` quando a entrada não traz `bc_credito_pessoal_aa`. Nunca é escrita pelo LLM. |
 
 **Quando não há base normativa:** `fontes` fica vazia, nenhuma norma é citada no texto e a tela mostra "Não encontrei base normativa para este caso."
 
@@ -255,6 +258,7 @@ class EntradaPrever(BaseModel):
     situacao_preco: Literal["acima_do_justo", "abaixo_do_justo", "dentro_da_margem", "revisao_manual"]
     motivos: list[Motivo] = []
     alerta_dados: bool = False
+    bc_credito_pessoal_aa: float | None = Field(default=None, ge=0)  # % ao ano efetiva (BC); opcional
 
     @model_validator(mode="after")
     def exige_numeros_fora_da_revisao_manual(self):
@@ -294,6 +298,7 @@ class Parecer(RespostaLLM):
     origem: Literal["llm", "template"]
     versao_prompt: str
     gerado_em: datetime
+    contexto_mercado: str | None = None  # frase escrita pelo código, nunca pelo LLM
 ```
 
 ---
@@ -308,7 +313,9 @@ class Parecer(RespostaLLM):
 | `alerta_dados` e `situacao_preco = "revisao_manual"` sempre vêm juntos? | Samuel | Resolvida em 30/10: sim, sempre juntos. |
 | Gênero e idade também ficam fora da lista de motivos, como o país? | Samuel | Resolvida em 30/10: sim; nem entram no modelo. |
 | Acima do justo → `revisar_preco` em vez de `encaminhar_compliance` (ver `REGRAS_PARECER.md` v1.2) | Maria | Resolvida em 03/11: aprovada pela Maria. |
-| Confirmar que os campos de saída atendem às telas | Yasmin | Aberta. |
+| Confirmar que os campos de saída atendem às telas | Yasmin | Resolvida em 05/11: o painel usa os campos da seção 5. |
+| Passar `bc_credito_pessoal_aa` da view para o `gerar_parecer()` e mostrar o `contexto_mercado` | Yasmin | Aberta (v1.5). |
+| Trocar o rótulo "score de crédito (Estônia)" por um sem o país | Samuel | Aberta. O código já retira o país do rótulo, como proteção. |
 
 ## 8. Histórico
 
@@ -319,5 +326,6 @@ class Parecer(RespostaLLM):
 | 1.2 | 31/10/2026 | Exemplo 5.1 com `recomendacao: "revisar_preco"` e texto "não é explicada pelo risco estimado pelo modelo"; `encaminhar_compliance` deixa de ser escolhida automaticamente. Pendências do Samuel fechadas. (Proposta do Samuel, aguardando a Maria.) |
 | 1.3 | 03/11/2026 | Proposta da v1.2 aprovada pela Maria. `trecho_id` no formato real do índice (`cdc-art6-1`); seção 5.5 reescrita. |
 | 1.4 | 03/11/2026 | REB substituído pelo REF (o REB foi descontinuado em 2025); formato `ref-p<parágrafo>-1` na seção 5.5. |
+| 1.5 | 08/11/2026 | Juros nominais ("ao ano (nominal)"; DATA.md v0.7, seção 8). Entrada opcional `bc_credito_pessoal_aa` e saída `contexto_mercado`, frase escrita pelo código com a média do BC convertida para nominal (decisão com Marcos e Samuel, 05–06/11). País retirado dos rótulos. O LLM recebe só os 3 principais motivos (prompt v2). |
 
 Qualquer mudança neste formato só vale com aviso a todo o grupo.

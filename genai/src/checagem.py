@@ -5,6 +5,7 @@ EntradaPrever valida o que chega do prever(); RespostaLLM é o que o LLM devolve
 Parecer é o que gerar_parecer() entrega para a tela.
 conferir_parecer() confere o que o LLM escreveu (REGRAS_PARECER.md, seção 9).
 motivos_permitidos() tira gênero, idade e país dos motivos (REGRAS_PARECER.md, seção 4).
+montar_contexto_mercado() escreve a frase da média do BC, convertida para nominal (DATA.md, seções 8 e 9).
 
 Teste rápido (na pasta raiz):
     python genai/src/checagem.py
@@ -40,6 +41,9 @@ class EntradaPrever(BaseModel):
     situacao_preco: Literal["acima_do_justo", "abaixo_do_justo", "dentro_da_margem", "revisao_manual"]
     motivos: list[Motivo] = []
     alerta_dados: bool = False
+    # Média do BC (série 20742) no mês da concessão, em % ao ano EFETIVA, como vem da view
+    # (coluna bc_credito_pessoal_aa). Opcional: vazia antes de 03/2011. O LLM nunca a recebe.
+    bc_credito_pessoal_aa: float | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def exige_numeros_fora_da_revisao_manual(self):
@@ -79,11 +83,12 @@ class Parecer(RespostaLLM):
     origem: Literal["llm", "template"]
     versao_prompt: str
     gerado_em: datetime
+    contexto_mercado: str | None = None  # frase fixa escrita pelo código, nunca pelo LLM
 
 
 # ---------- Conferência do parecer (REGRAS_PARECER.md, seção 9) ----------
 
-UNIDADE_JURO = "ao ano"  # decisão 3: se o grupo mudar para "ao mês", muda só aqui
+UNIDADE_JURO = "ao ano (nominal)"  # juros do Bondora e do prever(): mensal = anual ÷ 12 (DATA.md, seção 8)
 TOLERANCIA_PP = 0.051     # o texto usa 1 casa decimal: 16,2% vale para 0.162 e 0.1624
 
 # Número com "%" (aceita "18,4%", "18.4 %") ou número com vírgula decimal ("0,184", "8,7 p.p.").
@@ -101,7 +106,9 @@ PALAVRAS_PROIBIDAS = re.compile(
 
 # Seção 4: gênero, idade e país nunca aparecem no parecer.
 ATRIBUTOS_SENSIVEIS = re.compile(
-    r"\b(g[eê]neros?|sexo|idades?|et[áa]ri[oa]s?|idos[oa]s?|pa[ií]s|pa[ií]ses|nacionalidade|estrangeir[oa]s?)\b",
+    r"\b(g[eê]neros?|sexo|idades?|et[áa]ri[oa]s?|idos[oa]s?|pa[ií]s|pa[ií]ses|nacionalidade|estrangeir[oa]s?"
+    r"|est[ôo]nia|estonian[oa]s?|finl[âa]ndia|finland[eê]s[ae]?s?|espanha|espanh[oó]is|espanhol[a]?s?"
+    r"|eslov[áa]quia|eslovac[oa]s?)\b",
     re.IGNORECASE)
 VARIAVEIS_SENSIVEIS = {"age", "gender", "sex", "country", "nationality",
                        "idade", "genero", "sexo", "pais", "nacionalidade"}
@@ -119,9 +126,20 @@ def motivo_e_sensivel(motivo: Motivo) -> bool:
     return bool(ATRIBUTOS_SENSIVEIS.search(motivo.rotulo) or partes_da_variavel & VARIAVEIS_SENSIVEIS)
 
 
+# País entre parênteses no rótulo, ex.: "score de crédito (Estônia)" -> "score de crédito".
+PAIS_ENTRE_PARENTESES = re.compile(
+    r"\s*\((?:est[ôo]nia|finl[âa]ndia|espanha|eslov[áa]quia)\)", re.IGNORECASE)
+
+
 def motivos_permitidos(entrada: EntradaPrever) -> list[Motivo]:
-    """Motivos que podem ir para o parecer e para o LLM."""
-    return [m for m in entrada.motivos if not motivo_e_sensivel(m)]
+    """Motivos que podem ir para o parecer e para o LLM, sem gênero, idade e país."""
+    permitidos = []
+    for motivo in entrada.motivos:
+        rotulo = PAIS_ENTRE_PARENTESES.sub("", motivo.rotulo).strip()
+        limpo = motivo.model_copy(update={"rotulo": rotulo})
+        if not motivo_e_sensivel(limpo):
+            permitidos.append(limpo)
+    return permitidos
 
 
 def contar_frases(texto: str) -> int:
@@ -132,6 +150,23 @@ def contar_frases(texto: str) -> int:
 def formatar_percentual(valor: float) -> str:
     """0.184 -> '18,4%'"""
     return f"{valor * 100:.1f}%".replace(".", ",")
+
+
+def efetiva_para_nominal(efetiva_percentual: float) -> float:
+    """Taxa efetiva ao ano em % (como o BC divulga) -> nominal ao ano em fração.
+    Ex.: 126,2% efetiva -> 0.845 (84,5% nominal, ou 7,04% ao mês)."""
+    return 12 * ((1 + efetiva_percentual / 100) ** (1 / 12) - 1)
+
+
+def montar_contexto_mercado(entrada: EntradaPrever) -> str | None:
+    """Frase fixa com a média do BC, escrita pelo código. Sem o dado (antes de 03/2011) -> None."""
+    if entrada.bc_credito_pessoal_aa is None:
+        return None
+    nominal = formatar_juro(efetiva_para_nominal(entrada.bc_credito_pessoal_aa))
+    efetiva = formatar_percentual(entrada.bc_credito_pessoal_aa / 100)
+    return ("Referência de mercado: no mês da concessão, a taxa média do crédito pessoal no Brasil "
+            f"era de {nominal} ({efetiva} efetiva, como o BC divulga). É um dado de contexto do "
+            "mercado brasileiro, não uma medida do preço justo deste contrato.")
 
 
 def formatar_juro(valor: float) -> str:

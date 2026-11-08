@@ -12,7 +12,7 @@ Teste rápido (na pasta raiz):
 from datetime import datetime, timedelta, timezone
 
 from genai.src.checagem import (EntradaPrever, Parecer, formatar_juro, formatar_percentual,
-                               motivos_permitidos)
+                               montar_contexto_mercado, motivos_permitidos)
 
 VERSAO_TEMPLATE = "template_v1"
 DECISAO = "A decisão final é do analista."
@@ -52,13 +52,13 @@ def _textos(entrada: EntradaPrever) -> tuple[str, list[str], str, list[str]]:
         )
 
     risco = f"Risco faixa {entrada.faixa} (chance de não pagar de {formatar_percentual(entrada.pd)})."
-    margem = (f"{formatar_percentual(entrada.juro_justo_min)} a {formatar_juro(entrada.juro_justo_max)}; "
-              f"valor central {formatar_juro(entrada.juro_justo)}")
+    margem = (f"de {formatar_percentual(entrada.juro_justo_min)} a {formatar_juro(entrada.juro_justo_max)}, "
+              f"com valor central de {formatar_juro(entrada.juro_justo)}")
     fatores = _fatores(entrada)
     todas = ["pd", "juro_cobrado", "juro_justo", "juro_justo_min", "juro_justo_max"]
 
     if entrada.situacao_preco == "acima_do_justo":
-        pontos = [f"O juro cobrado ({cobrado}) está acima da margem do juro justo estimado ({margem}).",
+        pontos = [f"O juro cobrado, de {cobrado}, está acima da margem do juro justo estimado: {margem}.",
                   "A diferença não é explicada pelo risco estimado pelo modelo. "
                   "É um indício a investigar, não uma conclusão."]
         return (
@@ -70,7 +70,7 @@ def _textos(entrada: EntradaPrever) -> tuple[str, list[str], str, list[str]]:
         )
 
     if entrada.situacao_preco == "abaixo_do_justo":
-        pontos = [f"O juro cobrado ({cobrado}) está abaixo da margem do juro justo estimado ({margem}).",
+        pontos = [f"O juro cobrado, de {cobrado}, está abaixo da margem do juro justo estimado: {margem}.",
                   "Esse preço pode não cobrir a perda esperada. "
                   "É um ponto de atenção para o banco, não uma falha do cliente."]
         return (
@@ -81,7 +81,7 @@ def _textos(entrada: EntradaPrever) -> tuple[str, list[str], str, list[str]]:
         )
 
     # dentro_da_margem
-    pontos = [f"O juro cobrado ({cobrado}) está dentro da margem do juro justo estimado ({margem})."]
+    pontos = [f"O juro cobrado, de {cobrado}, está dentro da margem do juro justo estimado: {margem}."]
     return (
         f"{risco} O juro cobrado está dentro da margem esperada para esse risco.",
         pontos + ([fatores] if fatores else []),
@@ -107,6 +107,7 @@ def montar_template(entrada: EntradaPrever, agora: datetime | None = None) -> Pa
         origem="template",
         versao_prompt=VERSAO_TEMPLATE,
         gerado_em=agora or datetime.now(FUSO),
+        contexto_mercado=montar_contexto_mercado(entrada),
     )
 
 

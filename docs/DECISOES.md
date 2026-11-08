@@ -95,7 +95,6 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - Euribor média de 0,9% contra juros de 20–30%: o custo do dinheiro pesa pouco;
   o juro justo depende sobretudo da perda esperada e de custos e margem.
 
-
 ### 8.1 Custos + margem por safra (recalibrada em 05/11)
 
 - Custos + margem calibrados por safra (média do justo = média do cobrado, sem default real), com taxa nominal (i/12) e o modelo de 05/11: 2009 13,5% · 2010 19,7% · 2011 19,2% · 2012 19,3% · 2013 20,8% · 2014 10,8% · 2015 15,3% · 2016 31,7% (trocada em 08/11, abaixo). Ano sem safra usa 2016.
@@ -104,7 +103,7 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
   - Por quê: o modelo erra o **nível** de risco de 2016 (previsto 55% × real 67%), e qualquer margem fixa empurrava a carteira toda para um lado. Com 31,7% (média): 65% de 2016 "abaixo do justo", mas as faixas A e B "abaixo" deram lucro (+5,7% e +2,5%). Com 15,6% (média 2013–2015): 60% "acima do justo", numa safra que deu prejuízo nas faixas C a E.
 - **Limitação (backtest 2016, 08/11):** dentro da faixa, "acima do justo" **não** rendeu mais que "abaixo" (E: −54% × −29%). Quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado: o rating dele vê risco que o modelo não vê. Por isso "acima do justo" é indício para revisão, nunca conclusão.
 - LGD por país (defaults 2014–2015): EE 0,34 · ES 0,76 · FI 0,55.
-- Pendente: a margem de incerteza por bootstrap (hoje ±2 pp fixo) define quantos ficam "dentro".
+- Pendente: **08/11: margem de incerteza por bootstrap** (20 reamostras por cliente, IC 95%): a dispersão das reamostras em logit, centrada na PD do modelo final; `juro_justo_min`/`max` = juro justo nas pontas do IC da PD. Largura na carteira: mediana 5,2 p.p. (p10 2,8; p90 17,6), contra 4,0 p.p. fixos antes. “Dentro da margem”: 11–18% por ano. Limite: só mede a incerteza da PD, não a da LGD nem a da margem.
 
 ## 9. Regra de achado
 
@@ -190,6 +189,29 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 | v2 sem renda                | 0,714           | 0,193           | 67,5%            |
 | v2 sem scores de bureau     | 0,704           | 0,196           | 68,9%            |
 
+### Equidade e backtest (08/11, `python -m src.modelos.equidade`)
+
+Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano, valor e prazo; IC 95% robusto (HC1). Resultado é **indício, nunca conclusão**.
+
+| Comparação                                           | Diferença           | IC 95%          | n                |
+| ------------------------------------------------------ | -------------------- | --------------- | ---------------- |
+| Gênero: mulher × homem (2013–2016, dentro do país) | −0,53 p.p.          | −0,91 a −0,15 | 7.435 × 10.821  |
+| Idade: 18–25 × 35–44 (2013–2021)                   | **+5,45 p.p.** | +5,06 a +5,84   | 13.682 × 31.987 |
+
+- **Gênero:** mulheres pagaram meio ponto a menos que homens de mesmo risco. Pequeno e a favor delas: sem sinal de discriminação contra mulheres. Ressalvas: codificação de gênero suspeita em 2017–2019 (por isso a janela 2013–2016) e gênero 2 (ausente) quase só da Espanha.
+- **Idade:** jovens pagaram 5,5 p.p. a mais que clientes de 35–44 com a mesma PD. Duas leituras possíveis: (a) cobrança maior só pela idade; (b) risco que o modelo não vê (o rating do Bondora usa idade; o nosso não, por decisão). Teste "default realizado − PD" por grupo (encerrados 2013–2016): jovens deram **+3,56 p.p.** mais default do que a PD previa (IC +1,42 a +5,70; n 2.596 × 5.325). Parte do prêmio tem base em risco, mas pela conta aproximada (3,6 p.p. × LGD ~0,6 em ~3 anos ≈ 1 p.p. ao ano) a perda extra explica cerca de 1 dos 5,5 p.p. Os ~4 p.p. restantes são  **indício de cobrança pela idade além do risco** , a investigar à luz do CDC. Gênero: mulheres deram **−3,34 p.p.** menos default que o previsto (IC −4,62 a −2,07): a diferença de preço vai na direção do risco, sem indício contra mulheres. Ressalva: o teste de default usa só encerrados 2013–2016.
+- **Backtest 2016** (margem pela mediana; rentabilidade realizada média):
+
+| Faixa | Abaixo do justo | Dentro  | Acima do justo |
+| ----- | --------------- | ------- | -------------- |
+| A     | +6,8%           | +3,4%   | +1,5%          |
+| B     | +3,2%           | −1,8%  | +1,2%          |
+| C     | −10,0%         | −6,0%  | −1,7%         |
+| D     | −25,7%         | −17,0% | −23,2%        |
+| E     | −26,2%         | −32,5% | −50,8%        |
+
+  O esperado era abaixo < dentro < acima em cada faixa. Só a faixa C segue o esperado; em A, B e E acontece o contrário. Confirma a limitação da seção 8.1: quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado.
+
 ## 13. Observações dos dados
 
 - 2009–2012: só Estônia. Espanha e Finlândia entram em 2013–2014.
@@ -215,8 +237,9 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 - [X] **04/11: entregar o `prever()`**
 - [X] 05/11: correção das coroas, retirada das 2 variáveis com mudança de regime, taxa nominal, contratos novos
 - [X] Recalibrar a margem por safra com a taxa nominal e o modelo de 05/11 (notebook 08) e regenerar os casos de teste (notebook 09)
-- [ ] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
+- [X] Margem de incerteza por bootstrap no lugar do ±2 pp fixo (`incerteza.py`)
 - [ ] `juro_pares_mediana` (pares = faixa × país × ano, mínimo de 30) como segunda opinião
 - [ ] Teste do `prever()` com modelo pequeno treinado no próprio teste, cobrindo as 4 situações
 - [X] 08/11: `carteira_auditoria.csv` (`src/modelos/carteira.py`, `python -m src.modelos.carteira`)
-- [ ] 09/11: `equidade.json` (gênero 2013–2016 dentro do país; idade 18–25 × 35–44) e backtest do retorno realizado
+- [X] 09/11 (adiantado para 08/11): `equidade.json` e backtest (seção 12)
+- [X] Preencher o teste "default realizado − PD" da idade (seção 12) e decidir a leitura do achado de idade

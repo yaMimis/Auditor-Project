@@ -1,6 +1,7 @@
 """prever(): saída no formato do FORMATO_JSON.md — versão 2 (05/11).
 LGD por país (notebook 07) e margem por safra (notebook 08).
-PROVISÓRIO até 09/11: margem de incerteza constante (±2 p.p.)."""
+Margem de incerteza (08/11): IC 95% por bootstrap por cliente quando o pacote tem
+"bootstrap" (notebook 10); sem ele, ±2 p.p. fixo."""
 from __future__ import annotations
 
 import json
@@ -10,6 +11,7 @@ import joblib
 import pandas as pd
 from scipy.optimize import brentq
 
+from src.modelos.incerteza import faixa_pd
 from src.modelos.treino import _para_modelo
 from src.modelos.variaveis import CATEGORICAS, criar_variaveis
 from src.modelos.xgb import motivos
@@ -32,7 +34,7 @@ MARGEM_POR_SAFRA = {2009: 0.1347, 2010: 0.1968, 2011: 0.1915, 2012: 0.1927,
 if ARQ_MARGEM.exists():
     MARGEM_POR_SAFRA.update({int(a): float(m) for a, m in
                              json.loads(ARQ_MARGEM.read_text(encoding="utf-8")).items()})
-MARGEM_INCERTEZA_PP = 2.0  # provisório: ± pontos percentuais
+MARGEM_INCERTEZA_PP = 2.0  # só quando o pacote não tem as reamostras do bootstrap
 CHECAR_FAIXA = ["valor_concedido", "prazo_meses", "renda_total"]
 
 
@@ -134,9 +136,18 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
     euribor = max(float(valor) / 100, 0.0)
     lgd = LGD_POR_PAIS.get(df["pais"].iloc[0], LGD_PADRAO)
     margem = MARGEM_POR_SAFRA.get(ano_contrato, MARGEM_POR_SAFRA[max(MARGEM_POR_SAFRA)])  # ano novo → última safra
-    justo = round(juro_justo(df["prazo_meses"].iloc[0], pd_, lgd, euribor + margem), 4)
-    jmin = round(max(justo - MARGEM_INCERTEZA_PP / 100, 0), 4)
-    jmax = round(justo + MARGEM_INCERTEZA_PP / 100, 4)
+    prazo = df["prazo_meses"].iloc[0]
+    justo = round(juro_justo(prazo, pd_, lgd, euribor + margem), 4)
+    if pac.get("bootstrap"):
+        # justo cresce com a PD: o IC do justo é o justo nas pontas do IC da PD
+        lo, hi = faixa_pd(pac["bootstrap"], X, [pd_])
+        pd_ic95 = [round(float(lo[0]), 4), round(float(hi[0]), 4)]
+        jmin = round(min(juro_justo(prazo, pd_ic95[0], lgd, euribor + margem), justo), 4)
+        jmax = round(max(juro_justo(prazo, pd_ic95[1], lgd, euribor + margem), justo), 4)
+    else:
+        pd_ic95 = None
+        jmin = round(max(justo - MARGEM_INCERTEZA_PP / 100, 0), 4)
+        jmax = round(justo + MARGEM_INCERTEZA_PP / 100, 4)
 
     if juro_cobrado > jmax:
         situacao = "acima_do_justo"
@@ -146,7 +157,7 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
         situacao = "dentro_da_margem"
 
     return {**base,
-            "pd": round(pd_, 4), "pd_ic95": None, "faixa": _faixa(pd_),
+            "pd": round(pd_, 4), "pd_ic95": pd_ic95, "faixa": _faixa(pd_),
             "juro_justo": justo, "juro_justo_min": jmin, "juro_justo_max": jmax,
             "diferenca_pp": round((juro_cobrado - justo) * 100, 1),
             "situacao_preco": situacao,

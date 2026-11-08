@@ -91,3 +91,35 @@ def test_calibracao_pela_mediana_divide_a_safra(pacote, carteira):
     lote = lote[lote["pd"].notna()]
     for ano, g in lote.groupby("ano"):
         assert abs((g["juro_cobrado"] - g["juro_justo"]).median()) < 0.002, ano
+
+
+@pytest.fixture(scope="module")
+def pacote_boot(pacote):
+    from src.modelos.incerteza import treinar_bootstrap
+    treino = criar_variaveis(_base_sintetica(900))
+    params = {"max_depth": 3, "min_child_weight": 5, "reg_lambda": 1}
+    return {**pacote, "bootstrap": treinar_bootstrap(treino, params, 50, n_reamostras=5)}
+
+
+def test_bootstrap_lote_igual_ao_prever_e_intervalo_coerente(pacote_boot, carteira):
+    lote = pontuar_lote(carteira, pacote_boot).set_index("contrato_id")
+    com_pd = lote[lote["pd"].notna()]
+    assert (com_pd["pd_ic95_min"] <= com_pd["pd"]).all() and (com_pd["pd"] <= com_pd["pd_ic95_max"]).all()
+    assert (com_pd["juro_justo_min"] <= com_pd["juro_justo"]).all()
+    assert (com_pd["juro_justo"] <= com_pd["juro_justo_max"]).all()
+    assert (com_pd["juro_justo_max"] - com_pd["juro_justo_min"] > 0).mean() > 0.9
+    for _, linha in carteira.head(25).iterrows():
+        um = prever(linha.drop("ano").to_dict(), pacote_boot)
+        l = lote.loc[um["contrato_id"]]
+        assert l["situacao_preco"] == um["situacao_preco"]
+        if um["pd"] is not None:
+            assert um["pd_ic95"] == [pytest.approx(l["pd_ic95_min"], abs=1e-4),
+                                     pytest.approx(l["pd_ic95_max"], abs=1e-4)]
+            assert l["juro_justo_min"] == pytest.approx(um["juro_justo_min"], abs=1e-4)
+            assert l["juro_justo_max"] == pytest.approx(um["juro_justo_max"], abs=1e-4)
+
+
+def test_bootstrap_respeita_contrato(pacote_boot, carteira):
+    from tests.modelos.test_contrato_prever import validar_saida_prever
+    for _, linha in carteira.head(10).iterrows():
+        validar_saida_prever(prever(linha.drop("ano").to_dict(), pacote_boot))

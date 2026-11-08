@@ -3,6 +3,7 @@ LGD por país (notebook 07) e margem por safra (notebook 08).
 PROVISÓRIO até 09/11: margem de incerteza constante (±2 p.p.)."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import joblib
@@ -21,9 +22,16 @@ FAIXAS = [(0.30, "A"), (0.45, "B"), (0.60, "C"), (0.75, "D"), (1.01, "E")]
 LGD_PADRAO = 0.60      
 LGD_POR_PAIS = {"EE": 0.34, "ES": 0.76, "FI": 0.55}   # LGD realizada, defaults 2014–2015 (notebook 07)    
 MARGEM_PADRAO = 0.05       # custos + margem ao ano, provisório
-# custos + margem ao ano por safra: média do justo = média do cobrado (notebook 08)
+# custos + margem ao ano por safra (notebook 08: média do justo = média do cobrado).
+# 2016–2021: recalibrada pela MEDIANA em 08/11 (src/modelos/carteira.py) e lida de
+# docs/resultados/margem_por_safra.json: em cada safra, metade dos contratos fica acima
+# do justo e metade abaixo (juro justo RELATIVO à safra; ver DECISOES.md, 8.1).
+ARQ_MARGEM = RAIZ / "docs" / "resultados" / "margem_por_safra.json"
 MARGEM_POR_SAFRA = {2009: 0.1347, 2010: 0.1968, 2011: 0.1915, 2012: 0.1927,
-                    2013: 0.2078, 2014: 0.1076, 2015: 0.1527, 2016: 0.3166}
+                    2013: 0.2078, 2014: 0.1076, 2015: 0.1527, 2016: 0.1560}
+if ARQ_MARGEM.exists():
+    MARGEM_POR_SAFRA.update({int(a): float(m) for a, m in
+                             json.loads(ARQ_MARGEM.read_text(encoding="utf-8")).items()})
 MARGEM_INCERTEZA_PP = 2.0  # provisório: ± pontos percentuais
 CHECAR_FAIXA = ["valor_concedido", "prazo_meses", "renda_total"]
 

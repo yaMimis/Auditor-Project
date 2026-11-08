@@ -1,0 +1,20 @@
+[
+  {
+    "atributo": "Gênero",
+    "comparacao": "feminino × masculino (dentro do país)",
+    "diferenca_pp": -0.53,
+    "ic95_min": -0.91,
+    "ic95_max": -0.15,
+    "n_grupo_a": 7435,
+    "n_grupo_b": 10821
+  },
+  {
+    "atributo": "Idade",
+    "comparacao": "18–25 × 35–44 anos",
+    "diferenca_pp": 5.45,
+    "ic95_min": 5.06,
+    "ic95_max": 5.84,
+    "n_grupo_a": 13682,
+    "n_grupo_b": 31987
+  }
+]

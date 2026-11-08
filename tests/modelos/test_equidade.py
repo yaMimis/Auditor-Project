@@ -42,7 +42,7 @@ def test_janela_genero_e_formato_do_painel(tmp_path):
     assert g["n_grupo_a"] == int((na_janela & (genero == 1)).sum())   # 2019 fora
     assert i["n_grupo_a"] == int(idade.between(18, 25).sum())          # < 18 fora
     import json
-    (tmp_path / "equidade.json").write_text(json.dumps([g, i], ensure_ascii=False))
+    (tmp_path / "equidade.json").write_text(json.dumps([g, i], ensure_ascii=False), encoding="utf-8")
     lido = carregar_equidade(tmp_path)
     assert [e["atributo"] for e in lido] == ["Gênero", "Idade"]
     assert set(lido[0]) >= {"diferenca_pp", "ic95_min", "ic95_max", "n_grupo_a", "n_grupo_b"}

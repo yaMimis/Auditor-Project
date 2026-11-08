@@ -123,3 +123,35 @@ def test_bootstrap_respeita_contrato(pacote_boot, carteira):
     from tests.modelos.test_contrato_prever import validar_saida_prever
     for _, linha in carteira.head(10).iterrows():
         validar_saida_prever(prever(linha.drop("ano").to_dict(), pacote_boot))
+
+
+def test_pares_mediana_lote_igual_ao_prever(pacote, carteira):
+    from src.modelos.carteira import tabela_pares
+    treino = _base_sintetica(900)
+    treino["data_emprestimo"] = pd.to_datetime(treino["ano"].astype(str) + "-03-01")
+    treino["juro_aa"] = np.random.default_rng(3).uniform(10, 90, len(treino))
+    pares = tabela_pares(treino, pacote)
+    assert (pares["n"] >= 30).all() and pares["ano"].max() <= 2015
+    pac = {**pacote, "pares": pares}
+
+    lote = pontuar_lote(carteira, pac).set_index("contrato_id")
+    assert lote["juro_pares_mediana"].notna().any()
+    assert lote.loc[lote["pd"].isna(), "juro_pares_mediana"].isna().all()
+    for _, linha in carteira.iterrows():
+        um = prever(linha.drop("ano").to_dict(), pac)
+        l = lote.loc[um["contrato_id"]]["juro_pares_mediana"]
+        if um["juro_pares_mediana"] is None:
+            assert pd.isna(l)
+        else:
+            assert l == pytest.approx(um["juro_pares_mediana"], abs=1e-4)
+
+
+def test_mediana_pares_regras():
+    from src.modelos.prever import mediana_pares
+    t = pd.DataFrame({"pais": ["EE", "EE", "FI"], "faixa": ["A", "A", "B"],
+                      "ano": [2014, 2015, 2015], "juro_pares_mediana": [0.2, 0.25, 0.3], "n": [40, 50, 31]})
+    assert mediana_pares(t, "EE", "A", 2014) == 0.2
+    assert mediana_pares(t, "EE", "A", 2021) == 0.25      # ano além do treino → último
+    assert mediana_pares(t, "EE", "B", 2015) is None      # grupo sem 30+
+    assert mediana_pares(t, "ES", "A", 2015) is None      # país sem tabela
+    assert mediana_pares(None, "EE", "A", 2015) is None

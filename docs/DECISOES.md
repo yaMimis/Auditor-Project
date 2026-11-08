@@ -201,17 +201,17 @@ Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano,
 
 - **Gênero:** mulheres pagaram meio ponto a menos que homens de mesmo risco. Pequeno e a favor delas: sem sinal de discriminação contra mulheres. Ressalvas: codificação de gênero suspeita em 2017–2019 (por isso a janela 2013–2016) e gênero 2 (ausente) quase só da Espanha.
 - **Idade:** jovens pagaram 5,5 p.p. a mais que clientes de 35–44 com a mesma PD. Duas leituras possíveis: (a) cobrança maior só pela idade; (b) risco que o modelo não vê (o rating do Bondora usa idade; o nosso não, por decisão). Teste "default realizado − PD" por grupo (encerrados 2013–2016): jovens deram **+3,56 p.p.** mais default do que a PD previa (IC +1,42 a +5,70; n 2.596 × 5.325). Parte do prêmio tem base em risco, mas pela conta aproximada (3,6 p.p. × LGD ~0,6 em ~3 anos ≈ 1 p.p. ao ano) a perda extra explica cerca de 1 dos 5,5 p.p. Os ~4 p.p. restantes são  **indício de cobrança pela idade além do risco** , a investigar à luz do CDC. Gênero: mulheres deram **−3,34 p.p.** menos default que o previsto (IC −4,62 a −2,07): a diferença de preço vai na direção do risco, sem indício contra mulheres. Ressalva: o teste de default usa só encerrados 2013–2016.
-- **Backtest 2016** (margem pela mediana; rentabilidade realizada média):
+- **Backtest 2016** (margem pela mediana + incerteza por bootstrap; rentabilidade realizada média, igual ao painel):
 
 | Faixa | Abaixo do justo | Dentro  | Acima do justo |
 | ----- | --------------- | ------- | -------------- |
-| A     | +6,8%           | +3,4%   | +1,5%          |
-| B     | +3,2%           | −1,8%  | +1,2%          |
-| C     | −10,0%         | −6,0%  | −1,7%         |
-| D     | −25,7%         | −17,0% | −23,2%        |
-| E     | −26,2%         | −32,5% | −50,8%        |
+| A     | +6,9%           | +1,8%   | +2,4%          |
+| B     | +3,8%           | −8,3%   | +3,2%          |
+| C     | −7,2%           | −13,1%  | −1,8%          |
+| D     | −26,0%          | −19,1%  | −23,2%         |
+| E     | −24,2%          | −39,4%  | −50,7%         |
 
-  O esperado era abaixo < dentro < acima em cada faixa. Só a faixa C segue o esperado; em A, B e E acontece o contrário. Confirma a limitação da seção 8.1: quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado.
+  O esperado era abaixo < dentro < acima em cada faixa. Só a faixa C tem "acima" rendendo mais que "abaixo"; em A, B, D e E acontece o contrário. Confirma a limitação da seção 8.1: quando o Bondora cobra mais que o nosso justo, em geral o cliente era mesmo mais arriscado.
 
 ## 13. Observações dos dados
 

@@ -54,7 +54,7 @@ def test_parecer_do_llm_aprovado(falsos):
     assert parecer["origem"] == "llm"
     assert parecer["contrato_id"] == "BO-1"
     assert parecer["recomendacao"] == "revisar_preco"
-    assert parecer["versao_prompt"] == "parecer_v1"
+    assert parecer["versao_prompt"] == cadeia.VERSAO_PROMPT
     assert parecer["gerado_em"].utcoffset() == timedelta(hours=-3)
     assert parecer["fontes"][0]["trecho_id"] == "cdc-art6-1"
 

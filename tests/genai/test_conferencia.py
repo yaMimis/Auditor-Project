@@ -46,7 +46,7 @@ def test_formata_percentual_com_virgula():
 
 
 def test_formata_juro_com_unidade():
-    assert formatar_juro(0.249) == "24,9% ao ano"
+    assert formatar_juro(0.249) == "24,9% ao ano (nominal)"
 
 
 # ---------- extração de números ----------

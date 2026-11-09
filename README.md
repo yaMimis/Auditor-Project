@@ -84,8 +84,9 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
    ```
    CLIENTE_ID_SAL=<chave de pelo menos 16 caracteres, a mesma para todo o grupo>
    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/auditor_db
+   GOOGLE_API_KEY=<chave do Gemini, para o parecer>
    ```
-   A chave pseudonimiza o `cliente_id`; peça-a ao grupo. Se a porta 5432 estiver ocupada, use um `docker-compose.override.yml` local com a porta 5433 e ajuste a URL.
+   A chave do sal pseudonimiza o `cliente_id`; peça-a ao grupo. Sem a `GOOGLE_API_KEY`, o parecer sai pelo template de reserva (sem IA). Se a porta 5432 estiver ocupada, use um `docker-compose.override.yml` local com a porta 5433 e ajuste a URL.
 
 4. **Banco.** Suba o PostgreSQL com pgvector:
    ```
@@ -100,14 +101,22 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
    ```
    Esperado: 179.235 contratos e 85.087 clientes distintos.
 
+   **Normas do parecer** (busca no pgvector), uma vez, com `pip install -r requirements-genai.txt`:
+   ```
+   python -m genai.src.dividir
+   python -m genai.src.indexar
+   ```
+   Sem esse passo o parecer funciona, mas sai sem fontes.
+
 6. **API e painel.** Coloque `pacote_prever_v1.joblib` em `modelos_salvos/` (fora do Git; peça ao Samuel) e suba:
    ```
    docker compose up --build api streamlit
    ```
+   O primeiro build demora mais: a imagem instala o PyTorch (CPU) para a busca nas normas.
    - Painel: http://localhost:8501 (sem o modelo, use os exemplos da aba de revisão)
    - API: http://localhost:8000/docs (`GET /` informa se o modelo foi carregado)
    - Para os dados da carteira, o painel lê `docs/resultados/carteira_auditoria.csv` e `equidade.json`.
-   - As decisões do analista ficam na tabela `decisao_analista`. Banco criado antes de 06/11? Aplique uma vez:
+   - As decisões do analista ficam na tabela `decisao_analista`. Banco criado antes de 09/11? Aplique (ou reaplique) uma vez; pode rodar de novo sem problema:
      ```
      docker cp db\05_decisoes_analista.sql auditor_postgres:/tmp/05.sql
      docker exec auditor_postgres psql -U postgres -d auditor_db -v ON_ERROR_STOP=1 -f /tmp/05.sql

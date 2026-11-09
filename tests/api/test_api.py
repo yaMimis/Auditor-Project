@@ -1,5 +1,8 @@
 """Testes da API sem o modelo real: o prever() é trocado por respostas de exemplo
-(docs/exemplos_prever.json), então rodam na CI sem o .joblib."""
+(docs/exemplos_prever.json), então rodam na CI sem o .joblib.
+
+O Gemini, a busca nas normas e o banco também são trocados por versões falsas: nenhum
+teste chama o LLM de verdade (mesmo com a GOOGLE_API_KEY no .env) nem depende do banco."""
 import json
 from pathlib import Path
 
@@ -23,6 +26,16 @@ PAYLOAD = {
     "country": "EE(Estônia)", "interest_cobrado": 24.5, "liabilities_total": 450,
     "gender": 1, "age": 35,
 }
+
+
+@pytest.fixture(autouse=True)
+def sem_llm_nem_banco(monkeypatch):
+    """Sem LLM e sem banco: o gerar_parecer() cai no template, como manda a regra."""
+    def sem_llm(*a, **k):
+        raise RuntimeError("LLM desligado nos testes")
+    monkeypatch.setattr(api.cadeia, "chamar_llm", sem_llm)
+    monkeypatch.setattr(api.cadeia, "buscar_trechos", lambda *a, **k: [])
+    monkeypatch.setattr(api.banco, "taxa_bc", lambda *a, **k: None)
 
 
 @pytest.fixture
@@ -142,14 +155,56 @@ def test_taxa_proposta_so_vale_ao_revisar(cliente, monkeypatch):
     assert gravado["taxa_proposta"] is None
 
 
-def test_decisao_em_revisao_manual_e_recusada(cliente, monkeypatch):
+def test_decisao_em_revisao_manual_vai_com_nulos(cliente, monkeypatch):
+    """Desde 08/11 a tabela aceita revisão manual: PD, faixa e juros justos vão nulos, nunca zero."""
+    gravado = {}
+    monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: (gravado.update(reg), _linha_gravada(reg))[1])
+    r = cliente.post("/decisoes", json=_nova_decisao("revisao_manual", decisao="manter_preco"))
+    assert r.status_code == 201, r.text
+    for campo in ("pd", "faixa", "juro_justo", "juro_justo_min", "juro_justo_max"):
+        assert gravado[campo] is None
+    assert gravado["situacao_preco"] == "revisao_manual" and gravado["recomendacao_sistema"] == "revisao_manual"
+    assert r.json()["pd"] is None
+
+
+def test_justificativa_em_branco_e_recusada(cliente, monkeypatch):
     monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: pytest.fail("não deveria gravar"))
-    r = cliente.post("/decisoes", json=_nova_decisao("revisao_manual"))
-    assert r.status_code == 422 and "revisão manual" in r.json()["detail"]
-
-
-def test_justificativa_em_branco_e_recusada(cliente):
     assert cliente.post("/decisoes", json=_nova_decisao(justificativa="   ")).status_code == 422
+    assert cliente.post("/decisoes", json=_nova_decisao(justificativa=None)).status_code == 422
+    assert cliente.post("/decisoes", json=_nova_decisao(analista="")).status_code == 422
+
+
+def test_campos_invalidos_viram_422_e_nao_500(cliente, monkeypatch):
+    monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: pytest.fail("não deveria gravar"))
+    assert cliente.post("/decisoes", json=_nova_decisao(requisicao_id="nao-e-uuid")).status_code == 422
+    assert cliente.post("/decisoes", json=_nova_decisao(decisao="aprovar")).status_code == 422
+    assert cliente.post("/decisoes", json=_nova_decisao(taxa_proposta=18)).status_code == 422  # 18 = 1800%: vai em fração
+
+
+def test_taxa_do_bc_vai_para_o_parecer(cliente, monkeypatch):
+    """/prever busca pelo mês da data; /parecer busca pelo contrato. O código escreve o contexto."""
+    pedidos = []
+
+    def bc(contrato_id=None, data_emprestimo=None):
+        pedidos.append((contrato_id, data_emprestimo))
+        return 126.2
+    monkeypatch.setattr(api.banco, "taxa_bc", bc)
+    _troca_prever(monkeypatch, POR_SITUACAO["acima_do_justo"])
+    r = cliente.post("/prever", json={**PAYLOAD, "data_emprestimo": "2016-03-15"})
+    assert r.status_code == 200, r.text
+    assert r.json()["bc_credito_pessoal_aa"] == 126.2
+    assert "Referência de mercado" in r.json()["parecer_ia"]["contexto_mercado"]
+    assert pedidos[0] == (None, "2016-03-15")
+    r = cliente.post("/parecer", json=POR_SITUACAO["dentro_da_margem"])
+    assert "Referência de mercado" in r.json()["contexto_mercado"]
+    assert pedidos[-1] == (POR_SITUACAO["dentro_da_margem"]["contrato_id"], None)
+
+
+def test_sem_taxa_do_bc_o_parecer_sai_sem_contexto(cliente, monkeypatch):
+    _troca_prever(monkeypatch, POR_SITUACAO["acima_do_justo"])
+    corpo = cliente.post("/prever", json=PAYLOAD).json()
+    assert corpo["parecer_ia"]["contexto_mercado"] is None
+    assert corpo["parecer_ia"]["origem"] == "template"  # LLM desligado → template
 
 
 def test_banco_fora_responde_503(cliente, monkeypatch):

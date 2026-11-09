@@ -2,6 +2,7 @@
 
 Regras de exibição (genai/REGRAS_PARECER.md e FORMATO_JSON.md):
 - PD e juros chegam em FRAÇÃO (0.249) e são mostrados com vírgula e 1 casa ("24,9%");
+- juros são NOMINAIS ao ano (convenção do Bondora; FORMATO_JSON v1.5): rótulo "a.a. nominal";
 - campo nulo vira "—" (nunca 0%);
 - todo texto vindo da API passa por html.escape antes de entrar no HTML.
 """
@@ -79,6 +80,7 @@ RECOMENDACOES = {
     "revisao_manual": "Revisão manual",
 }
 
+UNIDADE_JURO = " a.a. nominal"
 COR_AUMENTA = "#d9825b"
 COR_REDUZ = "#7fa7d9"
 
@@ -139,6 +141,8 @@ def kpis_revisao(r: dict) -> list[str]:
         justo_sub = "Não calculado: dados fora da faixa de treino"
     else:
         justo_sub = f"Margem de incerteza: {pct(r.get('juro_justo_min'))} – {pct(r.get('juro_justo_max'))}"
+    if r.get("juro_pares_mediana") is not None:  # segunda opinião: não muda a situação
+        justo_sub += f"<br>Mediana dos pares: {pct(r['juro_pares_mediana'])}"
 
     dist = distancia_da_margem_pp(r)
     if situacao == "revisao_manual":
@@ -152,9 +156,9 @@ def kpis_revisao(r: dict) -> list[str]:
     return [
         html_kpi("Risco de inadimplência", pd_valor, "", esc(ic_txt),
                  extra=f'<div class="ap-kpi-foot">{faixa_html}</div>'),
-        html_kpi("Juro cobrado", pct(r.get("juro_cobrado")), " a.a.", "Taxa do contrato"),
-        html_kpi("Juro justo calculado", pct(r.get("juro_justo")), " a.a." if r.get("juro_justo") else "",
-                 esc(justo_sub)),
+        html_kpi("Juro cobrado", pct(r.get("juro_cobrado")), UNIDADE_JURO, "Taxa do contrato"),
+        html_kpi("Juro justo calculado", pct(r.get("juro_justo")), UNIDADE_JURO if r.get("juro_justo") else "",
+                 justo_sub),  # justo_sub só tem números formatados por pct() e texto fixo
         html_kpi("Situação do preço", f'{s["icone"]} {esc(s["rotulo"])}', "", esc(sit_sub), destaque=s),
     ]
 
@@ -193,7 +197,7 @@ def html_barra_juros(r: dict) -> str:
         </div>
         <div class="ap-legend">
             <span><i style="background:rgba(228,189,125,.28)"></i>Margem de incerteza do modelo</span>
-            <span>Juro justo = custo do dinheiro (Euribor da época) + perda esperada ao longo do contrato + custos e margem calibrados na carteira</span>
+            <span>Juros nominais ao ano. Juro justo = custo do dinheiro (Euribor da época) + perda esperada ao longo do contrato + custos e margem calibrados na safra</span>
         </div>
     """)
 
@@ -305,6 +309,10 @@ def html_parecer(parecer: dict | None) -> str:
     else:
         fontes_html = '<span class="ap-muted">Não encontrei base normativa para este caso.</span>'
     rec = RECOMENDACOES.get(parecer.get("recomendacao"), parecer.get("recomendacao"))
+    contexto = ""
+    if parecer.get("contexto_mercado"):  # frase fixa escrita pelo código (média do BC), nunca pelo LLM
+        contexto = (f'<div class="ap-sec">Referência de mercado (Brasil)</div>'
+                    f'<div class="ap-mercado">{esc(parecer["contexto_mercado"])}</div>')
     return compactar(f"""
         <div class="ap-parecer-head">
             <div class="ap-card-title">Parecer</div>{origem}
@@ -317,6 +325,7 @@ def html_parecer(parecer: dict | None) -> str:
         <p class="ap-text">{esc(parecer.get("recomendacao_texto"))}</p>
         <div class="ap-sec">Fontes consultadas</div>
         <div class="ap-chips">{fontes_html}</div>
+        {contexto}
         <div class="ap-foot">Versão do texto: {esc(parecer.get("versao_prompt"))}</div>
     """)
 

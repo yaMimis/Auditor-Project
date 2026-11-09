@@ -23,8 +23,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
 
-from genai.src.checagem import (EntradaPrever, Fonte, Parecer, RespostaLLM, conferir_parecer,
-                                montar_contexto_mercado)
+from genai.src.checagem import (EntradaPrever, Fonte, Parecer, RespostaLLM, ajustar_resposta,
+                                conferir_parecer, montar_contexto_mercado)
 from genai.src.prompt import VERSAO_PROMPT, montar_mensagens
 from genai.src.template import FUSO, escolher_recomendacao, montar_template
 
@@ -172,6 +172,12 @@ def _passo_conferencia(estado: dict) -> dict:
     if not resposta.recomendacao_texto.rstrip().endswith(DECISAO):
         resposta.recomendacao_texto = f"{resposta.recomendacao_texto.rstrip()} {DECISAO}"
     problemas = conferir_parecer(resposta, estado["entrada"], [t["trecho_id"] for t in estado["trechos"]])
+    # Os ajustes vêm DEPOIS da conferência, que vê a resposta original do LLM. Eles só tiram texto ou
+    # fontes; nunca acrescentam. Assim não escondem um erro que a conferência recusaria.
+    if not problemas:
+        ajustes = ajustar_resposta(resposta)
+        if ajustes:
+            log.info("ajustes de estilo no parecer do LLM: %s", "; ".join(ajustes))
     return {**estado, "resposta": resposta, "problemas": problemas}
 
 

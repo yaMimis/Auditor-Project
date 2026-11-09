@@ -87,6 +87,7 @@ Siglas e termos usados no projeto, com o significado geral e como cada um aparec
 | **Taxa efetiva** | Taxa que já conta os juros sobre juros: (1 + mensal)^12 − 1. | É a do BC (série 20742) e a que o CDC (art. 52) manda informar. Converte-se para nominal com 12 × [(1 + efetiva)^(1/12) − 1]. |
 | **ROI**                                         | Ganho em relação ao que foi investido.                                                                          | Calculado em euros na carteira real.                                                                                                               |
 | **Backtest**                                    | Teste de uma regra com dados do passado, usando o desfecho que realmente aconteceu.                               | Os contratos marcados como "abaixo do justo" deram mais prejuízo? Se sim, a auditoria funciona.                                                   |
+| **Retorno realizado** | Quanto voltou, em euros, de um contrato em relação ao que foi emprestado: (principal e juros recebidos − valor concedido) ÷ valor concedido. | View `vw_retorno_realizado`. As recuperações já estão dentro dos pagamentos, e o cálculo não desconta o tempo. |
 | **Coroa estoniana (EEK)**                       | Moeda da Estônia até 31/12/2010, a 15,6466 coroas por euro.                                                     | Confirmado nos dados: a renda e os passivos de 2009–2010 estão em EEK, enquanto os valores dos empréstimos já foram convertidos para euros.    |
 
 ## 3. Dados e banco
@@ -179,6 +180,7 @@ Siglas e termos usados no projeto, com o significado geral e como cada um aparec
 | **Compliance**                          | Área que cuida de cumprir leis e normas internas.                                             | O analista pode encaminhar um caso.                                               |
 | **Governança**                         | Regras e responsabilidades para usar a IA com segurança.                                      | Seção própria da apresentação.                                               |
 | **Decisão humana**                     | A decisão final é de uma pessoa, não do sistema.                                            | O analista mantém o preço, recomenda ajustar a taxa ou encaminha ao compliance. |
+| **Fora da auditoria** | Contrato que não entra na comparação de preço da auditoria. | Os reestruturados: ficam no modelo, mas saem da auditoria de preço (coluna `fora_da_auditoria`). |
 | **Trilha de auditoria** | Registro de quem decidiu o quê, quando e com base em quê, que não pode ser alterado depois. | Tabela `decisao_analista`: cada decisão do analista, com o parecer, a justificativa e os números do momento. |
 
 ## 7. Processo e engenharia

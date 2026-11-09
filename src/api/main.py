@@ -10,6 +10,7 @@ from genai.src.checagem import EntradaPrever, Parecer
 from genai.src.template import montar_template
 from src.api.schemas import RespostaPrever, SolicitacaoEmprestimo
 from src.modelos.prever import PACOTE_PADRAO, prever
+from src.api import banco
 
 app = FastAPI(
     title="Auditor de Juros - API",
@@ -23,6 +24,7 @@ def read_root():
     return {
         "status": "API - AUDITOR OPERACIONAL",
         "modelo_carregavel": PACOTE_PADRAO.exists(),  # False = falta o .joblib em modelos_salvos/
+        "banco_disponivel": banco.banco_disponivel(),
     }
 
 
@@ -75,3 +77,26 @@ def parecer_de_saida_prever(saida: RespostaPrever):
 def _parecer(resultado: dict) -> dict:
     # TODO (Maria, até 08/11): trocar o template por gerar_parecer(resultado).
     return montar_template(EntradaPrever.model_validate(resultado)).model_dump()
+
+@app.post("/decisoes", status_code=201)
+def registrar_decisao(decisao: dict):
+    try:
+        return banco.registrar_decisao(decisao)
+    except banco.BancoIndisponivel as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except banco.DecisaoRecusada as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@app.get("/decisoes")
+def listar_decisoes(contrato_id: str = None, limite: int = 200):
+    try:
+        return banco.listar_decisoes(contrato_id, limite)
+    except banco.BancoIndisponivel as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+@app.get("/decisoes/atuais")
+def decisoes_atuais():
+    try:
+        return banco.decisoes_atuais()
+    except banco.BancoIndisponivel as e:
+        raise HTTPException(status_code=503, detail=str(e))

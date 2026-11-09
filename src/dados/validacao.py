@@ -64,7 +64,7 @@ FINALIDADES = list(range(0, 9)) + list(range(101, 111))
 # decisões do analista (db/05_decisoes_analista.sql; os mesmos valores de src/api/schemas.py)
 DECISOES_ANALISTA = ["manter_preco", "revisar_preco", "encaminhar_compliance"]
 RECOMENDACOES = DECISOES_ANALISTA + ["revisao_manual"]
-SITUACOES_PRECO = ["acima_do_justo", "abaixo_do_justo", "dentro_da_margem"]
+SITUACOES_PRECO = ["acima_do_justo", "abaixo_do_justo", "dentro_da_margem", "revisao_manual"]
 ORIGENS_DECISAO = ["carteira", "simulacao"]
 CHAVES_PROIBIDAS_NO_JSON = ("genero", "idade", "gender", "age")   # gênero e idade nunca entram no registro
 TABELAS_MACRO = ("euribor_mensal", "selic_mensal", "bc_credito_pessoal_mensal")
@@ -224,12 +224,12 @@ def _regras_erro() -> dict[str, dict[str, "pa.Column"]]:
             "taxa_proposta": _col(True, False, _maior_que(0), pa.Check.less_than_or_equal_to(10)),
             "recomendacao_sistema": _col(True, False, pa.Check.isin(RECOMENDACOES)),
             "situacao_preco": _col(False, False, pa.Check.isin(SITUACOES_PRECO)),
-            "pd": _col(False, False, pa.Check.in_range(0, 1)),
-            "faixa": _col(False, False, pa.Check.isin(["A", "B", "C", "D", "E"])),
+            "pd": _col(True, False, pa.Check.in_range(0, 1)),
+            "faixa": _col(True, False, pa.Check.isin(["A", "B", "C", "D", "E"])),
             "juro_cobrado": _col(False, False, pa.Check.in_range(0, 10)),
-            "juro_justo": _col(False, False, pa.Check.in_range(0, 10)),
-            "juro_justo_min": _col(False, False, pa.Check.in_range(0, 10)),
-            "juro_justo_max": _col(False, False, pa.Check.in_range(0, 10)),
+            "juro_justo": _col(True, False, pa.Check.in_range(0, 10)),
+            "juro_justo_min": _col(True, False, pa.Check.in_range(0, 10)),
+            "juro_justo_max": _col(True, False, pa.Check.in_range(0, 10)),
             "versao_modelo": _col(False, False, _nao_vazio()),
             "versao_parecer": _col(True),
             "origem_parecer": _col(True, False, pa.Check.isin(["llm", "template"])),
@@ -285,6 +285,10 @@ def _checks_linha_erro() -> dict[str, list]:
             _linha("JSON sem genero nem idade", ("prever_json", "parecer_json"),
                    lambda df: ~df["prever_json"].map(_tem_chave_proibida).astype(bool)
                    & ~df["parecer_json"].map(_tem_chave_proibida).astype(bool)),
+            _linha("numeros obrigatorios fora de revisao_manual",
+                   ("situacao_preco", "pd", "faixa", "juro_justo", "juro_justo_min", "juro_justo_max"),
+                   lambda df: (df["situacao_preco"] == "revisao_manual")
+                   | df[["pd", "faixa", "juro_justo", "juro_justo_min", "juro_justo_max"]].notna().all(axis=1)),
             _linha("registrada_em nao esta no futuro", ("registrada_em",),
                    lambda df: pd.to_datetime(df["registrada_em"], utc=True)
                    <= pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=1)),
@@ -339,7 +343,8 @@ def _checks_linha_alerta() -> dict[str, list]:
     meses = pd.Timedelta(days=61)
     return {"decisao_analista": [
         _linha("juro_justo entre juro_justo_min e juro_justo_max", ("juro_justo", "juro_justo_min", "juro_justo_max"),
-               lambda df: (df["juro_justo_min"] <= df["juro_justo"]) & (df["juro_justo"] <= df["juro_justo_max"])),
+               lambda df: df["juro_justo"].isna()
+               | ((df["juro_justo_min"] <= df["juro_justo"]) & (df["juro_justo"] <= df["juro_justo_max"]))),
         _linha("revisar_preco traz taxa_proposta", ("decisao", "taxa_proposta"),
                lambda df: (df["decisao"] != "revisar_preco") | df["taxa_proposta"].notna()),
     ], "emprestimo": [

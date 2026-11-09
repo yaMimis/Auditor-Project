@@ -134,6 +134,10 @@ def _decisao_registrada_no_futuro(t):
     t["decisao_analista"].loc[0, "registrada_em"] = pd.Timestamp("2099-01-01", tz="UTC")
 
 
+def _numeros_nulos_fora_da_revisao_manual(t):
+    t["decisao_analista"].loc[0, "pd"] = float("nan")
+
+
 def _recebido_nao_fecha(t):
     t["vw_retorno_realizado"].loc[0, "recebido_total"] = 9999.0
 
@@ -182,6 +186,8 @@ CASOS = [
     ("decisão atual repetida na view", _view_da_decisao_atual_repetida, "vw_decisao_atual", "contrato_id"),
     ("decisão registrada no futuro", _decisao_registrada_no_futuro, "decisao_analista",
      "registrada_em nao esta no futuro"),
+    ("pd nulo fora da revisão manual", _numeros_nulos_fora_da_revisao_manual, "decisao_analista",
+     "numeros obrigatorios fora de revisao_manual"),
     ("recebido_total não fecha com principal + juros", _recebido_nao_fecha, "vw_retorno_realizado",
      "recebido_total = principal_recebido + juros_recebidos"),
     ("retorno realizado menor que -100%", _retorno_menor_que_menos_1, "vw_retorno_realizado", "retorno_realizado"),

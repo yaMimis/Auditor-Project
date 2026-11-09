@@ -49,6 +49,19 @@ def proibidos(texto):
     return PALAVRAS_PROIBIDAS.findall(texto) + ATRIBUTOS_SENSIVEIS.findall(texto)
 
 
+FONTE_FIXA = "lgpd-art20"  # trazida pela pergunta de governança em todos os casos (v3)
+
+
+def fontes_especificas(fontes):
+    """Fontes sem a LGPD art. 20: mede se o RAG achou a norma certa para a situação, e não só a fixa."""
+    return [f for f in fontes if not f.startswith(FONTE_FIXA)]
+
+
+def _recusa_por_palavra(rodada):
+    return any("conferência recusou" in a and ("palavra proibida" in a or "atributo sensível" in a)
+               for a in rodada["avisos"])
+
+
 def _aceita(trecho_id, prefixos):
     return any(trecho_id.startswith(p) for p in prefixos)
 
@@ -118,6 +131,9 @@ def escrever_markdown(resultados, caminho):
         f"| Pareceres do LLM aprovados pela conferência | {_pct([r['origem'] == 'llm' for r in todas if r['parecer']['recomendacao'] != 'revisao_manual'])} |",
         f"| Fontes dentro das normas aceitas (pareceres do LLM) | {_pct([r['fontes_ok'] for r in com_llm])} |",
         f"| Pareceres do LLM com alguma fonte | {_pct([bool(r['fontes']) for r in com_llm])} |",
+        f"| Pareceres do LLM com fonte específica da situação (sem contar {FONTE_FIXA}) "
+        f"| {_pct([bool(fontes_especificas(r['fontes'])) for r in com_llm])} |",
+        f"| Recusas da conferência por palavra/atributo proibido | {sum(_recusa_por_palavra(r) for r in todas)} |",
         f"| Sem palavra/atributo proibido | {_pct([not proibidos(_texto(r['parecer'])) for r in todas])} |",
         f"| Mesma resposta nas 2 rodadas | {_pct([res['consistente'] for res in resultados])} |",
         f"| Tempo médio do LLM | {sum(r['tempo_s'] for r in com_llm) / max(len(com_llm), 1):.1f} s |",
@@ -129,6 +145,10 @@ def escrever_markdown(resultados, caminho):
         "## Revisão humana (preencher)",
         "",
         "Sim/não em Fidelidade, Citação correta e Alucinação (sim = alucinou); Clareza de 1 a 5. Ler a rodada 1 abaixo.",
+        "",
+        "Na Citação correta, conferir também: (1) o parecer não diz que algo \"cumpre\" ou \"atende\" a LGPD "
+        "ou outra norma (conclusão jurídica é do compliance); (2) ao citar norma, usa o modo hipotético "
+        "(\"se este contrato fosse de um banco brasileiro\").",
         "",
         "| Caso | Tipo | Origem (r1/r2) | Fontes (r1) | Fidelidade | Citação correta | Alucinação | Clareza |",
         "|---|---|---|---|---|---|---|---|",

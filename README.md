@@ -107,26 +107,12 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
    - Painel: http://localhost:8501 (sem o modelo, use os exemplos da aba de revisão)
    - API: http://localhost:8000/docs (`GET /` informa se o modelo foi carregado)
    - Para os dados da carteira, o painel lê `docs/resultados/carteira_auditoria.csv` e `equidade.json`.
-
-7. **Parecer com IA (GenAI).** Instale as dependências da frente e crie a sua chave do Gemini em [aistudio.google.com](https://aistudio.google.com/api-keys) (nível gratuito; contas de instituição podem não ter o nível gratuito, então prefira um Gmail pessoal):
-   ```
-   pip install -r requirements-genai.txt
-   ```
-   Acrescente ao `.env` (nunca vai ao Git):
-   ```
-   GOOGLE_API_KEY=<sua chave>
-   MODELO_LLM=gemini-3.5-flash-lite   # opcional; plano B: gemini-3.1-flash-lite
-   ```
-   Com o banco no ar (passo 4), indexe as normas e teste a busca:
-   ```
-   python genai/src/indexar.py
-   python genai/src/testar_busca.py
-   ```
-   Esperado: 91 trechos indexados e 8 de 10 perguntas com o artigo certo entre os 3 primeiros. Para ver pareceres dos casos de teste:
-   ```
-   python -m genai.src.cadeia
-   ```
-   Sem chave ou sem banco, nada quebra: sem banco, o parecer sai sem fontes; sem LLM, sai do template de reserva (`origem: "template"`).
+   - As decisões do analista ficam na tabela `decisao_analista`. Banco criado antes de 06/11? Aplique uma vez:
+     ```
+     docker cp db\05_decisoes_analista.sql auditor_postgres:/tmp/05.sql
+     docker exec auditor_postgres psql -U postgres -d auditor_db -v ON_ERROR_STOP=1 -f /tmp/05.sql
+     ```
+     Em http://localhost:8000/ deve aparecer `"banco_disponivel": true`.
 
 ## Documentação
 
@@ -137,9 +123,6 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 - [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
 - [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
-- [`genai/normas/FONTES.md`](genai/normas/FONTES.md): normas usadas no RAG, com fonte oficial e data de acesso.
-- [`genai/prompts/`](genai/prompts/): prompts versionados do parecer (a v2 corrige os problemas do primeiro teste real da v1).
-- [`genai/avaliacao/CRITERIOS.md`](genai/avaliacao/CRITERIOS.md): critérios de avaliação do parecer, definidos antes dos resultados.
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 
 ## Governança e ética
@@ -165,5 +148,4 @@ Cada frente registra aqui como usou assistentes de IA (agentic coding) e como re
 
 - **Dados:** os scripts de carga, os esquemas SQL e a documentação foram escritos com apoio do Claude e revisados e testados pelo responsável da frente.
 - **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas.
-- **Modelo:** a completar.
-- **GenAI:** a limpeza das normas, o código (divisão, indexação, cadeia, checagem e template), os testes e os prompts foram feitos com apoio do Claude. A responsável conferiu cada norma na fonte oficial (`FONTES.md`), rodou os testes, leu os pareceres reais do Gemini e usou outra IA como revisora independente do código. Os problemas encontrados no primeiro teste real (país no texto, rótulo alterado, frase hipotética sem norma) viraram regras e testes, e o prompt passou para a v2.
+- **Modelo e GenAI:** a completar por cada frente.

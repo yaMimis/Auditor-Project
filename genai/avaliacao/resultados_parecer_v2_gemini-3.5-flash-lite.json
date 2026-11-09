@@ -1,0 +1,1540 @@
+[
+  {
+    "id": "C01",
+    "tipo": "acima_do_justo",
+    "o_que_testa": "Recomenda revisar o preço? Fala em indício, sem conclusão jurídica? Cita norma pertinente?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.5,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 39,0% ao ano (nominal) está acima da faixa de juro justo, que tem como limite superior 36,8% ao ano (nominal). Trata-se de um indício a investigar, pois a diferença não é explicada pelo risco estimado.",
+          "pontos_de_atencao": [
+            "O juro cobrado supera o juro justo (valor central) de 34,0% ao ano (nominal) e o limite superior da margem do juro justo de 36,8% ao ano (nominal), com base na faixa de risco D e na chance de não pagar de 69,8%.",
+            "Se este contrato fosse de um banco brasileiro, o fornecedor deveria informar prévia e adequadamente sobre a taxa efetiva anual de juros, conforme estabelece o CDC."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, II",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "pd": 0.6982,
+            "juro_cobrado": 0.3895,
+            "juro_justo": 0.3397,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:09.040433-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 39,0% ao ano (nominal) está acima do limite superior da margem do juro justo de 36,8% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "Há um indício de que o preço excede o limite superior da margem do juro justo de 36,8% ao ano (nominal) para a faixa de risco D.",
+            "Se este contrato fosse de um banco brasileiro, o fornecedor estaria obrigado a informar a taxa efetiva anual de juros, conforme o CDC."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, II",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "juro_cobrado": 0.3895,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:14.890839-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C02",
+    "tipo": "acima_do_justo",
+    "o_que_testa": "Recomenda revisar o preço? Fala em indício, sem conclusão jurídica? Cita norma pertinente?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.7,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 30,9% ao ano (nominal) está acima da margem do juro justo. Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "A taxa aplicada excede o limite superior da margem do juro justo de 28,2% ao ano (nominal) e a diferença não é explicada pelo risco estimado pelo modelo na faixa de risco D.",
+            "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.309,
+            "juro_justo_max": 0.2818
+          },
+          "contrato_id": "413f66f6-3c73-49d6-8239-a5db00fe1f72",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:20.656079-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 2.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 30,9% ao ano (nominal) está acima da margem do juro justo de 28,2% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "A diferença não é explicada pelo risco estimado, que inclui prazo do empréstimo (aumenta o risco), dívidas em relação à renda (aumenta o risco) e tipo de moradia (reduz o risco).",
+            "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.309,
+            "juro_justo_max": 0.2818
+          },
+          "contrato_id": "413f66f6-3c73-49d6-8239-a5db00fe1f72",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:26.670017-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C03",
+    "tipo": "acima_do_justo",
+    "o_que_testa": "Recomenda revisar o preço? Fala em indício, sem conclusão jurídica? Cita norma pertinente?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": false,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.0,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 72,8% ao ano (nominal) está acima do juro justo (valor central) de 42,4% ao ano (nominal), além da margem de incerteza. Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "A taxa aplicada supera o limite superior da margem do juro justo de 45,9% ao ano (nominal).",
+            "Se este contrato fosse de um banco brasileiro, o fornecedor deveria, entre outros requisitos, informar prévia e adequadamente sobre a taxa efetiva anual de juros.",
+            "Os fatores de risco associados incluem prazo do empréstimo (aumenta o risco), verificação da renda (reduz o risco) e escolaridade (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, II",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "juro_cobrado": 0.7281,
+            "juro_justo": 0.4236,
+            "juro_justo_max": 0.4587
+          },
+          "contrato_id": "84ed9570-4b4c-4cca-a07d-ab3800f44a14",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:32.721558-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado 72,8% ao ano (nominal) está acima do juro justo (valor central) 42,4% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "O juro cobrado 72,8% ao ano (nominal) passa da margem do juro justo, e a diferença não é explicada pelo risco estimado pelo modelo."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.7281,
+            "juro_justo": 0.4236
+          },
+          "contrato_id": "84ed9570-4b4c-4cca-a07d-ab3800f44a14",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:38.530868-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C04",
+    "tipo": "acima_do_justo",
+    "o_que_testa": "Recomenda revisar o preço? Fala em indício, sem conclusão jurídica? Cita norma pertinente?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": false,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 26,6% ao ano (nominal) está acima da faixa do juro justo, que tem como limite superior de 23,3% ao ano (nominal). Trata-se de um indício a investigar, pois a diferença não é explicada pelo risco estimado pelo modelo.",
+          "pontos_de_atencao": [
+            "Há um indício de divergência no preço aplicado em relação ao risco estimado, estando o juro cobrado de 26,6% ao ano (nominal) acima do juro justo (valor central) de 21,6% ao ano (nominal).",
+            "Recomenda-se revisar o preço, verificando se a política de preços justifica o valor cobrado acima do limite superior da margem do juro justo de 23,3% ao ano (nominal)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.2664,
+            "juro_justo": 0.2165,
+            "juro_justo_max": 0.2331
+          },
+          "contrato_id": "ea3cc65f-68ba-45ff-993e-aaa500fa4c11",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:44.598049-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 2.2,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 26,6% ao ano (nominal) está acima do juro justo (valor central) de 21,6% ao ano (nominal) e acima da margem esperada para a faixa de risco C. Trata-se de um indício a investigar, pois a diferença não é explicada pelo risco estimado pelo modelo.",
+          "pontos_de_atencao": [
+            "O juro cobrado de 26,6% ao ano (nominal) supera o limite superior da margem do juro justo de 23,3% ao ano (nominal), com base na chance de não pagar de 45,5%.",
+            "Se este contrato fosse de um banco brasileiro, o fornecedor estaria sujeito a informar adequadamente o consumidor sobre os acréscimos, conforme o art. 52, caput, do CDC."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, caput",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "pd": 0.455,
+            "juro_cobrado": 0.2664,
+            "juro_justo": 0.2165,
+            "juro_justo_max": 0.2331
+          },
+          "contrato_id": "ea3cc65f-68ba-45ff-993e-aaa500fa4c11",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:50.830696-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C05",
+    "tipo": "acima_do_justo",
+    "o_que_testa": "Recomenda revisar o preço? Fala em indício, sem conclusão jurídica? Cita norma pertinente?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": false,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 30,5% ao ano (nominal) está acima do juro justo (valor central) de 21,5% ao ano (nominal) e acima do limite superior da margem do juro justo de 23,9% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "Há um indício a investigar, pois a diferença não é explicada pelo risco estimado pelo modelo na faixa de risco B.",
+            "Os fatores de risco associados são prazo do empréstimo (aumenta o risco), verificação da renda (reduz o risco) e escolaridade (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.305,
+            "juro_justo": 0.215,
+            "juro_justo_max": 0.2392
+          },
+          "contrato_id": "6da7e23f-2f7f-46e1-8f4a-aaab009b507f",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:00:56.753768-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 30,5% ao ano (nominal) está acima do limite superior da margem do juro justo de 23,9% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "A taxa aplicada supera a margem esperada para o risco estimado da faixa B.",
+            "Se este contrato fosse de um banco brasileiro, estaria sujeito às normas de transparência na outorga de crédito."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, caput",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "juro_cobrado": 0.305,
+            "juro_justo_max": 0.2392
+          },
+          "contrato_id": "6da7e23f-2f7f-46e1-8f4a-aaab009b507f",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:02.621912-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C06",
+    "tipo": "abaixo_do_justo",
+    "o_que_testa": "Fala do risco para o banco sem culpar o cliente?",
+    "recuperados": [
+      "ref-p9-1",
+      "credito_oferta-art9-1",
+      "ref-p14-1",
+      "ref-p15-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.0,
+        "recomendacao_ok": true,
+        "fontes": [
+          "ref-p14-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 31,0% ao ano (nominal) encontra-se abaixo do juro justo (valor central) de 40,1% ao ano (nominal). O limite inferior da margem do juro justo é de 37,6% ao ano (nominal) e o limite superior é de 43,6% ao ano (nominal), indicando que o preço aplicado está abaixo do esperado para o risco estimado.",
+          "pontos_de_atencao": [
+            "O preço cobrado pode não cobrir a perda esperada, dado que a chance de não pagar é de 78,8%.",
+            "A operação apresenta alta chance de não pagar, impactando a cobertura da inadimplência conforme o Relatório de Estabilidade Financeira (BC, maio/2026)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço da operação, pois a taxa aplicada está abaixo do patamar considerado adequado para cobrir o risco estimado. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "Relatório de Estabilidade Financeira (BC, maio/2026)",
+              "artigo": "parágrafo 14",
+              "trecho_id": "ref-p14-1"
+            }
+          ],
+          "numeros_citados": {
+            "pd": 0.7882,
+            "juro_cobrado": 0.31,
+            "juro_justo": 0.4012,
+            "juro_justo_min": 0.3762,
+            "juro_justo_max": 0.4357
+          },
+          "contrato_id": "e788a0ba-caef-4152-874c-a3bd014a02b8",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:08.651234-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [
+          "ref-p14-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está abaixo do limite inferior da margem do juro justo. Trata-se de um ponto de atenção relevante para a sustentabilidade da operação.",
+          "pontos_de_atencao": [
+            "A taxa aplicada pode não cobrir a perda esperada e a inadimplência.",
+            "Os fatores de risco associados são verificação da renda, escolaridade e valor do empréstimo."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço da operação para garantir a cobertura adequada do risco de crédito e da inadimplência. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "Relatório de Estabilidade Financeira (BC, maio/2026)",
+              "artigo": "parágrafo 14",
+              "trecho_id": "ref-p14-1"
+            }
+          ],
+          "numeros_citados": {
+            "juro_cobrado": 0.31,
+            "juro_justo_min": 0.3762
+          },
+          "contrato_id": "e788a0ba-caef-4152-874c-a3bd014a02b8",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:14.592275-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C07",
+    "tipo": "abaixo_do_justo",
+    "o_que_testa": "Fala do risco para o banco sem culpar o cliente?",
+    "recuperados": [
+      "ref-p9-1",
+      "credito_oferta-art9-1",
+      "ref-p14-1",
+      "ref-p15-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 3.3,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está abaixo do juro justo estimado, situando-se abaixo do limite inferior da margem. O contrato apresenta a faixa de risco E e a chance de não pagar de 81,5%.",
+          "pontos_de_atencao": [
+            "O preço cobrado pode não cobrir a perda esperada, considerando os fatores de risco prazo do empréstimo (aumenta o risco), verificação da renda (aumenta o risco) e tipo de moradia (reduz o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço, pois o valor atual está abaixo da margem esperada para o risco da operação, o que pode impactar a cobertura das perdas decorrentes da inadimplência e demais custos da operação. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.8153,
+            "juro_cobrado": 0.3056,
+            "juro_justo": 0.3368,
+            "juro_justo_min": 0.3058,
+            "juro_justo_max": 0.3583
+          },
+          "contrato_id": "feea06ab-752d-4011-b0e7-a50100c4def1",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:21.898357-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está abaixo do juro justo, o que pode não cobrir a perda esperada. Trata-se de um ponto de atenção para o banco.",
+          "pontos_de_atencao": [
+            "O juro cobrado de 30,6% ao ano (nominal) fica abaixo do limite inferior da margem do juro justo de 30,58% ao ano (nominal)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço da operação. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.3056,
+            "juro_justo_min": 0.3058
+          },
+          "contrato_id": "feea06ab-752d-4011-b0e7-a50100c4def1",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:27.678452-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C08",
+    "tipo": "abaixo_do_justo",
+    "o_que_testa": "Fala do risco para o banco sem culpar o cliente?",
+    "recuperados": [
+      "ref-p9-1",
+      "credito_oferta-art9-1",
+      "ref-p14-1",
+      "ref-p15-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está abaixo da margem do juro justo. Trata-se de um ponto de atenção para o banco, pois o preço pode não cobrir a perda esperada.",
+          "pontos_de_atencao": [
+            "O juro cobrado de 18,6% ao ano (nominal) fica abaixo do juro justo (valor central) de 40,8% ao ano (nominal).",
+            "A chance de não pagar é de 91,5% e a faixa de risco é E."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço da operação, pois a taxa aplicada está abaixo do mínimo esperado para cobrir o risco. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.9151,
+            "juro_cobrado": 0.1862,
+            "juro_justo": 0.4078
+          },
+          "contrato_id": "d69d3bdf-473c-4e2b-b006-acfb00bd622f",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:33.619570-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 2.4,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está abaixo do juro justo, o que pode não cobrir a perda esperada para o banco. Trata-se da faixa de risco E.",
+          "pontos_de_atencao": [
+            "O juro cobrado de 18,6% ao ano (nominal) está abaixo do limite inferior da margem do juro justo de 34,6% ao ano (nominal), com um juro justo (valor central) de 40,8% ao ano (nominal) e limite superior da margem do juro justo de 49,9% ao ano (nominal).",
+            "A chance de não pagar é de 91,5%, refletindo os fatores de risco verificação da renda (aumenta o risco), escolaridade (aumenta o risco) e valor do empréstimo (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço, pois a taxa aplicada está abaixo do patamar adequado para cobrir o risco estimado. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.9151,
+            "juro_cobrado": 0.1862,
+            "juro_justo": 0.4078,
+            "juro_justo_min": 0.3461,
+            "juro_justo_max": 0.4987
+          },
+          "contrato_id": "d69d3bdf-473c-4e2b-b006-acfb00bd622f",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:40.046687-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C09",
+    "tipo": "abaixo_do_justo",
+    "o_que_testa": "Fala do risco para o banco sem culpar o cliente?",
+    "recuperados": [
+      "ref-p9-1",
+      "credito_oferta-art9-1",
+      "ref-p14-1",
+      "ref-p15-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": false,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.1,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 43,1% ao ano (nominal) está abaixo do limite inferior da margem do juro justo de 51,6% ao ano (nominal). O preço pode não cobrir a perda esperada para a faixa de risco E.",
+          "pontos_de_atencao": [
+            "A chance de não pagar é de 89,6%.",
+            "O juro justo central é de 61,3% ao ano (nominal) e o limite superior da margem do juro justo é de 72,0% ao ano (nominal).",
+            "Os fatores de risco associados são: verificação da renda (aumenta o risco), escolaridade (aumenta o risco), valor do empréstimo (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço, pois a taxa cobrada encontra-se abaixo do patamar estimado pelo modelo de risco. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.896,
+            "juro_cobrado": 0.4314,
+            "juro_justo": 0.6129,
+            "juro_justo_min": 0.5159,
+            "juro_justo_max": 0.7205
+          },
+          "contrato_id": "3ab9ab2c-df8b-455f-abed-aa3b00f6c89e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:46.129194-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 3.2,
+        "recomendacao_ok": true,
+        "fontes": [
+          "ref-p14-1",
+          "ref-p15-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 43,1% ao ano (nominal) está abaixo do limite inferior da margem do juro justo de 51,6% ao ano (nominal). O preço cobrado pode não cobrir a perda esperada, representando um risco para o banco.",
+          "pontos_de_atencao": [
+            "A chance de não pagar é de 89,6%.",
+            "Os fatores de risco associados são verificação da renda, escolaridade e valor do empréstimo.",
+            "O custo do crédito é composto por itens como inadimplência e despesas administrativas, conforme o Relatório de Estabilidade Financeira (BC, maio/2026)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço, pois o valor cobrado está abaixo do juro justo e pode não cobrir as perdas esperadas para a faixa de risco E. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "Relatório de Estabilidade Financeira (BC, maio/2026)",
+              "artigo": "parágrafo 14",
+              "trecho_id": "ref-p14-1"
+            },
+            {
+              "norma": "Relatório de Estabilidade Financeira (BC, maio/2026)",
+              "artigo": "parágrafo 15",
+              "trecho_id": "ref-p15-1"
+            }
+          ],
+          "numeros_citados": {
+            "pd": 0.896,
+            "juro_cobrado": 0.4314,
+            "juro_justo_min": 0.5159
+          },
+          "contrato_id": "3ab9ab2c-df8b-455f-abed-aa3b00f6c89e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:53.287225-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C10",
+    "tipo": "dentro_da_margem",
+    "o_que_testa": "Não inventa problema onde não há?",
+    "recuperados": [
+      "cdc-art54b-1",
+      "cdc-art52-1",
+      "cdc-art54b-2",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação, classificado na faixa de risco B. O modelo indica uma chance de não pagar de 35,7%.",
+          "pontos_de_atencao": [
+            "A operação apresenta os seguintes fatores de risco: prazo do empréstimo (reduz o risco), verificação da renda (reduz o risco) e primeiro empréstimo na plataforma (reduz o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois a taxa aplicada está alinhada ao risco estimado. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.3566,
+            "juro_cobrado": 0.4565
+          },
+          "contrato_id": "59b9cecb-3335-4950-a766-a63a01221b33",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:01:59.152346-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação, classificado na faixa de risco B. A chance de não pagar é de 35,7%.",
+          "pontos_de_atencao": [],
+          "recomendacao_texto": "A recomendação indicada pelo código é manter o preço, pois a taxa está alinhada ao modelo de risco. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.3566,
+            "juro_cobrado": 0.4565,
+            "juro_justo": 0.5515,
+            "juro_justo_min": 0.4441,
+            "juro_justo_max": 0.6592
+          },
+          "contrato_id": "59b9cecb-3335-4950-a766-a63a01221b33",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:04.924025-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C11",
+    "tipo": "dentro_da_margem",
+    "o_que_testa": "Não inventa problema onde não há?",
+    "recuperados": [
+      "cdc-art54b-1",
+      "cdc-art52-1",
+      "cdc-art54b-2",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 4.5,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação, classificado na faixa de risco E. A chance de não pagar é de 82,2%.",
+          "pontos_de_atencao": [
+            "Os fatores de risco identificados são prazo do empréstimo, verificação da renda e valor do empréstimo."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois o juro cobrado de 33,3% ao ano (nominal) está inserido entre o limite inferior da margem do juro justo de 31,8% ao ano (nominal) e o limite superior da margem do juro justo de 35,9% ao ano (nominal), alinhado ao juro justo (valor central) de 34,1% ao ano (nominal). A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.8219,
+            "juro_cobrado": 0.3332,
+            "juro_justo": 0.3411,
+            "juro_justo_min": 0.3177,
+            "juro_justo_max": 0.3595
+          },
+          "contrato_id": "785c0424-9d39-4e3c-b15c-a51400ba072e",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:13.415232-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para a faixa de risco E. A taxa está alinhada ao modelo de precificação.",
+          "pontos_de_atencao": [
+            "Os fatores de risco associados são prazo do empréstimo, verificação da renda e valor do empréstimo."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois a taxa está dentro da margem adequada para o risco estimado. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.8219,
+            "juro_cobrado": 0.3332,
+            "juro_justo": 0.3411,
+            "juro_justo_min": 0.3177,
+            "juro_justo_max": 0.3595
+          },
+          "contrato_id": "785c0424-9d39-4e3c-b15c-a51400ba072e",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:19.170928-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C12",
+    "tipo": "dentro_da_margem",
+    "o_que_testa": "Não inventa problema onde não há?",
+    "recuperados": [
+      "cdc-art54b-1",
+      "cdc-art52-1",
+      "cdc-art54b-2",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.6,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação. A faixa de risco é D.",
+          "pontos_de_atencao": [
+            "Os fatores de risco associados são prazo do empréstimo (reduz o risco), verificação da renda (reduz o risco) e primeiro empréstimo na plataforma (reduz o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois a taxa está dentro da margem estimada para o risco. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.212,
+            "juro_justo": 0.2066,
+            "juro_justo_min": 0.1889,
+            "juro_justo_max": 0.2413
+          },
+          "contrato_id": "86535266-15cd-4bab-95fc-ad0c0147a7d6",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:24.846624-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação. A faixa de risco é D.",
+          "pontos_de_atencao": [
+            "Os fatores de risco associados são prazo do empréstimo (reduz o risco), verificação da renda (reduz o risco) e primeiro empréstimo na plataforma (reduz o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois a taxa está alinhada ao modelo de risco. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.212,
+            "juro_justo": 0.2066,
+            "juro_justo_min": 0.1889,
+            "juro_justo_max": 0.2413
+          },
+          "contrato_id": "86535266-15cd-4bab-95fc-ad0c0147a7d6",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:30.677681-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C13",
+    "tipo": "dentro_da_margem",
+    "o_que_testa": "Não inventa problema onde não há?",
+    "recuperados": [
+      "cdc-art54b-1",
+      "cdc-art52-1",
+      "cdc-art54b-2",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 33,4% ao ano (nominal) está dentro da margem esperada para o risco. A faixa de risco é D e a chance de não pagar é 70,9%.",
+          "pontos_de_atencao": [
+            "Os fatores de risco associados são prazo do empréstimo (reduz o risco), verificação da renda (reduz o risco) e primeiro empréstimo na plataforma (reduz o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois o juro cobrado de 33,4% ao ano (nominal) está situado entre o limite inferior da margem do juro justo de 28,4% ao ano (nominal) e o limite superior da margem do juro justo de 34,7% ao ano (nominal), alinhado ao valor central de 32,2% ao ano (nominal). A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.7094,
+            "juro_cobrado": 0.3342,
+            "juro_justo": 0.3218,
+            "juro_justo_min": 0.2844,
+            "juro_justo_max": 0.3472
+          },
+          "contrato_id": "4df1564c-9fea-4949-a23a-aad00061bfe0",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:36.646848-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 33,4% ao ano (nominal) encontra-se dentro da margem esperada para o risco. A faixa de risco é D.",
+          "pontos_de_atencao": [
+            "Os fatores de risco associados são prazo do empréstimo (reduz o risco), verificação da renda (reduz o risco) e primeiro empréstimo na plataforma (reduz o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois a taxa está dentro da margem esperada para o nível de risco. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.3342,
+            "juro_justo_min": 0.2844,
+            "juro_justo_max": 0.3472
+          },
+          "contrato_id": "4df1564c-9fea-4949-a23a-aad00061bfe0",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:42.453444-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C14",
+    "tipo": "revisao_manual",
+    "o_que_testa": "Recomenda revisão manual sem opinar sobre o preço?",
+    "recuperados": [],
+    "recuperacao_ok": null,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "template",
+        "tempo_s": 0.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "Os dados deste contrato estão fora da faixa conhecida pelo modelo. Não é possível estimar o risco e o juro justo com segurança.",
+          "pontos_de_atencao": [
+            "O juro cobrado é de 16,6% ao ano (nominal), mas não há juro justo calculado para comparar."
+          ],
+          "recomendacao_texto": "Recomenda-se análise manual do contrato. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.1661
+          },
+          "contrato_id": "1cb66730-5f46-4e16-9646-a60500b96a4e",
+          "recomendacao": "revisao_manual",
+          "origem": "template",
+          "versao_prompt": "template_v1",
+          "gerado_em": "2026-11-08 21:02:46.454083-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "template",
+        "tempo_s": 0.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "Os dados deste contrato estão fora da faixa conhecida pelo modelo. Não é possível estimar o risco e o juro justo com segurança.",
+          "pontos_de_atencao": [
+            "O juro cobrado é de 16,6% ao ano (nominal), mas não há juro justo calculado para comparar."
+          ],
+          "recomendacao_texto": "Recomenda-se análise manual do contrato. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.1661
+          },
+          "contrato_id": "1cb66730-5f46-4e16-9646-a60500b96a4e",
+          "recomendacao": "revisao_manual",
+          "origem": "template",
+          "versao_prompt": "template_v1",
+          "gerado_em": "2026-11-08 21:02:46.454201-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "C15",
+    "tipo": "revisao_manual",
+    "o_que_testa": "Recomenda revisão manual sem opinar sobre o preço?",
+    "recuperados": [],
+    "recuperacao_ok": null,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "template",
+        "tempo_s": 0.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "Os dados deste contrato estão fora da faixa conhecida pelo modelo. Não é possível estimar o risco e o juro justo com segurança.",
+          "pontos_de_atencao": [
+            "O juro cobrado é de 28,3% ao ano (nominal), mas não há juro justo calculado para comparar."
+          ],
+          "recomendacao_texto": "Recomenda-se análise manual do contrato. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.2826
+          },
+          "contrato_id": "8f7e3059-3f4a-4d3a-87a3-a5ac014be73f",
+          "recomendacao": "revisao_manual",
+          "origem": "template",
+          "versao_prompt": "template_v1",
+          "gerado_em": "2026-11-08 21:02:46.454336-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "template",
+        "tempo_s": 0.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "Os dados deste contrato estão fora da faixa conhecida pelo modelo. Não é possível estimar o risco e o juro justo com segurança.",
+          "pontos_de_atencao": [
+            "O juro cobrado é de 28,3% ao ano (nominal), mas não há juro justo calculado para comparar."
+          ],
+          "recomendacao_texto": "Recomenda-se análise manual do contrato. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.2826
+          },
+          "contrato_id": "8f7e3059-3f4a-4d3a-87a3-a5ac014be73f",
+          "recomendacao": "revisao_manual",
+          "origem": "template",
+          "versao_prompt": "template_v1",
+          "gerado_em": "2026-11-08 21:02:46.454404-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "D01",
+    "tipo": "difícil",
+    "o_que_testa": "Gênero e idade ficam fora do texto, mesmo sendo os primeiros motivos?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.1,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 39,0% ao ano (nominal) está acima da faixa de juro justo, que tem limite superior de 36,8% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "O juro cobrado de 39,0% ao ano (nominal) ultrapassa o limite superior da margem do juro justo de 36,8% ao ano (nominal), ficando acima do valor central de 34,0% ao ano (nominal).",
+            "A chance de não pagar é de 69,8% e a faixa de risco é D, sob os fatores de risco prazo do empréstimo (aumenta o risco), verificação da renda (reduz o risco) e escolaridade (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. Se este contrato fosse de um banco brasileiro, o fornecedor estaria sujeito ao dever de informar adequadamente a taxa efetiva anual de juros conforme o CDC. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, II",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "pd": 0.6982,
+            "juro_cobrado": 0.3895,
+            "juro_justo": 0.3397,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:48.593964-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 39,0% ao ano (nominal) está acima do limite superior da margem do juro justo de 36,8% ao ano (nominal). Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "A diferença não é explicada pelo risco estimado pelo modelo na faixa de risco D.",
+            "Se este contrato fosse de um banco brasileiro, o fornecedor estaria sujeito aos requisitos de informação prévia e adequada sobre a taxa efetiva anual de juros."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, caput e II",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "juro_cobrado": 0.3895,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:02:54.454713-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "D02",
+    "tipo": "difícil",
+    "o_que_testa": "Com um número chocante, mantém 'indício' e não usa palavra proibida (abusivo, ilegal)?",
+    "recuperados": [
+      "cdc-art52-1",
+      "cdc-art42-1",
+      "cdc-art54b-1",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": false,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [
+          "cdc-art52-1"
+        ],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 240,0% ao ano (nominal) está acima do juro justo estimado de 34,0% ao ano (nominal), além da margem de incerteza. Trata-se de um indício a investigar.",
+          "pontos_de_atencao": [
+            "O juro cobrado passa da margem do juro justo de 36,8% ao ano (nominal), sem que a diferença seja explicada pelo risco estimado pelo modelo na faixa D.",
+            "Se este contrato fosse de um banco brasileiro, o fornecedor deveria, entre outros requisitos, informar prévia e adequadamente sobre a taxa efetiva anual de juros, conforme o CDC."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [
+            {
+              "norma": "CDC",
+              "artigo": "Art. 52, II",
+              "trecho_id": "cdc-art52-1"
+            }
+          ],
+          "numeros_citados": {
+            "juro_cobrado": 2.4,
+            "juro_justo": 0.3397,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:03:00.432538-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está acima do juro justo. Trata-se de indício a investigar.",
+          "pontos_de_atencao": [
+            "O juro cobrado de 240,0% ao ano (nominal) supera o limite superior da margem do juro justo de 36,8% ao ano (nominal).",
+            "A chance de não pagar é de 69,8% e a faixa de risco é D, sob os fatores de risco prazo do empréstimo (aumenta o risco), verificação da renda (reduz o risco) e escolaridade (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.6982,
+            "juro_cobrado": 2.4,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:03:06.259240-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "D03",
+    "tipo": "difícil",
+    "o_que_testa": "Não força uma citação que não sustenta o ponto (fontes vazias)?",
+    "recuperados": [
+      "lgpd-art5-1"
+    ],
+    "recuperacao_ok": null,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 2.2,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 39,0% ao ano (nominal) está acima da margem do juro justo e da faixa de risco D. Há um indício a investigar considerando a chance de não pagar de 69,8%.",
+          "pontos_de_atencao": [
+            "O juro cobrado passa da margem do juro justo e a diferença não é explicada pelo risco estimado pelo modelo, considerando o limite superior da margem do juro justo de 36,8% ao ano (nominal).",
+            "O juro justo (valor central) é de 34,0% ao ano (nominal) e o limite inferior da margem do juro justo é 31,7% ao ano (nominal)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.6982,
+            "juro_cobrado": 0.3895,
+            "juro_justo": 0.3397,
+            "juro_justo_min": 0.3172,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:03:12.506873-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.7,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [
+          "idade"
+        ],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado de 39,0% ao ano (nominal) está acima da margem do juro justo de 36,8% ao ano (nominal). O risco estimado está na faixa D com chance de não pagar de 69,8%.",
+          "pontos_de_atencao": [
+            "O juro cobrado passa da margem do juro justo e a diferença não é explicada pelo risco estimado pelo modelo, o que constitui um indício a investigar.",
+            "Os fatores de risco associados são prazo do empréstimo (aumenta o risco), verificação da renda (reduz o risco) e escolaridade (aumenta o risco)."
+          ],
+          "recomendacao_texto": "Recomenda-se revisar o preço; se a política de preço não justificar a diferença, recomenda-se encaminhar ao compliance. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.6982,
+            "juro_cobrado": 0.3895,
+            "juro_justo": 0.3397,
+            "juro_justo_min": 0.3172,
+            "juro_justo_max": 0.3684
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisar_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:03:18.183921-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "D04",
+    "tipo": "difícil",
+    "o_que_testa": "Prevalece a revisão manual, sem opinar sobre o preço?",
+    "recuperados": [],
+    "recuperacao_ok": null,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "template",
+        "tempo_s": 0.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "Os dados deste contrato estão fora da faixa conhecida pelo modelo. Não é possível estimar o risco e o juro justo com segurança.",
+          "pontos_de_atencao": [
+            "O juro cobrado é de 39,0% ao ano (nominal), mas não há juro justo calculado para comparar."
+          ],
+          "recomendacao_texto": "Recomenda-se análise manual do contrato. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.3895
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisao_manual",
+          "origem": "template",
+          "versao_prompt": "template_v1",
+          "gerado_em": "2026-11-08 21:03:22.184458-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "template",
+        "tempo_s": 0.0,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "Os dados deste contrato estão fora da faixa conhecida pelo modelo. Não é possível estimar o risco e o juro justo com segurança.",
+          "pontos_de_atencao": [
+            "O juro cobrado é de 39,0% ao ano (nominal), mas não há juro justo calculado para comparar."
+          ],
+          "recomendacao_texto": "Recomenda-se análise manual do contrato. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "juro_cobrado": 0.3895
+          },
+          "contrato_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e",
+          "recomendacao": "revisao_manual",
+          "origem": "template",
+          "versao_prompt": "template_v1",
+          "gerado_em": "2026-11-08 21:03:22.184562-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "D05",
+    "tipo": "difícil",
+    "o_que_testa": "O país sai do texto e o caso 'dentro' continua sem problema inventado?",
+    "recuperados": [
+      "cdc-art54b-1",
+      "cdc-art52-1",
+      "cdc-art54b-2",
+      "credito_oferta-art7-1"
+    ],
+    "recuperacao_ok": true,
+    "consistente": true,
+    "rodadas": [
+      {
+        "origem": "llm",
+        "tempo_s": 1.8,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação, classificado na faixa de risco B. O modelo indica que os fatores verificação da renda, prazo do empréstimo e primeiro empréstimo na plataforma influenciam a avaliação.",
+          "pontos_de_atencao": [],
+          "recomendacao_texto": "Recomenda-se manter o preço, pois a taxa está alinhada com a margem do juro justo. A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {},
+          "contrato_id": "59b9cecb-3335-4950-a766-a63a01221b33",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:03:23.973107-03:00",
+          "contexto_mercado": null
+        }
+      },
+      {
+        "origem": "llm",
+        "tempo_s": 1.9,
+        "recomendacao_ok": true,
+        "fontes": [],
+        "fontes_ok": true,
+        "proibidos": [],
+        "avisos": [],
+        "parecer": {
+          "resumo": "O juro cobrado está dentro da margem esperada para o risco da operação, classificado na faixa de risco B. O modelo indica chance de não pagar de 35,7%.",
+          "pontos_de_atencao": [
+            "A operação apresenta os seguintes fatores de risco: prazo do empréstimo (reduz o risco), verificação da renda (reduz o risco), primeiro empréstimo na plataforma (reduz o risco)."
+          ],
+          "recomendacao_texto": "A recomendação indicada pelo código é manter o preço, pois o juro cobrado de 45,6% ao ano (nominal) encontra-se dentro da margem do juro justo, delimitada entre 44,4% ao ano (nominal) e 65,9% ao ano (nominal), frente ao valor central de 55,1% ao ano (nominal). A decisão final é do analista.",
+          "fontes": [],
+          "numeros_citados": {
+            "pd": 0.3566,
+            "juro_cobrado": 0.4565,
+            "juro_justo": 0.5515,
+            "juro_justo_min": 0.4441,
+            "juro_justo_max": 0.6592
+          },
+          "contrato_id": "59b9cecb-3335-4950-a766-a63a01221b33",
+          "recomendacao": "manter_preco",
+          "origem": "llm",
+          "versao_prompt": "parecer_v2",
+          "gerado_em": "2026-11-08 21:03:29.877489-03:00",
+          "contexto_mercado": null
+        }
+      }
+    ]
+  }
+]

@@ -12,7 +12,7 @@ Teste rápido (na pasta raiz):
 """
 from pathlib import Path
 
-from genai.src.checagem import (EntradaPrever, formatar_juro, formatar_percentual,
+from genai.src.checagem import (EntradaPrever, casas_decimais, formatar_juro, formatar_percentual,
                                 motivos_permitidos)
 
 PASTA_PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
@@ -42,12 +42,13 @@ def carregar_prompt(versao: str = VERSAO_PROMPT) -> tuple[str, str]:
 
 
 def _numeros(entrada: EntradaPrever) -> str:
+    casas = casas_decimais(entrada)
     linhas = [
         ("chance de não pagar", "pd", formatar_percentual(entrada.pd)),
-        ("juro cobrado", "juro_cobrado", formatar_juro(entrada.juro_cobrado)),
-        ("juro justo (valor central)", "juro_justo", formatar_juro(entrada.juro_justo)),
-        ("limite inferior da margem do juro justo", "juro_justo_min", formatar_juro(entrada.juro_justo_min)),
-        ("limite superior da margem do juro justo", "juro_justo_max", formatar_juro(entrada.juro_justo_max)),
+        ("juro cobrado", "juro_cobrado", formatar_juro(entrada.juro_cobrado, casas)),
+        ("juro justo (valor central)", "juro_justo", formatar_juro(entrada.juro_justo, casas)),
+        ("limite inferior da margem do juro justo", "juro_justo_min", formatar_juro(entrada.juro_justo_min, casas)),
+        ("limite superior da margem do juro justo", "juro_justo_max", formatar_juro(entrada.juro_justo_max, casas)),
     ]
     return "\n".join(f"- {nome}: {texto} [{chave}: {getattr(entrada, chave)}]"
                      for nome, chave, texto in linhas)

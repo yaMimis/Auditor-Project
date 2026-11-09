@@ -25,6 +25,9 @@
 --   * Taxas em FRAÇÃO ao ano, como a API (0,249 = 24,9% ao ano, taxa nominal).
 --   * Valores dos domínios iguais aos de src/api/schemas.py (há teste que confere).
 --   * A justificativa é obrigatória. Evite dado pessoal no texto livre dela.
+--   * Revisão manual (dados fora da faixa do treino): o prever() devolve situacao_preco = 'revisao_manual'
+--     com pd, faixa e os juros justos nulos, e o analista ainda decide. Fora da revisão manual esses
+--     números são obrigatórios (mesma regra do genai/src/checagem.py).
 --
 -- COMO A API GRAVA (a API não manda registrada_em nem origem):
 --   INSERT INTO decisao_analista
@@ -60,27 +63,50 @@ CREATE TABLE IF NOT EXISTS decisao_analista (
     recomendacao_sistema TEXT                                    -- a do parecer (vazia se não houve parecer)
                          CHECK (recomendacao_sistema IN ('manter_preco', 'revisar_preco', 'encaminhar_compliance', 'revisao_manual')),
     situacao_preco       TEXT NOT NULL
-                         CHECK (situacao_preco IN ('acima_do_justo', 'abaixo_do_justo', 'dentro_da_margem')),
-    -- números do momento (resposta do prever()), em fração
-    pd                   DOUBLE PRECISION NOT NULL CHECK (pd BETWEEN 0 AND 1),
-    faixa                TEXT NOT NULL CHECK (faixa IN ('A', 'B', 'C', 'D', 'E')),
+                         CHECK (situacao_preco IN ('acima_do_justo', 'abaixo_do_justo', 'dentro_da_margem', 'revisao_manual')),
+    -- números do momento (resposta do prever()), em fração; só ficam vazios em revisao_manual
+    pd                   DOUBLE PRECISION CHECK (pd BETWEEN 0 AND 1),
+    faixa                TEXT CHECK (faixa IN ('A', 'B', 'C', 'D', 'E')),
     juro_cobrado         DOUBLE PRECISION NOT NULL CHECK (juro_cobrado BETWEEN 0 AND 10),
-    juro_justo           DOUBLE PRECISION NOT NULL CHECK (juro_justo BETWEEN 0 AND 10),
-    juro_justo_min       DOUBLE PRECISION NOT NULL CHECK (juro_justo_min BETWEEN 0 AND 10),
-    juro_justo_max       DOUBLE PRECISION NOT NULL CHECK (juro_justo_max BETWEEN 0 AND 10),
+    juro_justo           DOUBLE PRECISION CHECK (juro_justo BETWEEN 0 AND 10),
+    juro_justo_min       DOUBLE PRECISION CHECK (juro_justo_min BETWEEN 0 AND 10),
+    juro_justo_max       DOUBLE PRECISION CHECK (juro_justo_max BETWEEN 0 AND 10),
     -- versões, para saber qual modelo e qual parecer estavam na tela
     versao_modelo        TEXT NOT NULL CHECK (length(btrim(versao_modelo)) > 0),
     versao_parecer       TEXT,                                   -- versao_prompt do parecer
     origem_parecer       TEXT CHECK (origem_parecer IN ('llm', 'template')),
     -- cópia do que o analista viu (sem gênero nem idade)
     prever_json          JSONB CHECK (prever_json IS NULL OR NOT (prever_json ?| ARRAY['genero', 'idade', 'gender', 'age'])),
-    parecer_json         JSONB CHECK (parecer_json IS NULL OR NOT (parecer_json ?| ARRAY['genero', 'idade', 'gender', 'age']))
+    parecer_json         JSONB CHECK (parecer_json IS NULL OR NOT (parecer_json ?| ARRAY['genero', 'idade', 'gender', 'age'])),
+    -- mesma regra do genai/src/checagem.py: fora da revisão manual, os números são obrigatórios
+    CONSTRAINT decisao_analista_numeros_obrigatorios CHECK (
+        situacao_preco = 'revisao_manual'
+        OR (pd IS NOT NULL AND faixa IS NOT NULL AND juro_justo IS NOT NULL
+            AND juro_justo_min IS NOT NULL AND juro_justo_max IS NOT NULL))
 );
 
 CREATE INDEX IF NOT EXISTS ix_decisao_analista_contrato
     ON decisao_analista (contrato_id, registrada_em DESC);
 CREATE INDEX IF NOT EXISTS ix_decisao_analista_data
     ON decisao_analista (registrada_em DESC);
+
+-- ---------------------------------------------------------------------
+-- Atualização (revisão manual). Em bancos que JÁ têm a tabela, o CREATE acima não muda nada;
+-- estes comandos põem a tabela no mesmo formato e podem rodar quantas vezes quiser.
+-- ---------------------------------------------------------------------
+ALTER TABLE decisao_analista DROP CONSTRAINT IF EXISTS decisao_analista_situacao_preco_check;
+ALTER TABLE decisao_analista ADD CONSTRAINT decisao_analista_situacao_preco_check
+    CHECK (situacao_preco IN ('acima_do_justo', 'abaixo_do_justo', 'dentro_da_margem', 'revisao_manual'));
+ALTER TABLE decisao_analista ALTER COLUMN pd DROP NOT NULL;
+ALTER TABLE decisao_analista ALTER COLUMN faixa DROP NOT NULL;
+ALTER TABLE decisao_analista ALTER COLUMN juro_justo DROP NOT NULL;
+ALTER TABLE decisao_analista ALTER COLUMN juro_justo_min DROP NOT NULL;
+ALTER TABLE decisao_analista ALTER COLUMN juro_justo_max DROP NOT NULL;
+ALTER TABLE decisao_analista DROP CONSTRAINT IF EXISTS decisao_analista_numeros_obrigatorios;
+ALTER TABLE decisao_analista ADD CONSTRAINT decisao_analista_numeros_obrigatorios CHECK (
+    situacao_preco = 'revisao_manual'
+    OR (pd IS NOT NULL AND faixa IS NOT NULL AND juro_justo IS NOT NULL
+        AND juro_justo_min IS NOT NULL AND juro_justo_max IS NOT NULL));
 
 -- ---------------------------------------------------------------------
 -- Gatilho de inserção: data do servidor e origem do contrato

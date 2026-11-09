@@ -129,6 +129,16 @@ def tabelas_validas() -> dict[str, pd.DataFrame]:
         "prever_json": [{"pd": 0.18, "faixa": "C"}, {"pd": 0.30, "faixa": "D"}],
         "parecer_json": [{"resumo": "ok"}, None],
     })
+    # contrato em revisão manual: pd, faixa e juros justos nulos (o prever() faz isso com dados fora da faixa)
+    manual = decisoes.iloc[[1]].copy()
+    for coluna, valor in {"decisao_id": 3, "contrato_id": "EXEMPLO-2", "origem": "simulacao",
+                          "decisao": "encaminhar_compliance", "justificativa": "dados fora da faixa do treino",
+                          "situacao_preco": "revisao_manual", "recomendacao_sistema": "revisao_manual",
+                          "taxa_proposta": np.nan, "pd": np.nan, "faixa": None, "juro_justo": np.nan,
+                          "juro_justo_min": np.nan, "juro_justo_max": np.nan}.items():
+        manual[coluna] = [valor]
+    manual["prever_json"] = [{"situacao_preco": "revisao_manual"}]
+    decisoes = pd.concat([decisoes, manual], ignore_index=True)
     decisao_atual = decisoes.loc[decisoes["origem"] == "carteira",
                                  ["decisao_id", "contrato_id", "registrada_em", "analista", "decisao",
                                   "justificativa", "taxa_proposta", "recomendacao_sistema",

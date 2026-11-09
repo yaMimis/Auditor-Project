@@ -44,9 +44,9 @@ def test_dominios_do_sql_sao_os_do_codigo():
 def test_dominios_do_sql_sao_os_da_api():
     """Se a API mudar um valor (src/api/schemas.py), este teste avisa que o banco precisa mudar."""
     try:
-        from typing import get_args
+        from typing import Literal, get_args, get_origin
 
-        from src.api.schemas import ParecerIA, RespostaPrever
+        from src.api.schemas import Parecer, RespostaPrever
     except ImportError:          # pydantic não instalado neste ambiente
         return
 
@@ -54,13 +54,22 @@ def test_dominios_do_sql_sao_os_da_api():
         campos = getattr(modelo, "model_fields", None) or modelo.__fields__
         info = campos[campo]
         anotacao = getattr(info, "annotation", None) or info.outer_type_
-        return set(get_args(anotacao))
+
+        def literais(tipo):          # junta os valores de Literal, mesmo dentro de "Literal[...] | None"
+            if get_origin(tipo) is Literal:
+                return set(get_args(tipo))
+            achados = set()
+            for parte in get_args(tipo):
+                achados |= literais(parte)
+            return achados
+
+        return literais(anotacao)
 
     d = _dominios()
     assert d["situacao_preco"] == valores(RespostaPrever, "situacao_preco")
     assert d["faixa"] == valores(RespostaPrever, "faixa")
-    assert d["recomendacao_sistema"] == valores(ParecerIA, "recomendacao")
-    assert d["origem_parecer"] == valores(ParecerIA, "origem")
+    assert d["recomendacao_sistema"] == valores(Parecer, "recomendacao")
+    assert d["origem_parecer"] == valores(Parecer, "origem")
 
 
 def test_nao_ha_coluna_de_genero_nem_idade():

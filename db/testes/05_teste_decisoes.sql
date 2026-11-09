@@ -22,7 +22,10 @@ CREATE FUNCTION pg_temp.inserir(
     p_situacao      text DEFAULT 'dentro_da_margem',
     p_faixa         text DEFAULT 'C',
     p_pd            double precision DEFAULT 0.18,
-    p_prever        jsonb DEFAULT NULL
+    p_prever        jsonb DEFAULT NULL,
+    p_juro_justo    double precision DEFAULT 0.162,
+    p_juro_min      double precision DEFAULT 0.141,
+    p_juro_max      double precision DEFAULT 0.183
 ) RETURNS void AS $$
 BEGIN
     INSERT INTO decisao_analista
@@ -30,7 +33,7 @@ BEGIN
          juro_cobrado, juro_justo, juro_justo_min, juro_justo_max, versao_modelo, prever_json)
     VALUES
         (p_contrato, 'teste', p_decisao, p_justificativa, p_situacao, p_pd, p_faixa,
-         0.249, 0.162, 0.141, 0.183, 'teste', p_prever);
+         0.249, p_juro_justo, p_juro_min, p_juro_max, 'teste', p_prever);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -115,12 +118,24 @@ BEGIN
     RAISE NOTICE 'ok: requisicao_id repetido não duplica';
 END $$;
 
+-- 3b) revisão manual: o prever() devolve a situação com pd, faixa e juros justos nulos, e a decisão tem que ser aceita
+DO $$
+BEGIN
+    PERFORM pg_temp.inserir(p_contrato => 'TESTE-REVISAO-MANUAL', p_decisao => 'encaminhar_compliance',
+                            p_situacao => 'revisao_manual', p_faixa => NULL, p_pd => NULL,
+                            p_juro_justo => NULL, p_juro_min => NULL, p_juro_max => NULL);
+    RAISE NOTICE 'ok: decisão em revisao_manual (números nulos) foi aceita';
+END $$;
+
 -- 4) o que o banco tem que recusar
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_decisao => 'foo')$q$,                      'decisão fora do domínio');
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_justificativa => '   ')$q$,                'justificativa vazia');
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_situacao => 'barato')$q$,                  'situacao_preco fora do domínio');
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_faixa => 'F')$q$,                          'faixa fora de A a E');
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_pd => 1.5)$q$,                             'pd maior que 1');
+SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_pd => NULL)$q$,                              'pd nulo fora de revisao_manual');
+SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_faixa => NULL)$q$,                           'faixa nula fora de revisao_manual');
+SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_juro_justo => NULL)$q$,                      'juro_justo nulo fora de revisao_manual');
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_prever => '{"gender": 1}'::jsonb)$q$,      'JSON com gender');
 SELECT pg_temp.deve_falhar($q$SELECT pg_temp.inserir(p_prever => '{"idade": 30}'::jsonb)$q$,      'JSON com idade');
 SELECT pg_temp.deve_falhar($q$UPDATE decisao_analista SET justificativa = 'alterada'$q$,          'UPDATE (só inclusão)');

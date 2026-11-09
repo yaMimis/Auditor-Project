@@ -10,6 +10,24 @@ Status: em desenvolvimento. Entrega dos arquivos em 19/11/2026 e apresentação 
 - O motor de risco e de preço usa o contexto da época de cada contrato (Euribor).
 - O parecer segue a LGPD, o CDC e as normas do Banco Central, em modo hipotético: "se este contrato fosse de um banco brasileiro".
 
+## Dados: fonte, licença e premissas
+
+- **Fonte:** Bondora Public Reports, arquivo "Loan dataset" (LoanData): 179.235 contratos de 2009 a 2021, com corte em 20/07/2021 (impressão digital do arquivo no `DATA.md`). A Bondora descreve esse livro de empréstimos como público e disponível para qualquer pessoa, mas **não encontramos uma licença explícita**. Por isso o CSV não é redistribuído neste repositório (`data/raw/` fica fora do Git) e a fonte é citada aqui.
+- **Séries do BC e do BCE:** a Selic e as taxas de crédito do Banco Central vêm do portal de dados abertos do BC, que informa a licença Open Data Commons ODbL (conferida na página da série 25464). A Euribor vem do Portal de dados do BCE. Os CSVs ficam em `data/raw/`, fora do Git.
+- **Premissas declaradas:**
+  - A base é real e europeia (Estônia, Espanha e Finlândia), usada "como se fosse de um banco brasileiro". Nenhum número foi simulado.
+  - Os valores estão em euro, com uma exceção: a renda e os passivos da Estônia até 2010 vinham em coroas e foram convertidos (÷ 15,6466).
+  - Os juros estão em % ao ano, como taxa **nominal** (a mensal é a anual ÷ 12). A taxa do BC é efetiva e aparece só como contexto, convertida para nominal; a conversão foi conferida contra a série mensal oficial do BC (SGS 25464), com diferença máxima de 0,005 ponto percentual ao mês.
+  - O período é outro (2009–2021), e o modelo usa só contratos encerrados de 2009 a 2016.
+- **Colunas por grupo** (regras completas no [`DATA.md`](DATA.md), seção 6):
+
+| Grupo | Colunas | Regra |
+| --- | --- | --- |
+| Variáveis do modelo | 21 | Pedido, renda e dívidas, perfil, histórico e scores de bureau (`docs/DECISOES.md`, seção 5) |
+| Lista negra | 26 | Pós-concessão ou saídas do Bondora; nunca entram como variável (há teste automático) |
+| Só auditoria | 4 | `genero`, `idade`, `estado_civil` e `n_dependentes`: auditam, nunca decidem |
+| Indisponíveis depois de 2017 | 7 | Em branco ou zeradas na carteira de 2017–2021; fora do modelo |
+
 ## Arquitetura
 
 Contrato → modelo de risco (PD, probabilidade de default) → juro justo por fluxo de caixa → comparação com o juro cobrado → busca das normas (RAG, geração aumentada por recuperação) → parecer em JSON → checagem dos números contra a API → painel do analista → decisão humana.
@@ -60,6 +78,7 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
    - `BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv`
    - `BC-Meta_Selic_Mensal.csv` (opcional, só conferência)
    - `bcdata.sgs.20742.csv` (opcional, referência de mercado do BC)
+   - `bcdata.sgs.25464.csv` (opcional, só para conferir a conversão da taxa do BC: `python src/dados/validar_conversao_bc.py`)
 
 3. **Configuração.** Crie um `.env` na raiz, que nunca vai ao Git:
    ```
@@ -99,6 +118,10 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
 - [`DATA.md`](DATA.md): regras dos dados (alvo, recorte, divisão treino e teste, colunas proibidas, fontes externas, privacidade e limitações).
 - [`docs/DECISOES.md`](docs/DECISOES.md): decisões de modelagem.
+- [`docs/glossario.md`](docs/glossario.md): siglas e termos do projeto.
+- [`docs/qualidade_dados.md`](docs/qualidade_dados.md): relatório de qualidade dos dados (regras e alertas).
+- [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
+- [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 

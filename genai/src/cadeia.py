@@ -4,9 +4,12 @@ Cadeia do parecer: gerar_parecer(saida_prever) -> dict no formato Parecer.
 Passo a passo (REGRAS_PARECER.md, seções 7 a 9):
 1. valida a saída do prever() (EntradaPrever); inválida -> template de revisão manual;
 2. o código escolhe a recomendação; revisão manual -> template (o LLM não é chamado);
-3. busca os trechos de normas no pgvector (sem banco -> segue sem trechos);
-4. monta o prompt (prompt.py) e chama o Gemini com saída estruturada;
-5. confere o resultado (conferir_parecer); qualquer problema ou erro -> template.
+3. roda a cadeia RAG em LangChain (LCEL), com 4 passos fixos:
+   busca nas normas (pgvector) | prompt (prompt.py) | Gemini (saída estruturada) | conferência;
+4. qualquer problema ou erro -> template.
+Sem memória: cada parecer é independente (nada é guardado entre contratos; LGPD, art. 6º, III).
+Os imports do LangChain ficam dentro das funções: onde ele não estiver instalado (CI mínimo,
+imagem sem GenAI), o módulo continua importável e o parecer cai no template.
 A função nunca levanta erro para a API: no pior caso, devolve o template.
 
 Teste rápido (na pasta raiz; precisa da GOOGLE_API_KEY no .env):
@@ -14,6 +17,7 @@ Teste rápido (na pasta raiz; precisa da GOOGLE_API_KEY no .env):
 """
 import logging
 import os
+import warnings
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -115,30 +119,85 @@ def _para_resposta_llm(bruta: _RespostaGemini) -> RespostaLLM:
 
 
 def chamar_llm(sistema: str, usuario: str) -> RespostaLLM:
-    """Chama o Gemini com saída estruturada. Erros sobem para gerar_parecer() tratar."""
-    from google import genai
-    from google.genai import types
+    """Gemini via LangChain, com saída estruturada. Erros sobem para gerar_parecer() tratar."""
+    from langchain_core.messages import HumanMessage, SystemMessage
+    from langchain_google_genai import ChatGoogleGenerativeAI
 
-    cliente = genai.Client(http_options=types.HttpOptions(
-        timeout=SEGUNDOS_POR_TENTATIVA * 1000,
-            retry_options=types.HttpRetryOptions(attempts=TENTATIVAS_LLM, initial_delay=0.5, max_delay=1.0),
-    ))
-    resposta = cliente.models.generate_content(
+    modelo = ChatGoogleGenerativeAI(
         model=MODELO_LLM,
-        contents=usuario,
-        config=types.GenerateContentConfig(
-            system_instruction=sistema,
-            temperature=0,
-            response_mime_type="application/json",
-            response_schema=_RespostaGemini,
-        ),
+        temperature=0,
+        timeout=SEGUNDOS_POR_TENTATIVA,
+        max_retries=TENTATIVAS_LLM - 1,  # a 1ª chamada + 1 nova tentativa em erro temporário
     )
-    return _para_resposta_llm(_RespostaGemini.model_validate_json(resposta.text))
+    estruturado = modelo.with_structured_output(_RespostaGemini)
+    with warnings.catch_warnings():
+        # Os modelos Gemini mais novos ignoram a temperatura (amostragem fixa) e o LangChain avisa
+        # a cada chamada. Mantemos temperature=0 para os modelos que a aceitam e calamos o aviso.
+        warnings.filterwarnings("ignore", message=".*fixed sampling defaults.*")
+        bruta = estruturado.invoke([SystemMessage(content=sistema), HumanMessage(content=usuario)])
+    return _para_resposta_llm(bruta)
+
+
+# ---------- Cadeia RAG (LangChain LCEL) ----------
+# Cada passo recebe e devolve um dicionário de estado. As funções de fora (buscar_trechos,
+# montar_mensagens, chamar_llm, conferir_parecer) são chamadas na hora: os testes podem trocá-las.
+
+DECISAO = "A decisão final é do analista."
+
+
+def _passo_busca(estado: dict) -> dict:
+    return {**estado, "trechos": buscar_trechos(estado["entrada"])}
+
+
+def _passo_prompt(estado: dict) -> dict:
+    sistema, usuario = montar_mensagens(estado["entrada"], estado["recomendacao"], estado["trechos"])
+    return {**estado, "sistema": sistema, "usuario": usuario}
+
+
+def _passo_llm(estado: dict) -> dict:
+    return {**estado, "resposta": chamar_llm(estado["sistema"], estado["usuario"])}
+
+
+def _passo_conferencia(estado: dict) -> dict:
+    resposta = estado["resposta"]
+    if not resposta.recomendacao_texto.rstrip().endswith(DECISAO):
+        resposta.recomendacao_texto = f"{resposta.recomendacao_texto.rstrip()} {DECISAO}"
+    problemas = conferir_parecer(resposta, estado["entrada"], [t["trecho_id"] for t in estado["trechos"]])
+    return {**estado, "resposta": resposta, "problemas": problemas}
+
+
+PASSOS = (
+    ("busca_normas", _passo_busca),
+    ("monta_prompt", _passo_prompt),
+    ("gemini", _passo_llm),
+    ("conferencia", _passo_conferencia),
+)
+
+
+class _CadeiaSemLangChain:
+    """Os mesmos 4 passos, em sequência, para quando o LangChain não está instalado."""
+
+    def invoke(self, estado: dict) -> dict:
+        for _, passo in PASSOS:
+            estado = passo(estado)
+        return estado
+
+
+def _montar_cadeia_rag():
+    """busca_normas | monta_prompt | gemini | conferencia, como uma chain LCEL."""
+    try:
+        from langchain_core.runnables import RunnableLambda
+    except ImportError:
+        log.info("LangChain não instalado: os mesmos passos rodam em sequência")
+        return _CadeiaSemLangChain()
+    nome, passo = PASSOS[0]
+    cadeia = RunnableLambda(passo, name=nome)
+    for nome, passo in PASSOS[1:]:
+        cadeia = cadeia | RunnableLambda(passo, name=nome)
+    return cadeia
 
 
 # ---------- A função que a API chama ----------
-
-DECISAO = "A decisão final é do analista."
 
 
 def _entrada_de_revisao(saida: dict) -> EntradaPrever:
@@ -165,22 +224,17 @@ def gerar_parecer(saida_prever: dict) -> dict:
     if entrada.vai_para_revisao_manual:
         return montar_template(entrada).model_dump()
 
-    trechos = buscar_trechos(entrada)
     try:
-        sistema, usuario = montar_mensagens(entrada, recomendacao, trechos)
-        resposta = chamar_llm(sistema, usuario)
+        estado = _montar_cadeia_rag().invoke({"entrada": entrada, "recomendacao": recomendacao})
     except Exception as erro:
         log.warning("LLM indisponível ou resposta inválida (%s): template", erro)
         return montar_template(entrada).model_dump()
 
-    if not resposta.recomendacao_texto.rstrip().endswith(DECISAO):
-        resposta.recomendacao_texto = f"{resposta.recomendacao_texto.rstrip()} {DECISAO}"
-
-    problemas = conferir_parecer(resposta, entrada, [t["trecho_id"] for t in trechos])
-    if problemas:
-        log.warning("conferência recusou o parecer do LLM: %s", "; ".join(problemas))
+    if estado["problemas"]:
+        log.warning("conferência recusou o parecer do LLM: %s", "; ".join(estado["problemas"]))
         return montar_template(entrada).model_dump()
 
+    resposta = estado["resposta"]
     return Parecer(
         **resposta.model_dump(),
         contrato_id=entrada.contrato_id,

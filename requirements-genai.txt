@@ -4,4 +4,6 @@
 -r requirements.txt
 sentence-transformers>=2.3.0
 torch>=2.0.0
-google-genai      # cliente do Gemini (genai/src/testar_llm.py e gerar_parecer)
+google-genai      # cliente do Gemini (genai/src/testar_llm.py)
+langchain-core>=1.7,<2       # cadeia RAG em LCEL (genai/src/cadeia.py)
+langchain-google-genai>=4.4,<5  # Gemini no LangChain, com saída estruturada

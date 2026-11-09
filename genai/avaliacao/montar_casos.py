@@ -31,10 +31,11 @@ RECOMENDACAO = {"acima_do_justo": "revisar_preco", "abaixo_do_justo": "revisar_p
                 "dentro_da_margem": "manter_preco", "revisao_manual": "revisao_manual"}
 
 # Normas que fazem sentido citar em cada situação (prefixo do trecho_id). Fonte vazia também é aceita.
+# 09/11 (antes de rodar a v3): LGPD art. 20 aceita em todas as situações, porque a busca v3 sempre a traz.
 NORMAS_ESPERADAS = {
     "acima_do_justo": ["cdc-art52", "cdc-art54b", "cdc-art39", "cdc-art6", "lgpd-art20", "cet-art"],
-    "abaixo_do_justo": ["ref-p", "cdc-art52", "cdc-art54b"],
-    "dentro_da_margem": ["cdc-art52", "cdc-art54b", "cet-art"],
+    "abaixo_do_justo": ["ref-p", "cdc-art52", "cdc-art54b", "lgpd-art20"],
+    "dentro_da_margem": ["cdc-art52", "cdc-art54b", "cet-art", "cdc-art6", "lgpd-art20"],
     "revisao_manual": [],
 }
 

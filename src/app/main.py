@@ -9,6 +9,7 @@ import os
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import pandas
 import requests
@@ -40,6 +41,7 @@ st.set_page_config(
 
 API_BASE = os.getenv("API_URL", "http://localhost:8000")
 TIMEOUT_S = 30  # cobre a busca nas normas + LLM (20 s) + queda para o template
+TIMEOUT_CONSULTA_S = 5  # leituras rápidas (decisões)
 
 # ==========================================
 # 2. ESTILIZAÇÃO CSS CUSTOMIZADA (FINTECH / LEGAL-TECH)
@@ -311,10 +313,11 @@ def chamar_api(rota: str, payload: dict) -> tuple[dict | None, str | None]:
         return None, f"A API não respondeu em {TIMEOUT_S} s ({url})."
     except requests.exceptions.ConnectionError:
         return None, f"Não foi possível conectar à API em {API_BASE}. Confira se o serviço 'api' está no ar."
-    if r.status_code == 422:
-        return None, "A API recusou os dados enviados (formato inválido). Detalhe: " + r.text[:400]
-    if r.status_code == 503:
-        return None, r.json().get("detail", "Modelo indisponível na API.")
+    if r.status_code in (422, 503):
+        detalhe = _detalhe(r)
+        if r.status_code == 422 and not isinstance(detalhe, str):
+            return None, "A API recusou os dados enviados (formato inválido). Detalhe: " + r.text[:400]
+        return None, detalhe or "Serviço indisponível na API."
     if not r.ok:
         return None, f"A API respondeu com erro {r.status_code}: {r.text[:300]}"
     try:
@@ -324,6 +327,35 @@ def chamar_api(rota: str, payload: dict) -> tuple[dict | None, str | None]:
     if not isinstance(dados, dict):
         return None, "A API retornou uma estrutura diferente da esperada."
     return dados, None
+
+
+def _detalhe(r) -> str | list | None:
+    try:
+        return r.json().get("detail")
+    except (json.JSONDecodeError, AttributeError):
+        return None
+
+
+def consultar_api(rota: str, params: dict | None = None) -> tuple[list | dict | None, str | None]:
+    """GET na API (leituras rápidas). Devolve (dados, erro)."""
+    try:
+        r = requests.get(f"{API_BASE}{rota}", params=params, timeout=TIMEOUT_CONSULTA_S)
+    except requests.exceptions.RequestException:
+        return None, f"Não foi possível conectar à API em {API_BASE}."
+    if not r.ok:
+        return None, str(_detalhe(r) or f"A API respondeu com erro {r.status_code}.")
+    try:
+        return r.json(), None
+    except json.JSONDecodeError:
+        return None, "A resposta da API não pôde ser interpretada."
+
+
+def consultar_lista(rota: str, params: dict | None = None) -> tuple[list[dict], str | None]:
+    """Como consultar_api, mas garante uma lista (vazia se a resposta vier em outro formato)."""
+    dados, erro = consultar_api(rota, params)
+    if erro is None and not isinstance(dados, list):
+        return [], "A API devolveu um formato inesperado."
+    return dados or [], erro
 
 
 def guardar_resultado(resultado: dict, contexto: dict) -> None:
@@ -439,6 +471,9 @@ with area:
         else:
             md('<span class="ap-status"><i class="ap-dot" style="background:#8cc7a1"></i>'
                'API no ar · modelo carregado</span>')
+        if status is not None and not status.get("banco_disponivel", False):
+            md('<span class="ap-status"><i class="ap-dot" style="background:#e8a462"></i>'
+               'Banco indisponível: as decisões ficam só nesta sessão até ele voltar.</span>')
     with col_analista:
         st.text_input("Analista responsável", key="analista", placeholder="Seu nome")
 
@@ -626,43 +661,78 @@ def montar_payload() -> dict:
 # ------------------------------------------
 # 6.2 Resultado da revisão
 # ------------------------------------------
-def registrar_decisao(resultado: dict, decisao: str, justificativa: str, nova_taxa: float | None) -> None:
+def registrar_decisao(resultado: dict, decisao: str, justificativa: str,
+                      nova_taxa_pct: float | None) -> tuple[str, str]:
+    """Grava a decisão no banco (POST /decisoes). Devolve (onde, mensagem):
+    'banco' gravou · 'sessao' banco fora, guardada só nesta sessão · 'erro' recusada."""
+    payload = {
+        "requisicao_id": str(uuid4()),  # um por clique: o banco não grava o mesmo clique duas vezes
+        "analista": st.session_state.analista.strip(),
+        "decisao": decisao,
+        "justificativa": justificativa.strip(),
+        "taxa_proposta": nova_taxa_pct / 100 if (decisao == "revisar_preco" and nova_taxa_pct) else None,
+        "resultado": resultado,  # a RESPOSTA do /prever: não carrega gênero nem idade
+    }
+    try:
+        r = requests.post(f"{API_BASE}/decisoes", json=payload, timeout=TIMEOUT_CONSULTA_S)
+    except requests.exceptions.RequestException:
+        r = None
+    if r is not None and r.status_code in (200, 201):
+        return "banco", "Decisão gravada no banco."
+    if r is not None and r.status_code == 422:
+        return "erro", str(_detalhe(r) or "A API recusou a decisão.")
     parecer = resultado.get("parecer_ia") or {}
     st.session_state.decisoes.insert(0, {
-        "registrado_em": datetime.now(FUSO).strftime("%Y-%m-%d %H:%M:%S"),
-        "analista": st.session_state.analista.strip(),
+        "registrada_em": datetime.now(FUSO).isoformat(timespec="seconds"),
         "contrato_id": resultado.get("contrato_id"),
+        "origem": "só nesta sessão",
+        "analista": payload["analista"],
+        "decisao": decisao,
+        "justificativa": payload["justificativa"],
+        "taxa_proposta": payload["taxa_proposta"],
+        "recomendacao_sistema": parecer.get("recomendacao"),
         "situacao_preco": resultado.get("situacao_preco"),
         "pd": resultado.get("pd"),
         "juro_cobrado": resultado.get("juro_cobrado"),
         "juro_justo": resultado.get("juro_justo"),
-        "recomendacao_sistema": parecer.get("recomendacao"),
-        "decisao": decisao,
-        "nova_taxa_proposta": nova_taxa,
-        "justificativa": justificativa.strip(),
-        "origem_parecer": parecer.get("origem"),
         "versao_modelo": resultado.get("versao_modelo"),
-        "versao_prompt": parecer.get("versao_prompt"),
+        "versao_parecer": parecer.get("versao_prompt"),
+        "origem_parecer": parecer.get("origem"),
     })
+    return "sessao", ("Banco indisponível: a decisão ficou só nesta sessão. "
+                      "Exporte na aba Registro de decisões antes de fechar.")
+
+
+def ultima_decisao(contrato_id: str) -> dict | None:
+    dados, _ = consultar_lista("/decisoes", {"contrato_id": contrato_id, "limite": 1})
+    if dados:
+        return dados[0]
+    da_sessao = [d for d in st.session_state.decisoes if d["contrato_id"] == contrato_id]
+    return da_sessao[0] if da_sessao else None
 
 
 def bloco_decisao(resultado: dict) -> None:
     cid = resultado.get("contrato_id", "?")
     parecer = resultado.get("parecer_ia") or {}
     rec = RECOMENDACOES.get(parecer.get("recomendacao"), "—")
+    revisao_manual = resultado.get("situacao_preco") == "revisao_manual"
     with st.container(border=True):
         md(f"""
             <div class="ap-card-title">Decisão do analista</div>
             <div class="ap-card-sub">Recomendação do sistema: <b style="color:#e4bd7d">{esc(rec)}</b>.
             O sistema não decide: a decisão final é sempre do analista e fica registrada com o parecer e a justificativa.</div>
         """)
+        if revisao_manual:
+            md("""<div class="ap-alert">Contratos em revisão manual não têm PD nem juro justo, e a tabela de decisões
+                ainda exige esses números. Confira os dados de origem; o registro desta decisão fica disponível
+                quando a tabela aceitar a revisão manual.</div>""")
         col_just, col_taxa = st.columns([3, 1], gap="medium")
         with col_just:
             justificativa = st.text_area("Justificativa (obrigatória)", key=f"just_{cid}",
-                                         placeholder="Explique sua decisão", height=110)
+                                         placeholder="Explique sua decisão", height=110, disabled=revisao_manual)
         with col_taxa:
             nova = st.number_input("Nova taxa proposta (% a.a.)", key=f"nova_{cid}", min_value=0.0,
-                                   max_value=500.0, value=None, step=0.5, format="%.2f",
+                                   max_value=500.0, value=None, step=0.5, format="%.2f", disabled=revisao_manual,
                                    help="Opcional; registrada só quando a decisão for revisar o preço.")
         botoes = st.columns(3, gap="small")
         escolhas = [("manter_preco", "Manter preço", "secondary"),
@@ -670,20 +740,21 @@ def bloco_decisao(resultado: dict) -> None:
                     ("encaminhar_compliance", "Encaminhar ao compliance", "secondary")]
         for coluna, (chave, rotulo, tipo) in zip(botoes, escolhas):
             with coluna:
-                if st.button(rotulo, key=f"dec_{chave}_{cid}", type=tipo, use_container_width=True):
-                    if not justificativa.strip():
+                if st.button(rotulo, key=f"dec_{chave}_{cid}", type=tipo, use_container_width=True,
+                             disabled=revisao_manual):
+                    if not (justificativa or "").strip():
                         st.warning("Escreva a justificativa antes de registrar a decisão.")
                     elif not st.session_state.analista.strip():
                         st.warning("Informe o nome do analista responsável no topo da seção.")
                     else:
-                        registrar_decisao(resultado, chave, justificativa,
-                                          nova if chave == "revisar_preco" else None)
-                        st.success(f"Decisão registrada: {rotulo}. Veja a aba Registro de decisões.")
-        anteriores = [d for d in st.session_state.decisoes if d["contrato_id"] == cid]
-        if anteriores:
-            d = anteriores[0]
+                        onde, mensagem = registrar_decisao(resultado, chave, justificativa, nova)
+                        {"banco": st.success, "sessao": st.warning, "erro": st.error}[onde](
+                            f"{rotulo}: {mensagem}" if onde != "erro" else mensagem)
+        d = ultima_decisao(cid)
+        if d:
+            quando = str(d.get("registrada_em", ""))[:16].replace("T", " ")
             st.caption(f"Última decisão neste contrato: {RECOMENDACOES.get(d['decisao'], d['decisao'])} "
-                       f"por {d['analista']} em {d['registrado_em']}.")
+                       f"por {d['analista']} em {quando}.")
 
 
 def render_revisao(r: dict, ctx: dict) -> None:
@@ -816,15 +887,28 @@ def kpis_carteira(res: dict | None) -> None:
                 <div class="ap-kpi-value" {estilo}>{esc(valor)}</div><div class="ap-kpi-sub">{esc(sub)}</div></div>""")
 
 
-def tabela_fila(linhas: list[dict]) -> str:
+def tabela_fila(linhas: list[dict], decididos: dict[str, str] | None = None) -> str:
+    """decididos = {contrato_id: decisão atual} (vw_decisao_atual)."""
+    decididos = decididos or {}
+
+    def decisao(cid):
+        d = decididos.get(cid)
+        return badge(RECOMENDACOES.get(d, d), "#8cc7a1", "rgba(140,199,161,.10)") if d else '<span class="ap-muted">pendente</span>'
     corpo = "".join(
         f"<tr><td><b>{esc(x['contrato_id'])}</b></td><td>{esc(x.get('faixa') or '—')}</td>"
         f"<td>{pct(x.get('juro_cobrado'))}</td><td>{pct(x.get('juro_justo'))}</td>"
         f"<td>{badge_situacao(x.get('situacao_preco'))}</td>"
-        f"<td>{'' if x.get('distancia_pp') is None else str(x['distancia_pp']).replace('.', ',') + ' pp'}</td></tr>"
+        f"<td>{'' if x.get('distancia_pp') is None else str(x['distancia_pp']).replace('.', ',') + ' pp'}</td>"
+        f"<td>{decisao(x['contrato_id'])}</td></tr>"
         for x in linhas)
     return compactar(f"""<table class="ap-table"><thead><tr><th>Contrato</th><th>Faixa</th><th>Juro cobrado</th>
-        <th>Juro justo</th><th>Situação</th><th>Além da margem</th></tr></thead><tbody>{corpo}</tbody></table>""")
+        <th>Juro justo</th><th>Situação</th><th>Além da margem</th><th>Decisão atual</th></tr></thead>
+        <tbody>{corpo}</tbody></table>""")
+
+
+def decisoes_atuais() -> dict[str, str]:
+    dados, _ = consultar_lista("/decisoes/atuais")
+    return {d["contrato_id"]: d["decisao"] for d in dados}
 
 
 def abrir_da_carteira(linha: dict) -> None:
@@ -930,7 +1014,7 @@ with aba_carteira:
                 st.download_button("Exportar lista (CSV)", fila.to_csv(index=False).encode("utf-8"),
                                    file_name="contratos_para_revisao.csv", mime="text/csv")
             registros = json.loads(fila.head(50).to_json(orient="records"))  # tipos nativos, NaN → null
-            md(tabela_fila(registros))
+            md(tabela_fila(registros, decisoes_atuais()))
             if len(fila) > 50:
                 st.caption("Mostrando os 50 primeiros; a exportação traz a lista completa.")
             col_sel, col_btn = st.columns([3, 1], gap="small")
@@ -951,18 +1035,32 @@ with aba_carteira:
 # ------------------------------------------
 # 6.5 Aba: registro de decisões
 # ------------------------------------------
+COLUNAS_REGISTRO = {
+    "registrada_em": "Registrada em", "analista": "Analista", "contrato_id": "Contrato", "origem": "Origem",
+    "decisao": "Decisão", "recomendacao_sistema": "Recomendação do sistema", "situacao_preco": "Situação",
+    "juro_cobrado": "Juro cobrado", "juro_justo": "Juro justo", "taxa_proposta": "Nova taxa",
+    "justificativa": "Justificativa", "origem_parecer": "Parecer", "versao_modelo": "Modelo",
+}
+
 with aba_registro:
-    decisoes = st.session_state.decisoes
+    do_banco, erro_banco = consultar_lista("/decisoes", {"limite": 1000})
+    decisoes = (st.session_state.decisoes or []) + do_banco
     md("""<div class="audit-eyebrow" style="margin-top:1.2rem">Registro de decisões</div>
         <div class="ap-title">Quem decidiu, o quê e por quê</div>
-        <div class="ap-meta">Cada decisão fica com o parecer, a recomendação do sistema e a justificativa
-        (direito de revisão, LGPD art. 20). Nesta versão o registro vale para a sessão; exporte antes de fechar.</div>""")
+        <div class="ap-meta">Cada decisão fica gravada no banco com o parecer, a recomendação do sistema e a
+        justificativa (direito de revisão, LGPD art. 20). O registro é só de inclusão: para corrigir, registre uma
+        nova decisão; a mais recente vale.</div>""")
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    if erro_banco:
+        st.warning(f"Registro do banco indisponível ({erro_banco}). Mostrando só as decisões desta sessão.")
+    if st.session_state.decisoes:
+        st.caption(f"{len(st.session_state.decisoes)} decisão(ões) desta sessão não foram gravadas no banco "
+                   "(origem “só nesta sessão”). Exporte antes de fechar.")
     if not decisoes:
-        st.caption("Nenhuma decisão registrada nesta sessão.")
+        st.caption("Nenhuma decisão registrada ainda.")
     else:
         tabela = pandas.DataFrame(decisoes)
-        divergentes = (tabela["decisao"] != tabela["recomendacao_sistema"]).sum()
+        divergentes = int((tabela["decisao"] != tabela["recomendacao_sistema"]).sum())
         c1, c2, c3 = st.columns(3, gap="small")
         with c1:
             md(f'<div class="ap-kpi"><div class="ap-kpi-label">Decisões registradas</div><div class="ap-kpi-value">{len(tabela)}</div></div>')
@@ -973,15 +1071,21 @@ with aba_registro:
             n_comp = int((tabela["decisao"] == "encaminhar_compliance").sum())
             md(f'<div class="ap-kpi"><div class="ap-kpi-label">Encaminhadas ao compliance</div><div class="ap-kpi-value">{n_comp}</div></div>')
         st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-        exibir = tabela.assign(decisao=tabela["decisao"].map(RECOMENDACOES),
-                               recomendacao_sistema=tabela["recomendacao_sistema"].map(RECOMENDACOES))
+        exibir = tabela.reindex(columns=list(COLUNAS_REGISTRO)).assign(
+            registrada_em=tabela["registrada_em"].astype(str).str[:16].str.replace("T", " "),
+            decisao=tabela["decisao"].map(RECOMENDACOES),
+            recomendacao_sistema=tabela["recomendacao_sistema"].map(RECOMENDACOES),
+            situacao_preco=tabela["situacao_preco"].map(lambda v: SITUACOES.get(v, {}).get("rotulo", v)),
+            **{c: tabela[c].map(lambda v: pct(v) if v is not None and pandas.notna(v) else "—")
+               for c in ("juro_cobrado", "juro_justo", "taxa_proposta") if c in tabela},
+        ).rename(columns=COLUNAS_REGISTRO)
         st.dataframe(exibir, use_container_width=True, hide_index=True)
         col_csv, col_json, _ = st.columns([1, 1, 2], gap="small")
         with col_csv:
             st.download_button("Exportar CSV", tabela.to_csv(index=False).encode("utf-8"),
                                file_name="decisoes_analista.csv", mime="text/csv")
         with col_json:
-            st.download_button("Exportar JSON", json.dumps(decisoes, ensure_ascii=False, indent=2).encode("utf-8"),
+            st.download_button("Exportar JSON", json.dumps(decisoes, ensure_ascii=False, indent=2, default=str).encode("utf-8"),
                                file_name="decisoes_analista.json", mime="application/json")
 
 

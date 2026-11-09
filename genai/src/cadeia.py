@@ -38,11 +38,17 @@ TENTATIVAS_LLM = 2          # a segunda só acontece em erro temporário (ex.: 5
 MODELO_EMBEDDINGS = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 TABELA = "trechos_normas"
 QUANTOS_TRECHOS = 4
+# Pergunta extra, igual para todas as situações: o parecer apoia uma decisão de crédito feita
+# com um modelo, então o direito de revisão de decisões automatizadas (LGPD, art. 20) é sempre
+# pertinente. Entra no máximo 1 trecho dela, depois dos trechos da situação.
+PERGUNTA_GOVERNANCA = ("revisão de decisões de crédito tomadas unicamente com base em "
+                       "tratamento automatizado de dados pessoais")
 
-# O que procurar nas normas para cada situação do preço.
+# O que procurar nas normas para cada situação do preço (v3: o "acima" focado em transparência
+# do preço; a v2 trazia também o CDC art. 42, de cobrança de dívidas, sem relação com o caso).
 PERGUNTAS_BUSCA = {
-    "acima_do_justo": "juro cobrado acima do justo para o risco; informação clara ao consumidor "
-                      "sobre a taxa de juros e o custo efetivo total do crédito",
+    "acima_do_justo": "informação adequada e clara ao consumidor sobre a taxa efetiva de juros, "
+                      "o custo efetivo total e o preço do crédito",
     "abaixo_do_justo": "composição do custo do crédito: inadimplência, custo de captação, "
                        "despesas administrativas e margem; preço que não cobre a perda esperada",
     "dentro_da_margem": "informação clara ao consumidor sobre a taxa de juros efetiva "
@@ -87,7 +93,10 @@ def _consultar_banco(pergunta: str, quantos: int) -> list[dict]:
 def buscar_trechos(entrada: EntradaPrever, quantos: int = QUANTOS_TRECHOS) -> list[dict]:
     """Trechos de normas para o contrato. Se o banco não responder, segue sem trechos."""
     try:
-        return _consultar_banco(PERGUNTAS_BUSCA[entrada.situacao_preco], quantos)
+        trechos = _consultar_banco(PERGUNTAS_BUSCA[entrada.situacao_preco], quantos)
+        ids = {t["trecho_id"] for t in trechos}
+        extras = [t for t in _consultar_banco(PERGUNTA_GOVERNANCA, 2) if t["trecho_id"] not in ids]
+        return trechos + extras[:1]
     except Exception as erro:  # sem Docker, sem biblioteca ou sem DATABASE_URL
         log.warning("busca nas normas indisponível (%s): parecer segue sem fontes", erro)
         return []

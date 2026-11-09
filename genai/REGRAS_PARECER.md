@@ -1,13 +1,13 @@
 # REGRAS_PARECER.md — Regras para o parecer gerado pela IA
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.4 · **Data:** 08/11/2026
+**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.5 · **Data:** 09/11/2026
 **Status:** v1.2 aprovada pela Maria em 03/11/2026; v1.3 acrescenta a regra sobre os números do REF (seção 5); v1.4 traz a unidade nominal, a referência de mercado do BC, os nomes de países e as correções do primeiro teste real do LLM, aguardando o grupo.
 
 ## 1. Finalidade
 
 Estas regras dizem como o parecer deve ser escrito e o que ele nunca pode fazer. Elas são usadas em dois lugares:
 
-- **No prompt** (`genai/prompts/parecer_v2.md`; a v1 continua no repositório), como instruções ao LLM.
+- **No prompt** (`genai/prompts/parecer_v3.md`; a v1 e a v2 continuam no repositório), como instruções ao LLM.
 - **Na checagem por código** (`genai/src/checagem.py`), que rejeita o parecer que as descumprir.
 
 O formato dos dados (campos, tipos, exemplos) está só em `FORMATO_JSON.md`. Este documento não o repete.
@@ -141,5 +141,6 @@ Nos 20 casos de avaliação (critérios em `genai/avaliacao/CRITERIOS.md`), alé
 | 1.2     | 31/10/2026 | Seção 7: acima do justo passa de `encaminhar_compliance` para `revisar_preco`, com encaminhamento ao compliance como decisão do analista; texto "não é explicada pelo risco estimado pelo modelo". (Proposta do Samuel em 31/10; aprovada pela Maria em 03/11.)
 | 1.3     | 03/11/2026 | Seção 5: números dos trechos do REF nunca aparecem no parecer; esses trechos só explicam a composição do custo do crédito. |
 | 1.4     | 08/11/2026 | Juros nominais ("ao ano (nominal)"). Seção 5: média do BC só no `contexto_mercado`, escrita pelo código e convertida para nominal. Seção 4: nomes dos países do Bondora contam como país; país entre parênteses sai do rótulo. Seção 3 e 7 (após o primeiro teste real do LLM): frase hipotética só com norma citada e no condicional; sem "Ponto de atenção:"; nome dos fatores copiado exatamente; no caso "dentro", os pontos podem ficar vazios. Prompt passa para `parecer_v2`. |
+| 1.5     | 09/11/2026 | Após a avaliação dos 20 casos (v2): citar a norma sempre que um trecho sustentar um ponto; a busca traz também a LGPD art. 20 (revisão de decisões automatizadas), que pode ser citada em qualquer situação; o REF pode ser citado no caso "abaixo" para explicar que a inadimplência compõe o custo do crédito (sem números); valor central ≠ margem; a recomendação não se repete nos pontos. Prompt passa para `parecer_v3`. |
 
 Qualquer mudança nestas regras gera nova versão do prompt (`parecer_v2`, `parecer_v3`...) com o motivo anotado.

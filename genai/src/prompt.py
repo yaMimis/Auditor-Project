@@ -1,6 +1,6 @@
 """
 Monta as mensagens enviadas ao LLM a partir do prompt versionado
-(genai/prompts/parecer_v2.md; a v1 continua no repositório) e da saída do prever().
+(genai/prompts/parecer_v3.md; a v1 e a v2 continuam no repositório) e da saída do prever().
 
 O que vai para o LLM (FORMATO_JSON.md, seção 4): números já formatados, faixa,
 situação do preço, recomendação já escolhida, motivos pelo rótulo e os trechos
@@ -16,7 +16,7 @@ from genai.src.checagem import (EntradaPrever, formatar_juro, formatar_percentua
                                 motivos_permitidos)
 
 PASTA_PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
-VERSAO_PROMPT = "parecer_v2"
+VERSAO_PROMPT = "parecer_v3"
 MAXIMO_FATORES = 3  # v2: menos fatores, menos chance de o LLM listar ou alterar nomes
 
 SITUACOES = {

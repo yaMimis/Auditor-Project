@@ -90,6 +90,9 @@ def registrar_decisao(payload: dict):
     if not justificativa.strip():
         raise HTTPException(status_code=422, detail="A justificativa não pode estar em branco.")
 
+    # Remove o parecer_ia de dentro do dicionário guardado como prever_json
+    prever_limpo = {k: v for k, v in resultado.items() if k != "parecer_ia"}
+
     registro_banco = {
         "requisicao_id": payload.get("requisicao_id"),
         "contrato_id": resultado.get("contrato_id"),
@@ -108,7 +111,7 @@ def registrar_decisao(payload: dict):
         "versao_modelo": resultado.get("versao_modelo"),
         "versao_parecer": parecer.get("versao_prompt"),
         "origem_parecer": parecer.get("origem"),
-        "prever_json": resultado,
+        "prever_json": prever_limpo,
         "parecer_json": parecer,
     }
 
@@ -118,3 +121,17 @@ def registrar_decisao(payload: dict):
         raise HTTPException(status_code=503, detail=str(e))
     except banco.DecisaoRecusada as e:
         raise HTTPException(status_code=422, detail=str(e))
+
+@app.get("/decisoes")
+def listar_decisoes(contrato_id: str = None, limite: int = 200):
+    try:
+        return banco.listar_decisoes(contrato_id, limite)
+    except banco.BancoIndisponivel as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+@app.get("/decisoes/atuais")
+def decisoes_atuais():
+    try:
+        return banco.decisoes_atuais()
+    except banco.BancoIndisponivel as e:
+        raise HTTPException(status_code=503, detail=str(e))

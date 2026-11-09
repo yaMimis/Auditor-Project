@@ -16,7 +16,7 @@ from genai.src.checagem import (EntradaPrever, formatar_juro, formatar_percentua
                                 motivos_permitidos)
 
 PASTA_PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
-VERSAO_PROMPT = "parecer_v3"
+VERSAO_PROMPT = "parecer_v4"
 MAXIMO_FATORES = 3  # v2: menos fatores, menos chance de o LLM listar ou alterar nomes
 
 SITUACOES = {

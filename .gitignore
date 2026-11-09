@@ -8,6 +8,7 @@ myenv/
 data/raw/*.csv
 data/raw/*.md
 !data/raw/diretorio.md
+!data/raw/bcdata.sgs.25464
 data/clean/*.csv
 docker-compose.override.yml
 *.joblib

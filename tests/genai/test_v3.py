@@ -8,7 +8,7 @@ from pathlib import Path
 
 from genai.src import cadeia
 from genai.src.checagem import EntradaPrever
-from genai.src.prompt import VERSAO_PROMPT, carregar_prompt, montar_mensagens
+from genai.src.prompt import carregar_prompt, montar_mensagens
 
 ENTRADA = EntradaPrever.model_validate({
     "contrato_id": "BO-1", "versao_modelo": "teste",
@@ -60,15 +60,14 @@ def test_pergunta_do_acima_nao_fala_mais_em_cobranca():
 
 # ---------- prompt v3 ----------
 
-def test_versao_atual_e_a_v3_e_as_anteriores_continuam():
-    assert VERSAO_PROMPT == "parecer_v3"
-    for versao in ("parecer_v1", "parecer_v2"):
+def test_versoes_anteriores_continuam():
+    for versao in ("parecer_v1", "parecer_v2", "parecer_v3"):
         sistema, usuario = carregar_prompt(versao)
         assert sistema and "{numeros}" in usuario
 
 
 def test_prompt_v3_tem_as_regras_novas():
-    sistema, _ = montar_mensagens(ENTRADA, "revisar_preco", [])
+    sistema, _ = montar_mensagens(ENTRADA, "revisar_preco", [], versao="parecer_v3")
     assert "Não a repita nos pontos de atenção" in sistema
     assert "Não chame o valor central de \"margem\"" in sistema
     assert "\"fontes\" não deve ficar vazia" in sistema
@@ -99,7 +98,7 @@ def test_lgpd_20_aceita_nas_situacoes_com_llm():
 # ---------- revisão antes de rodar (09/11) ----------
 
 def test_prompt_v3_pede_para_nao_copiar_palavras_proibidas_dos_trechos():
-    sistema, _ = montar_mensagens(ENTRADA, "revisar_preco", [])
+    sistema, _ = montar_mensagens(ENTRADA, "revisar_preco", [], versao="parecer_v3")
     assert "nunca copie essas palavras para o parecer" in sistema
     assert "cumpre, atende, respeita ou descumpre" in sistema
     assert "art. 6º, III" in sistema

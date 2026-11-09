@@ -183,6 +183,25 @@ def extrair_numeros(texto: str) -> list[float]:
     return numeros
 
 
+# "art. 6º, III", "Art. 54-B", "artigo 20" -> ("6", ""), ("54", "b"), ("20", ""). Só o padrão "art.":
+# "Lei nº 8.078" e "Resolução 4.881" não contam. O inciso e o parágrafo são ignorados.
+PADRAO_ARTIGO = re.compile(r"\bart(?:igo)?s?\.?\s*(\d+)(?:\s*[º°])?(?:\s*-\s*([A-Za-z])|([A-Za-z]))?\b",
+                           re.IGNORECASE)
+# trecho_id "cdc-art54b-1" -> ("54", "b"); os trechos do REF ("ref-p14-1") não têm artigo.
+ARTIGO_DO_TRECHO = re.compile(r"-art(\d+)([a-z]?)-\d+$")
+
+
+def artigos_no_texto(texto: str) -> set[tuple[str, str]]:
+    """Artigos mencionados num texto, como (número, letra), sem inciso nem parágrafo."""
+    return {(numero, (com_hifen or colada).lower()) for numero, com_hifen, colada in PADRAO_ARTIGO.findall(texto)}
+
+
+def artigo_do_trecho(trecho_id: str) -> tuple[str, str] | None:
+    """O artigo de um trecho, pelo trecho_id. None para trechos sem artigo (REF)."""
+    achado = ARTIGO_DO_TRECHO.search(trecho_id)
+    return (achado.group(1), achado.group(2)) if achado else None
+
+
 def conferir_parecer(resposta: RespostaLLM, entrada: EntradaPrever,
                      trechos_recuperados: list[str]) -> list[str]:
     """Confere o que o LLM escreveu. Lista vazia = aprovado; senão, usar o template."""
@@ -208,6 +227,20 @@ def conferir_parecer(resposta: RespostaLLM, entrada: EntradaPrever,
     for fonte in resposta.fontes:
         if fonte.trecho_id not in trechos_recuperados:
             problemas.append(f"fonte {fonte.trecho_id} não está entre os trechos recuperados")
+
+    # 3b. Artigos (v4, 09/11): o LLM chegou a escrever "CDC, art. 6º, III" com outro trecho na fonte.
+    #   - o artigo de cada fonte precisa ser o do próprio trecho;
+    #   - todo "art. N" do texto precisa ser o artigo de algum trecho recuperado.
+    for fonte in resposta.fontes:
+        do_trecho = artigo_do_trecho(fonte.trecho_id)
+        citados = artigos_no_texto(fonte.artigo)
+        if do_trecho and citados and citados != {do_trecho}:
+            problemas.append(f"fonte {fonte.trecho_id} com artigo \"{fonte.artigo}\", que não é o do trecho")
+    recuperados = {artigo_do_trecho(t) for t in trechos_recuperados} - {None}
+    for texto in textos:
+        for artigo in sorted(artigos_no_texto(texto) - recuperados):
+            problemas.append(f"art. {artigo[0]}{'-' + artigo[1].upper() if artigo[1] else ''} no texto não está "
+                             f"entre os trechos recuperados")
 
     # 4. Vocabulário e 5. atributos sensíveis, em todos os textos.
     for texto in textos:

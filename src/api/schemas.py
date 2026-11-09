@@ -6,8 +6,9 @@ Não duplicar esses modelos aqui: se o formato mudar, muda só lá.
 """
 from __future__ import annotations
 
-from datetime import date
-from typing import Any
+from datetime import date, datetime
+from typing import Any, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -66,3 +67,62 @@ class RespostaPrever(EntradaPrever):
     diferenca_pp: float | None = None
     juro_pares_mediana: float | None = None  # o Samuel vai acrescentar no prever()
     parecer_ia: Parecer | None = None
+
+
+# ---------- Decisão do analista (db/05_decisoes_analista.sql) ----------
+
+DecisaoAnalista = Literal["manter_preco", "revisar_preco", "encaminhar_compliance"]
+
+
+class NovaDecisao(BaseModel):
+    """O que o painel envia ao registrar uma decisão.
+
+    `resultado` é a RESPOSTA do /prever (com o parecer), nunca a solicitação:
+    assim gênero e idade não chegam ao registro. Em revisão manual, PD, faixa e
+    juros justos seguem nulos (a tabela aceita desde 08/11).
+    """
+    requisicao_id: UUID | None = Field(default=None, description="Gerado pelo painel a cada clique; evita gravar duas vezes")
+    analista: str = Field(min_length=1, max_length=120)
+    decisao: DecisaoAnalista
+    justificativa: str = Field(min_length=1, max_length=4000)
+    taxa_proposta: float | None = Field(default=None, gt=0, le=10, description="Nova taxa, em fração ao ano (nominal)")
+    resultado: RespostaPrever
+
+    @field_validator("analista", "justificativa")
+    @classmethod
+    def _sem_espacos_vazios(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("não pode ficar em branco")
+        return v.strip()
+
+
+class DecisaoRegistrada(BaseModel):
+    """Uma linha da tabela decisao_analista, como o painel exibe."""
+    decisao_id: int
+    registrada_em: datetime
+    contrato_id: str
+    origem: Literal["carteira", "simulacao"]
+    analista: str
+    decisao: DecisaoAnalista
+    justificativa: str
+    taxa_proposta: float | None = None
+    recomendacao_sistema: str | None = None
+    situacao_preco: str
+    pd: float | None = None          # nulos só em revisão manual
+    faixa: str | None = None
+    juro_cobrado: float
+    juro_justo: float | None = None
+    juro_justo_min: float | None = None
+    juro_justo_max: float | None = None
+    versao_modelo: str
+    versao_parecer: str | None = None
+    origem_parecer: str | None = None
+
+
+class DecisaoAtual(BaseModel):
+    """Decisão mais recente de um contrato da carteira (vw_decisao_atual)."""
+    contrato_id: str
+    decisao_id: int
+    registrada_em: datetime
+    analista: str
+    decisao: DecisaoAnalista

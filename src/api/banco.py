@@ -1,7 +1,9 @@
-"""Acesso da API ao banco: decisões do analista (db/05_decisoes_analista.sql, Marcos).
+"""Acesso da API ao banco (Marcos): decisões do analista e taxa média do BC.
 
-A tabela é só de inclusão: a API grava e lê, nunca altera. Data e origem
-('carteira' ou 'simulacao') são definidas pelo próprio banco.
+- decisao_analista (db/05): só de inclusão; a API grava e lê, nunca altera. Data e
+  origem ('carteira' ou 'simulacao') são definidas pelo próprio banco.
+- Taxa do BC (db/02): % a.a. EFETIVA, de 03/2011 a 07/2021; vai para o gerar_parecer()
+  como bc_credito_pessoal_aa, e o código da Maria escreve o contexto_mercado.
 """
 
 from __future__ import annotations
@@ -43,6 +45,8 @@ SQL_UMA = f"SELECT {COLUNAS_LISTAGEM} FROM decisao_analista WHERE decisao_id = %
 SQL_LISTAR = f"SELECT {COLUNAS_LISTAGEM} FROM decisao_analista ORDER BY registrada_em DESC, decisao_id DESC LIMIT %s"
 SQL_LISTAR_CONTRATO = (f"SELECT {COLUNAS_LISTAGEM} FROM decisao_analista WHERE contrato_id = %s "
                        "ORDER BY registrada_em DESC, decisao_id DESC LIMIT %s")
+SQL_BC_CONTRATO = "SELECT bc_credito_pessoal_aa FROM vw_custo_do_dinheiro WHERE loan_id = %s"
+SQL_BC_MES = "SELECT taxa_aa FROM bc_credito_pessoal_mensal WHERE mes = date_trunc('month', %s::date)::date"
 SQL_ATUAIS = ("SELECT contrato_id, decisao_id, registrada_em, analista, decisao "
               "FROM vw_decisao_atual ORDER BY registrada_em DESC")
 
@@ -134,3 +138,24 @@ def decisoes_atuais() -> list[dict]:
             return [dict(linha) for linha in cur.fetchall()]
     except psycopg2.errors.UndefinedTable as exc:
         raise BancoIndisponivel("view vw_decisao_atual não existe: aplique db/05_decisoes_analista.sql") from exc
+
+
+def taxa_bc(contrato_id: str | None = None, data_emprestimo: str | None = None) -> float | None:
+    """Média do BC (crédito pessoal, % a.a. efetiva) no mês da concessão.
+
+    Com data → mês da data (contratos do formulário). Sem data → pelo contrato na
+    vw_custo_do_dinheiro (carteira e casos reais). Sem dado ou sem banco → None:
+    o parecer só fica sem a frase de referência, nunca falha por isso.
+    """
+    try:
+        with _conexao() as conn, conn.cursor() as cur:
+            if data_emprestimo:
+                cur.execute(SQL_BC_MES, (str(data_emprestimo)[:10],))
+            elif contrato_id:
+                cur.execute(SQL_BC_CONTRATO, (contrato_id,))
+            else:
+                return None
+            linha = cur.fetchone()
+            return float(linha[0]) if linha and linha[0] is not None else None
+    except Exception:
+        return None

@@ -98,3 +98,20 @@ def test_casos_reais_mostram_motivos_sem_codigo_cru():
             html = html_motivos(caso["motivos"])
             assert "escolaridade</span>" not in html  # rótulo sem valor cru
             assert ".0<" not in html                   # nada de "4.0"
+
+def test_juros_nominais_e_mediana_dos_pares_no_cartao():
+    r = dict(POR_SITUACAO["acima_do_justo"], juro_pares_mediana=0.2233)
+    cartoes = kpis_revisao(r)
+    assert "a.a. nominal" in cartoes[1] and "a.a. nominal" in cartoes[2]
+    assert "Mediana dos pares: 22,3%" in cartoes[2]
+    assert "Mediana dos pares" not in kpis_revisao(dict(r, juro_pares_mediana=None))[2]
+    assert "Juros nominais ao ano" in html_barra_juros(r)
+
+
+def test_parecer_mostra_referencia_do_bc_so_quando_existe():
+    base = {"resumo": "r", "pontos_de_atencao": [], "recomendacao": "manter_preco", "recomendacao_texto": "t",
+            "fontes": [], "origem": "llm", "versao_prompt": "parecer_v2"}
+    frase = "Referência de mercado: no mês da concessão, a taxa média <b>era</b> de 84,5% ao ano (nominal)."
+    html = html_parecer({**base, "contexto_mercado": frase})
+    assert "Referência de mercado (Brasil)" in html and "&lt;b&gt;" in html  # texto escapado
+    assert "Referência de mercado (Brasil)" not in html_parecer({**base, "contexto_mercado": None})

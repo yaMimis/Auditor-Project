@@ -75,3 +75,12 @@ def test_backtest_por_faixa(pasta):
     bt = cart.backtest(cart.carregar_carteira(pasta))
     assert bt.loc["A", "acima_do_justo"] == pytest.approx(0.10)
     assert bt.loc["B", "abaixo_do_justo"] == pytest.approx(-0.02)
+
+def test_exportacao_da_fila_so_com_colunas_uteis(pasta):
+    conteudo = cart.exportar_fila(cart.carregar_carteira(pasta))
+    assert conteudo.startswith(b"\xef\xbb\xbf")  # BOM: o Excel abre os acentos certo
+    linhas = conteudo.decode("utf-8-sig").splitlines()
+    cabecalho = linhas[0].split(",")
+    assert cabecalho[:4] == ["contrato_id", "ano", "pais", "faixa"] and "distancia_pp" in cabecalho
+    assert "rentabilidade_realizada" not in cabecalho
+    assert len(linhas) == 1 + 3  # A1, B1, B2 (fora da margem)

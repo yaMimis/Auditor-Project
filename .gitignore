@@ -14,3 +14,9 @@ docker-compose.override.yml
 *.pkl
 .ipynb_checkpoints/
 .pytest_cache/
+
+# Terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+infra/terraform.tfvars

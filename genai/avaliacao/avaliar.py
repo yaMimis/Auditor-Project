@@ -62,6 +62,22 @@ def _recusa_por_palavra(rodada):
                for a in rodada["avisos"])
 
 
+def _recusa_por_artigo(rodada):
+    return any("conferência recusou" in a and ("no texto não está entre os trechos recuperados" in a
+                                                or "que não é o do trecho" in a)
+               for a in rodada["avisos"])
+
+
+def _llm_por_tipo(resultados):
+    """Rodadas com parecer do LLM, separadas por tipo de caso (acima, abaixo, dentro, difícil)."""
+    grupos = {}
+    for res in resultados:
+        for rodada in res["rodadas"]:
+            if rodada["origem"] == "llm":
+                grupos.setdefault(res["tipo"], []).append(rodada)
+    return grupos
+
+
 def _aceita(trecho_id, prefixos):
     return any(trecho_id.startswith(p) for p in prefixos)
 
@@ -133,7 +149,11 @@ def escrever_markdown(resultados, caminho):
         f"| Pareceres do LLM com alguma fonte | {_pct([bool(r['fontes']) for r in com_llm])} |",
         f"| Pareceres do LLM com fonte específica da situação (sem contar {FONTE_FIXA}) "
         f"| {_pct([bool(fontes_especificas(r['fontes'])) for r in com_llm])} |",
+        *[f"| ↳ fonte específica, só {tipo} | {_pct([bool(fontes_especificas(r['fontes'])) for r in rodadas])} |"
+          for tipo, rodadas in _llm_por_tipo(resultados).items()],
+        f"| Pareceres do LLM que citam a {FONTE_FIXA} | {_pct([any(f.startswith(FONTE_FIXA) for f in r['fontes']) for r in com_llm])} |",
         f"| Recusas da conferência por palavra/atributo proibido | {sum(_recusa_por_palavra(r) for r in todas)} |",
+        f"| Recusas da conferência por artigo | {sum(_recusa_por_artigo(r) for r in todas)} |",
         f"| Sem palavra/atributo proibido | {_pct([not proibidos(_texto(r['parecer'])) for r in todas])} |",
         f"| Mesma resposta nas 2 rodadas | {_pct([res['consistente'] for res in resultados])} |",
         f"| Tempo médio do LLM | {sum(r['tempo_s'] for r in com_llm) / max(len(com_llm), 1):.1f} s |",

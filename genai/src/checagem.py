@@ -147,9 +147,21 @@ def contar_frases(texto: str) -> int:
     return len([f for f in FIM_DE_FRASE.split(texto) if f])
 
 
-def formatar_percentual(valor: float) -> str:
-    """0.184 -> '18,4%'"""
-    return f"{valor * 100:.1f}%".replace(".", ",")
+def formatar_percentual(valor: float, casas: int = 1) -> str:
+    """0.184 -> '18,4%'; com casas=2: 0.3056 -> '30,56%'."""
+    return f"{valor * 100:.{casas}f}%".replace(".", ",")
+
+
+def casas_decimais(entrada: "EntradaPrever") -> int:
+    """Casas dos juros no texto: 1; ou 2 quando dois juros diferentes ficariam iguais com 1 casa.
+    Ex. (C07 da avaliação): cobrado 30,56% e limite inferior 30,58% viravam "30,6% abaixo de 30,6%"."""
+    juros = [v for v in (entrada.juro_cobrado, entrada.juro_justo, entrada.juro_justo_min, entrada.juro_justo_max)
+             if v is not None]
+    for i, a in enumerate(juros):
+        for b in juros[i + 1:]:
+            if abs(a - b) > 1e-9 and formatar_percentual(a) == formatar_percentual(b):
+                return 2
+    return 1
 
 
 def efetiva_para_nominal(efetiva_percentual: float) -> float:
@@ -169,9 +181,9 @@ def montar_contexto_mercado(entrada: EntradaPrever) -> str | None:
             "mercado brasileiro, não uma medida do preço justo deste contrato.")
 
 
-def formatar_juro(valor: float) -> str:
-    """0.249 -> '24,9% ao ano'"""
-    return f"{formatar_percentual(valor)} {UNIDADE_JURO}"
+def formatar_juro(valor: float, casas: int = 1) -> str:
+    """0.249 -> '24,9% ao ano (nominal)'"""
+    return f"{formatar_percentual(valor, casas)} {UNIDADE_JURO}"
 
 
 def extrair_numeros(texto: str) -> list[float]:
@@ -181,6 +193,63 @@ def extrair_numeros(texto: str) -> list[float]:
         bruto = com_porcento or com_virgula
         numeros.append(float(bruto.replace(",", ".")))
     return numeros
+
+
+# "art. 6º, III", "Art. 54-B", "artigo 20" -> ("6", ""), ("54", "b"), ("20", ""). Só o padrão "art.":
+# "Lei nº 8.078" e "Resolução 4.881" não contam. O inciso e o parágrafo são ignorados.
+PADRAO_ARTIGO = re.compile(r"\bart(?:igo)?s?\.?\s*(\d+)(?:\s*[º°])?(?:\s*-\s*([A-Za-z])|([A-Za-z]))?\b",
+                           re.IGNORECASE)
+# trecho_id "cdc-art54b-1" -> ("54", "b"); os trechos do REF ("ref-p14-1") não têm artigo.
+ARTIGO_DO_TRECHO = re.compile(r"-art(\d+)([a-z]?)-\d+$")
+
+
+def artigos_no_texto(texto: str) -> set[tuple[str, str]]:
+    """Artigos mencionados num texto, como (número, letra), sem inciso nem parágrafo."""
+    return {(numero, (com_hifen or colada).lower()) for numero, com_hifen, colada in PADRAO_ARTIGO.findall(texto)}
+
+
+def artigo_do_trecho(trecho_id: str) -> tuple[str, str] | None:
+    """O artigo de um trecho, pelo trecho_id. None para trechos sem artigo (REF)."""
+    achado = ARTIGO_DO_TRECHO.search(trecho_id)
+    return (achado.group(1), achado.group(2)) if achado else None
+
+
+# ---------- Ajustes de estilo (sem recusa) ----------
+
+COMECA_COM_RECOMENDACAO = re.compile(r"^\s*recomenda-se\b", re.IGNORECASE)
+TRECHO_REVISAO_AUTOMATIZADA = "lgpd-art20"
+
+
+def _frases(texto: str) -> list[str]:
+    protegido = ABREVIACOES.sub(r"\1._", texto.strip())
+    return [f.replace("._", ". ") for f in FIM_DE_FRASE.split(protegido) if f]
+
+
+def ajustar_resposta(resposta: RespostaLLM) -> list[str]:
+    """Ajustes de estilo feitos pelo código depois que a conferência aprova (v4, 09/11). Não recusam o
+    parecer: só tiram o que sobra. Devolve a lista do que foi ajustado, para o log.
+    - Recomendação repetida: a regra do prompt falhou na v3 e na v4. Saem os pontos que começam com
+      "Recomenda-se" e, se sobrar outra frase, as frases do resumo que começam assim.
+    - LGPD art. 20 decorativa: sai das fontes se o texto não fala de revisão de decisão automatizada."""
+    ajustes = []
+    pontos = [p for p in resposta.pontos_de_atencao if not COMECA_COM_RECOMENDACAO.match(p)]
+    if len(pontos) < len(resposta.pontos_de_atencao):
+        ajustes.append(f"{len(resposta.pontos_de_atencao) - len(pontos)} ponto(s) repetindo a recomendação")
+        resposta.pontos_de_atencao = pontos
+
+    frases = _frases(resposta.resumo)
+    mantidas = [f for f in frases if not COMECA_COM_RECOMENDACAO.match(f)]
+    if mantidas and len(mantidas) < len(frases):
+        ajustes.append("frase do resumo repetindo a recomendação")
+        resposta.resumo = " ".join(mantidas)
+
+    texto = " ".join([resposta.resumo, *resposta.pontos_de_atencao, resposta.recomendacao_texto]).lower()
+    if "revis" not in texto or "automatizad" not in texto:
+        fontes = [f for f in resposta.fontes if not f.trecho_id.startswith(TRECHO_REVISAO_AUTOMATIZADA)]
+        if len(fontes) < len(resposta.fontes):
+            ajustes.append("LGPD art. 20 nas fontes sem o texto falar dela")
+            resposta.fontes = fontes
+    return ajustes
 
 
 def conferir_parecer(resposta: RespostaLLM, entrada: EntradaPrever,
@@ -208,6 +277,20 @@ def conferir_parecer(resposta: RespostaLLM, entrada: EntradaPrever,
     for fonte in resposta.fontes:
         if fonte.trecho_id not in trechos_recuperados:
             problemas.append(f"fonte {fonte.trecho_id} não está entre os trechos recuperados")
+
+    # 3b. Artigos (v4, 09/11): o LLM chegou a escrever "CDC, art. 6º, III" com outro trecho na fonte.
+    #   - o artigo de cada fonte precisa ser o do próprio trecho;
+    #   - todo "art. N" do texto precisa ser o artigo de algum trecho recuperado.
+    for fonte in resposta.fontes:
+        do_trecho = artigo_do_trecho(fonte.trecho_id)
+        citados = artigos_no_texto(fonte.artigo)
+        if do_trecho and citados and citados != {do_trecho}:
+            problemas.append(f"fonte {fonte.trecho_id} com artigo \"{fonte.artigo}\", que não é o do trecho")
+    recuperados = {artigo_do_trecho(t) for t in trechos_recuperados} - {None}
+    for texto in textos:
+        for artigo in sorted(artigos_no_texto(texto) - recuperados):
+            problemas.append(f"art. {artigo[0]}{'-' + artigo[1].upper() if artigo[1] else ''} no texto não está "
+                             f"entre os trechos recuperados")
 
     # 4. Vocabulário e 5. atributos sensíveis, em todos os textos.
     for texto in textos:

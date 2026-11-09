@@ -37,7 +37,7 @@ Contrato → modelo de risco (PD, probabilidade de default) → juro justo por f
 | Dados | pandas, pandera, PostgreSQL, SQLAlchemy |
 | Vetores | pgvector, no mesmo PostgreSQL |
 | Modelo | scikit-learn, XGBoost, SHAP, scipy |
-| Parecer | Gemini (`google-genai`), sentence-transformers multilíngue, prompts versionados |
+| Parecer | LangChain (chain LCEL: busca → prompt → Gemini → conferência), Gemini (`langchain-google-genai`), pgvector, sentence-transformers multilíngue, prompts versionados |
 | Serviço e app | FastAPI, Streamlit |
 | Infra e qualidade | Docker Compose, pytest, black, flake8, GitHub Actions |
 

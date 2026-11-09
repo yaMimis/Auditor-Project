@@ -135,3 +135,15 @@ def fila_revisao(df: pd.DataFrame, limite: int | None = 50) -> pd.DataFrame:
                             fora["juro_justo_min"] - fora["juro_cobrado"]) * 100).round(1)
     fora = fora.sort_values("distancia_pp", ascending=False)
     return fora if limite is None else fora.head(limite)
+
+
+COLUNAS_EXPORTACAO = ["contrato_id", "ano", "pais", "faixa", "pd", "juro_cobrado", "juro_justo",
+                      "juro_justo_min", "juro_justo_max", "juro_pares_mediana", "situacao_preco",
+                      "distancia_pp", "excesso_eur", "perda_nao_coberta_eur"]
+
+
+def exportar_fila(df: pd.DataFrame) -> bytes:
+    """Fila completa de revisão em CSV (UTF-8 com BOM, abre certo no Excel), só com as colunas úteis."""
+    fila = fila_revisao(df, limite=None)
+    colunas = [c for c in COLUNAS_EXPORTACAO if c in fila.columns]
+    return fila[colunas].to_csv(index=False).encode("utf-8-sig")

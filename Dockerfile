@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# requirements-genai.txt inclui o requirements.txt + busca nas normas (sentence-transformers,
+# torch CPU, pgvector) e o cliente do Gemini, usados pelo parecer na API.
+COPY requirements.txt requirements-genai.txt ./
+RUN pip install --no-cache-dir -r requirements-genai.txt
 
 #copia codigo fonte do projeto local
 COPY . .

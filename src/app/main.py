@@ -237,6 +237,8 @@ st.markdown("""
     .ap-muted { color: var(--text-muted); }
     .ap-small { font-size: .72rem; }
     .ap-empty { color: var(--text-muted); font-size: .85rem; padding: .6rem 0; }
+    .ap-mercado { border-left: 3px solid #7fa7d9; background: rgba(127,167,217,.08); border-radius: 0 8px 8px 0;
+        padding: .7rem .9rem; color: #d7dbe2; font-size: .84rem; line-height: 1.55; }
 
     .ap-stack-row { display: grid; grid-template-columns: 4.2rem 1fr 3.2rem; gap: .8rem; align-items: center; margin: .5rem 0; }
     .ap-stack-label { font-size: .84rem; font-weight: 700; color: #e8e5df; }
@@ -386,6 +388,14 @@ def dados_carteira():
         return cart.carregar_carteira(), cart.carregar_equidade(), None
     except (ValueError, OSError, json.JSONDecodeError) as exc:
         return None, None, str(exc)
+
+
+@st.cache_data(ttl=300, max_entries=8, show_spinner="Preparando a exportação...")
+def csv_da_fila(anos, pais, faixa) -> bytes:
+    """CSV da fila completa para os filtros escolhidos. Só roda quando o analista pede:
+    com a carteira inteira são ~90 mil linhas (~10 MB)."""
+    df, _, _ = dados_carteira()
+    return cart.exportar_fila(cart.filtrar(df, anos=anos, pais=pais, faixa=faixa))
 
 
 # ==========================================
@@ -723,16 +733,15 @@ def bloco_decisao(resultado: dict) -> None:
             O sistema não decide: a decisão final é sempre do analista e fica registrada com o parecer e a justificativa.</div>
         """)
         if revisao_manual:
-            md("""<div class="ap-alert">Contratos em revisão manual não têm PD nem juro justo, e a tabela de decisões
-                ainda exige esses números. Confira os dados de origem; o registro desta decisão fica disponível
-                quando a tabela aceitar a revisão manual.</div>""")
+            md("""<div class="ap-alert">Revisão manual: o sistema não calculou PD nem juro justo. Confira os dados
+                de origem e registre na justificativa o que foi verificado; a decisão é gravada sem esses números.</div>""")
         col_just, col_taxa = st.columns([3, 1], gap="medium")
         with col_just:
             justificativa = st.text_area("Justificativa (obrigatória)", key=f"just_{cid}",
-                                         placeholder="Explique sua decisão", height=110, disabled=revisao_manual)
+                                         placeholder="Explique sua decisão", height=110)
         with col_taxa:
             nova = st.number_input("Nova taxa proposta (% a.a.)", key=f"nova_{cid}", min_value=0.0,
-                                   max_value=500.0, value=None, step=0.5, format="%.2f", disabled=revisao_manual,
+                                   max_value=500.0, value=None, step=0.5, format="%.2f",
                                    help="Opcional; registrada só quando a decisão for revisar o preço.")
         botoes = st.columns(3, gap="small")
         escolhas = [("manter_preco", "Manter preço", "secondary"),
@@ -740,8 +749,7 @@ def bloco_decisao(resultado: dict) -> None:
                     ("encaminhar_compliance", "Encaminhar ao compliance", "secondary")]
         for coluna, (chave, rotulo, tipo) in zip(botoes, escolhas):
             with coluna:
-                if st.button(rotulo, key=f"dec_{chave}_{cid}", type=tipo, use_container_width=True,
-                             disabled=revisao_manual):
+                if st.button(rotulo, key=f"dec_{chave}_{cid}", type=tipo, use_container_width=True):
                     if not (justificativa or "").strip():
                         st.warning("Escreva a justificativa antes de registrar a decisão.")
                     elif not st.session_state.analista.strip():
@@ -920,6 +928,9 @@ def abrir_da_carteira(linha: dict) -> None:
         "juro_justo_min": linha.get("juro_justo_min"), "juro_justo_max": linha.get("juro_justo_max"),
         "situacao_preco": linha["situacao_preco"], "motivos": [],
         "alerta_dados": linha["situacao_preco"] == "revisao_manual",
+        "juro_pares_mediana": linha.get("juro_pares_mediana"),
+        "pd_ic95": ([linha["pd_ic95_min"], linha["pd_ic95_max"]]
+                    if linha.get("pd_ic95_min") is not None and linha.get("pd_ic95_max") is not None else None),
     }
     parecer, erro = chamar_api("/parecer", resultado)
     resultado["parecer_ia"] = parecer
@@ -1011,8 +1022,12 @@ with aba_carteira:
                '<div class="ap-card-sub">Do mais distante para o mais próximo da margem de incerteza.</div>')
         if fila is not None and not fila.empty:
             with col_exp:
-                st.download_button("Exportar lista (CSV)", fila.to_csv(index=False).encode("utf-8"),
-                                   file_name="contratos_para_revisao.csv", mime="text/csv")
+                chave_export = (filtros["anos"], filtros["pais"], filtros["faixa"])
+                if st.button("Preparar exportação (CSV)", key="preparar_export"):
+                    st.session_state.export_fila = chave_export
+                if st.session_state.get("export_fila") == chave_export:  # filtros mudaram → pedir de novo
+                    st.download_button("Baixar CSV", csv_da_fila(*chave_export),
+                                       file_name="contratos_para_revisao.csv", mime="text/csv", key="baixar_fila")
             registros = json.loads(fila.head(50).to_json(orient="records"))  # tipos nativos, NaN → null
             md(tabela_fila(registros, decisoes_atuais()))
             if len(fila) > 50:

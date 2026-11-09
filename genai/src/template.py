@@ -11,8 +11,8 @@ Teste rápido (na pasta raiz):
 """
 from datetime import datetime, timedelta, timezone
 
-from genai.src.checagem import (EntradaPrever, Parecer, formatar_juro, formatar_percentual,
-                               montar_contexto_mercado, motivos_permitidos)
+from genai.src.checagem import (EntradaPrever, Parecer, casas_decimais, formatar_juro,
+                               formatar_percentual, montar_contexto_mercado, motivos_permitidos)
 
 VERSAO_TEMPLATE = "template_v1"
 DECISAO = "A decisão final é do analista."
@@ -40,7 +40,8 @@ def _fatores(entrada: EntradaPrever) -> str | None:
 
 def _textos(entrada: EntradaPrever) -> tuple[str, list[str], str, list[str]]:
     """Devolve (resumo, pontos_de_atencao, recomendacao_texto, chaves dos números usados)."""
-    cobrado = formatar_juro(entrada.juro_cobrado)
+    casas = casas_decimais(entrada)
+    cobrado = formatar_juro(entrada.juro_cobrado, casas)
 
     if entrada.vai_para_revisao_manual:
         return (
@@ -52,8 +53,9 @@ def _textos(entrada: EntradaPrever) -> tuple[str, list[str], str, list[str]]:
         )
 
     risco = f"Risco faixa {entrada.faixa} (chance de não pagar de {formatar_percentual(entrada.pd)})."
-    margem = (f"de {formatar_percentual(entrada.juro_justo_min)} a {formatar_juro(entrada.juro_justo_max)}, "
-              f"com valor central de {formatar_juro(entrada.juro_justo)}")
+    margem = (f"de {formatar_percentual(entrada.juro_justo_min, casas)} a "
+              f"{formatar_juro(entrada.juro_justo_max, casas)}, "
+              f"com valor central de {formatar_juro(entrada.juro_justo, casas)}")
     fatores = _fatores(entrada)
     todas = ["pd", "juro_cobrado", "juro_justo", "juro_justo_min", "juro_justo_max"]
 

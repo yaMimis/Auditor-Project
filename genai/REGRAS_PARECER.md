@@ -1,13 +1,13 @@
 # REGRAS_PARECER.md — Regras para o parecer gerado pela IA
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.5 · **Data:** 09/11/2026
+**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.7 · **Data:** 09/11/2026
 **Status:** v1.2 aprovada pela Maria em 03/11/2026; v1.3 acrescenta a regra sobre os números do REF (seção 5); v1.4 traz a unidade nominal, a referência de mercado do BC, os nomes de países e as correções do primeiro teste real do LLM, aguardando o grupo.
 
 ## 1. Finalidade
 
 Estas regras dizem como o parecer deve ser escrito e o que ele nunca pode fazer. Elas são usadas em dois lugares:
 
-- **No prompt** (`genai/prompts/parecer_v3.md`; a v1 e a v2 continuam no repositório), como instruções ao LLM.
+- **No prompt** (`genai/prompts/parecer_v4.md`; a v1, a v2 e a v3 continuam no repositório), como instruções ao LLM.
 - **Na checagem por código** (`genai/src/checagem.py`), que rejeita o parecer que as descumprir.
 
 O formato dos dados (campos, tipos, exemplos) está só em `FORMATO_JSON.md`. Este documento não o repete.
@@ -120,11 +120,18 @@ O parecer do template tem `origem: "template"`, `versao_prompt: "template_v1"`, 
 | Formato              | O JSON do LLM passa na validação pydantic (`RespostaLLM`).                                                                                      |
 | Números             | Cada valor de `numeros_citados` é igual ao da entrada, e cada número do texto corresponde a um valor formatado recebido.                        |
 | Fontes               | Cada `trecho_id` de `fontes` está entre os trechos recuperados.                                                                                |
+| Artigos              | O artigo de cada fonte é o do próprio trecho, e todo "art. N" escrito no texto é o artigo de algum trecho recuperado (só o número e a letra, sem inciso; os trechos do REF não têm artigo). |
 | Vocabulário         | O texto não contém nenhuma palavra proibida da seção 3.                                                                                         |
 | Atributos sensíveis | O texto não menciona gênero, idade ou país, inclusive pelo nome dos países do Bondora.                                                                                                      |
 | Tamanho              | Resumo com até 2 frases; no máximo 3 pontos de atenção.                                                                                         |
 
 Se a entrada for inválida, o erro é registrado e o contrato vai para revisão manual. Se qualquer outro item falhar, entra o template de reserva.
+
+**Ajustes sem recusa (v1.7).** Depois que a conferência aprova, o código só tira o que sobra; nunca acrescenta texto nem fonte, e a conferência sempre vê a resposta original do LLM:
+- pontos de atenção que começam com "Recomenda-se" saem, e também as frases do resumo que começam assim, se sobrar outra frase (a recomendação fica só no campo dela);
+- a LGPD art. 20 sai das fontes quando o texto não fala de revisão de decisão automatizada (citação decorativa).
+
+**Casas decimais.** Os juros aparecem com 1 casa; com 2 quando dois juros diferentes ficariam iguais com 1 casa (ex.: 30,56% e 30,58%, que com 1 casa virariam "30,6% abaixo de 30,6%"). Vale para o prompt e para o template.
 
 ---
 
@@ -142,5 +149,7 @@ Nos 20 casos de avaliação (critérios em `genai/avaliacao/CRITERIOS.md`), alé
 | 1.3     | 03/11/2026 | Seção 5: números dos trechos do REF nunca aparecem no parecer; esses trechos só explicam a composição do custo do crédito. |
 | 1.4     | 08/11/2026 | Juros nominais ("ao ano (nominal)"). Seção 5: média do BC só no `contexto_mercado`, escrita pelo código e convertida para nominal. Seção 4: nomes dos países do Bondora contam como país; país entre parênteses sai do rótulo. Seção 3 e 7 (após o primeiro teste real do LLM): frase hipotética só com norma citada e no condicional; sem "Ponto de atenção:"; nome dos fatores copiado exatamente; no caso "dentro", os pontos podem ficar vazios. Prompt passa para `parecer_v2`. |
 | 1.5     | 09/11/2026 | Após a avaliação dos 20 casos (v2): citar a norma sempre que um trecho sustentar um ponto; a busca traz também a LGPD art. 20 (revisão de decisões automatizadas), que pode ser citada em qualquer situação; o REF pode ser citado no caso "abaixo" para explicar que a inadimplência compõe o custo do crédito (sem números); valor central ≠ margem; a recomendação não se repete nos pontos. Prompt passa para `parecer_v3`. |
+| 1.6     | 09/11/2026 | Após a avaliação da v3: o LLM escreveu um artigo que não era o do trecho citado (C01, "CDC, art. 6º, III"), induzido por uma regra do prompt. Seção 9: nova checagem de artigos no código. Nenhuma regra do prompt nomeia artigo; a LGPD art. 20 só é citada se o texto disser o que ela diz; a recomendação não se repete no resumo. Prompt passa para `parecer_v4`. |
+| 1.7     | 09/11/2026 | Após a avaliação da v4, só no código (o prompt continua `parecer_v4`): a recomendação repetida e a LGPD art. 20 decorativa passam a ser retiradas depois da conferência, porque duas versões do prompt não resolveram; juros com 2 casas quando 1 casa os deixaria iguais (C07). |
 
 Qualquer mudança nestas regras gera nova versão do prompt (`parecer_v2`, `parecer_v3`...) com o motivo anotado.

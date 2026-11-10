@@ -7,7 +7,9 @@ Uso (na raiz do projeto, com o banco no ar, o .env preenchido e a carga do Bondo
 
 Por padrão lê estes arquivos de data/raw/ (use as opções --euribor-12m, --euribor-3m,
 --selic, --selic-meta e --bc-credito para outros caminhos):
-    ECB_Euribor_Serie-Mensal-12-Meses_csv.csv   Euribor 12 meses (BCE, série ...EURIBOR1YD_...)
+    ECB_Euribor_Serie-Mensal-12-Meses_csv.csv   Euribor 12 meses (BCE, série ...EURIBOR1YD_...;
+                                                também aceita o nome sem o "_csv":
+                                                ECB_Euribor_Serie-Mensal-12-Meses.csv)
     ECB_Euribor_Serie-Mensal-3-Meses.csv        Euribor 3 meses  (BCE, série ...EURIBOR3MD_...)
     BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv   Selic acumulada no mês anualizada base 252
                                                 (Banco Central, SGS 4189, % ao ano)
@@ -45,7 +47,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from carga_bondora import _carregar_env, _conectar, _copy
+try:  # rodando como script: python src/dados/carga_macro.py
+    from carga_bondora import _carregar_env, _conectar, _copy
+except ModuleNotFoundError:  # importado como módulo (testes): from src.dados import carga_macro
+    from src.dados.carga_bondora import _carregar_env, _conectar, _copy
 
 JANELA_INI = "2009-01"
 JANELA_FIM = "2021-07"
@@ -53,6 +58,13 @@ BC_INI = "2011-03"  # a série 20742 do BC começa aqui
 MESES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 PASTA_PADRAO = Path("data/raw")
 NOMES_BC_20742 = ("bcdata.sgs.20742.csv", "bcdata_sgs_20742.csv")
+# O download do BCE às vezes vem com "_csv" antes da extensão: os dois nomes valem.
+NOMES_EURIBOR_12M = ("ECB_Euribor_Serie-Mensal-12-Meses_csv.csv", "ECB_Euribor_Serie-Mensal-12-Meses.csv")
+
+
+def primeiro_existente(nomes: tuple[str, ...], pasta: Path = PASTA_PADRAO) -> Path | None:
+    """Caminho do primeiro nome que existe em `pasta`, na ordem dada; None se nenhum existir."""
+    return next((pasta / n for n in nomes if (pasta / n).is_file()), None)
 
 
 # --------------------------------------------------------------------------
@@ -241,8 +253,8 @@ def main() -> None:
     ap.add_argument("--dsn", default=os.environ.get("DATABASE_URL"),
                     help="padrão: variável de ambiente DATABASE_URL")
     ap.add_argument("--ddl", type=Path, help="arquivo .sql aplicado antes da carga")
-    ap.add_argument("--euribor-12m", type=Path,
-                    default=PASTA_PADRAO / "ECB_Euribor_Serie-Mensal-12-Meses.csv")
+    ap.add_argument("--euribor-12m", type=Path, default=None,
+                    help="padrão: data/raw/" + " ou ".join(NOMES_EURIBOR_12M))
     ap.add_argument("--euribor-3m", type=Path,
                     default=PASTA_PADRAO / "ECB_Euribor_Serie-Mensal-3-Meses.csv")
     ap.add_argument("--selic", type=Path,
@@ -255,11 +267,14 @@ def main() -> None:
     a = ap.parse_args()
     if not a.dsn:
         sys.exit("ERRO: informe --dsn ou defina DATABASE_URL.")
-    obrigatorios = {"euribor_12m": a.euribor_12m, "euribor_3m": a.euribor_3m, "selic": a.selic}
+    # Sem --euribor-12m: o primeiro dos dois nomes que existir (se nenhum existir, o erro
+    # abaixo cita o primeiro nome, que é o do download atual do BCE).
+    e12 = a.euribor_12m or primeiro_existente(NOMES_EURIBOR_12M) or PASTA_PADRAO / NOMES_EURIBOR_12M[0]
+    obrigatorios = {"euribor_12m": e12, "euribor_3m": a.euribor_3m, "selic": a.selic}
     for nome, caminho in obrigatorios.items():
         if not caminho.is_file():
             sys.exit(f"ERRO: arquivo não encontrado: {caminho}")
-    bc = a.bc_credito or next((PASTA_PADRAO / n for n in NOMES_BC_20742 if (PASTA_PADRAO / n).is_file()), None)
+    bc = a.bc_credito or primeiro_existente(NOMES_BC_20742)
     if a.bc_credito is not None and not a.bc_credito.is_file():
         sys.exit(f"ERRO: arquivo não encontrado: {a.bc_credito}")
     arquivos = dict(obrigatorios,

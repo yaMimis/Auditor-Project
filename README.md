@@ -62,6 +62,16 @@ tests/        testes
 
 Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
+**Atalho (Windows):** com o banco já carregado (passos 2 a 5 abaixo, uma vez), use o `iniciar.ps1`:
+
+| Comando | O que faz |
+| --- | --- |
+| `.\iniciar.ps1` | confere `.env` e modelo, sobe o banco, aplica a tabela de decisões, indexa as normas (se faltar), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
+| `.\iniciar.ps1 -Build` | o mesmo, reconstruindo a imagem (mudou código ou requirements) |
+| `.\iniciar.ps1 -Parar` | para tudo; os dados do banco ficam guardados |
+
+O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cache e uma imagem única serve API e painel.
+
 1. Clone o repositório e instale as dependências:
    ```
    git clone https://github.com/yaMimis/Auditor-Project.git
@@ -103,8 +113,7 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
    **Normas do parecer** (busca no pgvector), uma vez, com `pip install -r requirements-genai.txt`:
    ```
-   python -m genai.src.dividir
-   python -m genai.src.indexar
+   python genai/src/indexar.py
    ```
    Sem esse passo o parecer funciona, mas sai sem fontes.
 
@@ -112,7 +121,7 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
    ```
    docker compose up --build api streamlit
    ```
-   O primeiro build demora mais: a imagem instala o PyTorch (CPU) para a busca nas normas.
+   O primeiro build demora mais: a imagem instala o PyTorch (CPU) para a busca nas normas. Depois, `docker compose up -d` sobe sem reconstruir; use `--build` só quando mudar código ou requirements.
    - Painel: http://localhost:8501 (sem o modelo, use os exemplos da aba de revisão)
    - API: http://localhost:8000/docs (`GET /` informa se o modelo foi carregado)
    - Para os dados da carteira, o painel lê `docs/resultados/carteira_auditoria.csv` e `equidade.json`.
@@ -132,6 +141,8 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 - [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
 - [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
+- [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md): roteiro da demo, plano B e perguntas prováveis.
+- [`infra/`](infra/README.md): o mesmo ambiente em Terraform (provider Docker, local, sem custo).
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 
 ## Governança e ética

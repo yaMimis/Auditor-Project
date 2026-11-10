@@ -1,0 +1,127 @@
+#cloud-config
+# O que a VM faz sozinha no primeiro boot (o Ubuntu da GCP lê este arquivo do metadado user-data).
+# Os trechos com cifrão e chaves são preenchidos pelo Terraform (templatefile no main.tf);
+# por isso os scripts abaixo usam $VARIAVEL sem chaves.
+# Acompanhe dentro da VM com:  cloud-init status --wait
+# Log completo:                sudo tail -f /var/log/cloud-init-output.log
+
+package_update: true
+packages:
+  - git
+  - ca-certificates
+  - curl
+
+# Cria o usuário já no boot; a chave SSH vem do metadado ssh-keys (main.tf).
+users:
+  - default
+  - name: ${usuario}
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+write_files:
+  # Segredos do .env (o mesmo formato do .env local). Nunca vai para o Git.
+  # DATABASE_URL não entra: o docker-compose.yml já aponta a API para o banco.
+  - path: /opt/auditor/.env
+    permissions: "0600"
+    content: |
+      GOOGLE_API_KEY=${google_api_key}
+      CLIENTE_ID_SAL=${cliente_id_sal}
+
+  # Montagem do primeiro boot (roda como root, uma vez só). Faz o que o iniciar.ps1 faz no Windows.
+  - path: /opt/auditor/montar.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euxo pipefail
+      USUARIO="${usuario}"
+      PROJETO="/home/$USUARIO/Auditor-Project"
+
+      # 1. Memória de reserva (swap de 2 GB): o build do PyTorch e a API juntos apertam os 4 GB.
+      if [ ! -f /swapfile ]; then
+        fallocate -l 2G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+        echo '/swapfile none swap sw 0 0' >> /etc/fstab
+      fi
+
+      # 2. Docker (com o docker compose).
+      curl -fsSL https://get.docker.com | sh
+      usermod -aG docker "$USUARIO"
+
+      # 3. Projeto: clona e coloca o .env e as pastas que ficam fora do Git.
+      git clone --branch "${ramo}" "${repositorio}" "$PROJETO"
+      install -m 600 /opt/auditor/.env "$PROJETO/.env"
+      mkdir -p "$PROJETO/modelos_salvos" "$PROJETO/data/raw" "/home/$USUARIO/envio"
+      chown -R "$USUARIO:$USUARIO" "$PROJETO" "/home/$USUARIO/envio"
+      cd "$PROJETO"
+
+      # 4. Imagem da aplicação (a parte demorada: PyTorch e bibliotecas).
+      docker compose build api
+
+      # 5. Banco: o esquema de db/ roda sozinho na 1ª criação do volume.
+      docker compose up -d postgres
+      for i in $(seq 1 60); do
+        [ "$(docker inspect -f '{{.State.Health.Status}}' auditor_postgres)" = "healthy" ] && break
+        sleep 3
+      done
+
+      # 6. Normas do parecer no pgvector (o mesmo comando do iniciar.ps1).
+      docker compose run --rm --no-deps api python genai/src/indexar.py \
+        || echo "AVISO: normas não indexadas; o parecer sai sem fontes"
+
+      # 7. API e painel em segundo plano.
+      docker compose up -d api streamlit
+      touch /opt/auditor/pronto
+      echo "Montagem concluída."
+
+  # Passo final, rodado pelo usuário depois de enviar os arquivos para ~/envio (README de infra/).
+  - path: /home/${usuario}/completar.sh
+    owner: ${usuario}:${usuario}
+    permissions: "0755"
+    defer: true
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      shopt -s nullglob
+      PROJETO="$HOME/Auditor-Project"
+      ENVIO="$HOME/envio"
+
+      if [ ! -f /opt/auditor/pronto ]; then
+        echo "A VM ainda está se montando. Espere com: cloud-init status --wait"
+        exit 1
+      fi
+      cd "$PROJETO"
+
+      # 1. Modelo (.joblib não está no Git)
+      if [ -f "$ENVIO/pacote_prever_v1.joblib" ]; then
+        mv "$ENVIO/pacote_prever_v1.joblib" modelos_salvos/
+        echo "[ok] modelo em modelos_salvos/"
+      fi
+
+      # 2. Séries de custo do dinheiro (Euribor, Selic, BC) para o banco
+      for arq in "$ENVIO"/*.csv; do mv "$arq" data/raw/; done
+      E12=""
+      for nome in ECB_Euribor_Serie-Mensal-12-Meses_csv.csv ECB_Euribor_Serie-Mensal-12-Meses.csv; do
+        if [ -f "data/raw/$nome" ]; then E12="$nome"; break; fi
+      done
+      if [ -n "$E12" ]; then
+        sudo docker compose run --rm --no-deps -v "$PROJETO/data/raw:/app/data/raw:ro" api \
+          python src/dados/carga_macro.py --ddl db/02_schema_macro.sql --euribor-12m "data/raw/$E12"
+        echo "[ok] Euribor, Selic e taxa do BC carregadas"
+      else
+        echo "[aviso] CSVs da Euribor não encontrados em ~/envio: o parecer sai sem a referência do BC"
+      fi
+
+      # 3. Reinicia a API para ela ver o modelo e espera ficar saudável
+      sudo docker compose restart api
+      for i in $(seq 1 48); do
+        [ "$(sudo docker inspect -f '{{.State.Health.Status}}' auditor_api)" = "healthy" ] && break
+        sleep 5
+      done
+      echo
+      curl -s http://localhost:8000/
+      echo
+
+runcmd:
+  - [bash, /opt/auditor/montar.sh]

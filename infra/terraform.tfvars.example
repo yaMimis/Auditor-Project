@@ -1,0 +1,14 @@
+# Copie para terraform.tfvars e preencha. O terraform.tfvars NUNCA vai para o Git.
+
+projeto_id    = "auditor-preco-justo-xxxx" # gcloud config get-value project
+ips_liberados = ["200.100.50.25/32"]       # seu IP + "/32" (um por pessoa que vai acessar)
+
+# Opcionais (já têm valor padrão):
+# regiao       = "southamerica-east1"
+# zona         = "southamerica-east1-b"
+# tipo_maquina = "e2-medium"
+# ramo_git     = "main"
+
+# Segredos: NÃO coloque aqui. Passe pelo terminal antes do plan/apply:
+#   $env:TF_VAR_google_api_key = "<chave do Gemini>"
+#   $env:TF_VAR_cliente_id_sal = "<chave do grupo>"

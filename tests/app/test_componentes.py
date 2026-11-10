@@ -115,3 +115,13 @@ def test_parecer_mostra_referencia_do_bc_so_quando_existe():
     html = html_parecer({**base, "contexto_mercado": frase})
     assert "Referência de mercado (Brasil)" in html and "&lt;b&gt;" in html  # texto escapado
     assert "Referência de mercado (Brasil)" not in html_parecer({**base, "contexto_mercado": None})
+
+
+def test_duas_casas_quando_os_juros_ficariam_iguais():
+    """Caso C07 da avaliação do parecer: cobrado 30,56% e limite 30,58% não podem virar 30,6% e 30,6%."""
+    r = dict(POR_SITUACAO["abaixo_do_justo"], juro_cobrado=0.3056, juro_justo=0.33, juro_justo_min=0.3058,
+             juro_justo_max=0.36)
+    cartoes = kpis_revisao(r)
+    assert "30,56%" in cartoes[1] and "30,58%" in cartoes[2]
+    assert "Cobrado 30,56%" in html_barra_juros(r)
+    assert "24,9%" in kpis_revisao(POR_SITUACAO["acima_do_justo"])[1]  # caso normal: 1 casa

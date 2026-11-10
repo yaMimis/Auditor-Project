@@ -54,6 +54,22 @@ Na Citação correta, conferir também: (1) o parecer não diz que algo "cumpre"
 | D04 | difícil | template/template | — | — | — | — | — |
 | D05 | difícil | llm/llm | — | sim | n/a | não | 5 |
 
+Legenda: n/a = o parecer não citou norma; — = parecer do template (não avaliado). Clareza: 5 claro e enxuto; 4 claro, com um detalhe sobrando; 3 entende-se, mas repete a recomendação ou tem texto confuso; 2 pode levar o leitor a erro; 1 não dá para entender.
+
+### Resumo da revisão (rodada 1, 17 pareceres do LLM)
+- Fidelidade: 17/17. Alucinação: 0/17.
+- Citação correta: 7/8 pareceres com fonte (a falha é o C04).
+- Clareza média: 3,6.
+
+### Observações da revisão
+- C04: LGPD art. 20 nas fontes sem o texto falar dela (citação decorativa). Corrigido depois no código (ajustes finais).
+- C07: "30,6% abaixo de 30,58%" parece contraditório (o valor real é 30,56%). O fato está certo, mas a forma pode confundir o analista: clareza 2. Corrigido depois no código (2 casas decimais quando 1 casa deixaria os juros iguais).
+- C03: o art. 54-D, II está citado corretamente, mas trata da concessão do crédito, não do preço; pertinência fraca (não estava entre as normas aceitas).
+- C11: "a recomendação escolhida pelo código" expõe o funcionamento interno ao analista.
+- Notas 3 em clareza (C01, C02, C04, C13, D01): quase todas por repetir a recomendação nos pontos ou no resumo. Corrigido depois no código (ajustes finais).
+- Casos difíceis: D01 sem gênero e idade, D02 manteve "indício" com juro de 240% ao ano, D03 não forçou citação, D05 sem o país. Os quatro passaram.
+- A revisão é do texto original do LLM, antes dos ajustes do código.
+
 ## Pareceres (rodada 1)
 
 ### C01 (acima_do_justo): Recomenda revisar o preço? Fala em indício, sem conclusão jurídica? Cita norma pertinente?
@@ -232,18 +248,3 @@ Na Citação correta, conferir também: (1) o parecer não diz que algo "cumpre"
 - **Recomendação:** Recomenda-se manter o preço, pois a taxa está dentro do intervalo esperado para a operação. A decisão final é do analista.
 - **Fontes:** nenhuma
 
-Legenda: n/a = o parecer não citou norma; — = parecer do template (não avaliado). Clareza: 5 claro e enxuto; 4 claro, com um detalhe sobrando; 3 entende-se, mas repete a recomendação ou tem texto confuso; 2 pode levar o leitor a erro; 1 não dá para entender.
-
-### Resumo da revisão (rodada 1, 17 pareceres do LLM)
-- Fidelidade: 17/17. Alucinação: 0/17.
-- Citação correta: 7/8 pareceres com fonte (a falha é o C04).
-- Clareza média: 3,6.
-
-### Observações da revisão
-- C04: LGPD art. 20 nas fontes sem o texto falar dela (citação decorativa). Corrigido depois no código (ajustes finais).
-- C07: "30,6% abaixo de 30,58%" parece contraditório (o valor real é 30,56%). O fato está certo, mas a forma pode confundir o analista: clareza 2. Corrigido depois no código (2 casas decimais quando 1 casa deixaria os juros iguais).
-- C03: o art. 54-D, II está citado corretamente, mas trata da concessão do crédito, não do preço; pertinência fraca (não estava entre as normas aceitas).
-- C11: "a recomendação escolhida pelo código" expõe o funcionamento interno ao analista.
-- Notas 3 em clareza (C01, C02, C04, C13, D01): quase todas por repetir a recomendação nos pontos ou no resumo. Corrigido depois no código (ajustes finais).
-- Casos difíceis: D01 sem gênero e idade, D02 manteve "indício" com juro de 240% ao ano, D03 não forçou citação, D05 sem o país. Os quatro passaram.
-- A revisão é do texto original do LLM, antes dos ajustes do código.

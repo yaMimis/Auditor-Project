@@ -1,114 +1,81 @@
-# Infraestrutura do Auditor de Preço Justo como código.
-# Descreve o mesmo ambiente do docker-compose.yml (banco, API e painel) com o provider
-# Docker do Terraform, rodando no próprio computador. Para a nuvem, troca-se o provider
-# e os recursos de container mantendo a mesma estrutura.
+# main.tf
+# A "lista de compras": tudo o que o Terraform cria na Google Cloud.
+# São 5 recursos. O "terraform plan" deve mostrar "Plan: 5 to add".
+# Não existe "grupo de recursos" como na Azure: o projeto da GCP faz esse papel,
+# e o "terraform destroy" apaga os 5 recursos (o projeto continua existindo).
 
-locals {
-  raiz         = abspath("${path.module}/..")
-  url_do_banco = "postgresql://postgres:postgres@auditor_tf_postgres:5432/auditor_db"
+# 1. Rede própria (VPC). Uma rede nova não aceita nenhuma conexão de fora até
+#    que uma regra de firewall libere: por isso a porta do banco (5432) fica fechada.
+resource "google_compute_network" "rede" {
+  name                    = "${var.prefixo}-rede"
+  auto_create_subnetworks = false
 }
 
-resource "docker_network" "auditor" {
-  name = "auditor_tf_rede"
+# 2. Sub-rede: o "pedaço" da rede, na região escolhida, onde a VM se conecta.
+resource "google_compute_subnetwork" "subrede" {
+  name          = "${var.prefixo}-subrede"
+  ip_cidr_range = "10.10.1.0/24"
+  region        = var.regiao
+  network       = google_compute_network.rede.id
 }
 
-resource "docker_volume" "dados_banco" {
-  name = "auditor_tf_postgres_data"
+# 3. IP público fixo: o endereço que você digita no navegador.
+resource "google_compute_address" "ip" {
+  name   = "${var.prefixo}-ip"
+  region = var.regiao
 }
 
-resource "docker_volume" "cache_modelos" {
-  name = "auditor_tf_cache_modelos_hf"
+# 4. Firewall: só abre SSH (22), API (8000) e painel (8501), e só para os IPs liberados.
+#    Vale para as VMs com a etiqueta "auditor" (na Azure era a ligação NSG + placa de rede).
+resource "google_compute_firewall" "entrada" {
+  name    = "${var.prefixo}-firewall"
+  network = google_compute_network.rede.name
+
+  direction     = "INGRESS"
+  source_ranges = var.ips_liberados
+  target_tags   = [var.prefixo]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "8000", "8501"]
+  }
 }
 
-resource "docker_image" "postgres" {
-  name         = "pgvector/pgvector:pg16"
-  keep_locally = true
-}
+# 5. A máquina virtual: Ubuntu 24.04 que, ao ligar, roda o cloud-init.yaml
+#    (instala Docker, clona o repositório, sobe banco, indexa as normas, sobe API e painel).
+resource "google_compute_instance" "vm" {
+  name         = "${var.prefixo}-vm"
+  machine_type = var.tipo_maquina
+  zone         = var.zona
+  tags         = [var.prefixo]
 
-# Construída antes pelo compose (o Dockerfile usa recursos do BuildKit).
-resource "docker_image" "app" {
-  name         = var.imagem_app
-  keep_locally = true
-}
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
+      size  = var.tamanho_disco_gb
+      type  = "pd-balanced"
+    }
+  }
 
-resource "docker_container" "postgres" {
-  name    = "auditor_tf_postgres"
-  image   = docker_image.postgres.image_id
-  restart = "unless-stopped"
-  env     = ["POSTGRES_USER=postgres", "POSTGRES_PASSWORD=postgres", "POSTGRES_DB=auditor_db"]
+  network_interface {
+    subnetwork = google_compute_subnetwork.subrede.id
+    access_config {
+      nat_ip = google_compute_address.ip.address
+    }
+  }
 
-  networks_advanced {
-    name = docker_network.auditor.name
-  }
-  ports {
-    internal = 5432
-    external = 5433
-  }
-  volumes {
-    volume_name    = docker_volume.dados_banco.name
-    container_path = "/var/lib/postgresql/data"
-  }
-  volumes {
-    host_path      = "${local.raiz}/db"
-    container_path = "/docker-entrypoint-initdb.d"
-    read_only      = true
-  }
-  healthcheck {
-    test     = ["CMD-SHELL", "pg_isready -U postgres -d auditor_db"]
-    interval = "5s"
-    timeout  = "5s"
-    retries  = 20
-  }
-  wait = true
-}
+  metadata = {
+    # Entrada só por chave SSH (sem senha), para o usuário definido em var.usuario.
+    ssh-keys       = "${var.usuario}:${trimspace(file(pathexpand(var.caminho_chave_publica)))}"
+    enable-oslogin = "FALSE"
 
-resource "docker_container" "api" {
-  name    = "auditor_tf_api"
-  image   = docker_image.app.image_id
-  restart = "unless-stopped"
-  env = compact([
-    "DATABASE_URL=${local.url_do_banco}",
-    var.google_api_key == "" ? "" : "GOOGLE_API_KEY=${var.google_api_key}",
-  ])
-
-  networks_advanced {
-    name    = docker_network.auditor.name
-    aliases = ["api"]
+    # Script executado uma única vez, no primeiro boot (o Ubuntu da GCP lê o cloud-init daqui).
+    user-data = templatefile("${path.module}/cloud-init.yaml", {
+      usuario        = var.usuario
+      repositorio    = var.repositorio_git
+      ramo           = var.ramo_git
+      google_api_key = var.google_api_key
+      cliente_id_sal = var.cliente_id_sal
+    })
   }
-  ports {
-    internal = 8000
-    external = var.porta_api
-  }
-  volumes {
-    host_path      = "${local.raiz}/modelos_salvos"
-    container_path = "/app/modelos_salvos"
-    read_only      = true
-  }
-  volumes {
-    volume_name    = docker_volume.cache_modelos.name
-    container_path = "/root/.cache/huggingface"
-  }
-  depends_on = [docker_container.postgres]
-}
-
-resource "docker_container" "painel" {
-  name    = "auditor_tf_streamlit"
-  image   = docker_image.app.image_id
-  restart = "unless-stopped"
-  command = ["streamlit", "run", "src/app/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
-  env     = ["API_URL=http://api:8000"]
-
-  networks_advanced {
-    name = docker_network.auditor.name
-  }
-  ports {
-    internal = 8501
-    external = var.porta_painel
-  }
-  volumes {
-    host_path      = "${local.raiz}/docs/resultados"
-    container_path = "/app/docs/resultados"
-    read_only      = true
-  }
-  depends_on = [docker_container.api]
 }

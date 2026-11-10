@@ -141,6 +141,7 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 - [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
 - [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
+- [`genai/avaliacao/`](genai/avaliacao/CRITERIOS.md): critérios, os 20 casos de avaliação e os resultados do parecer (prompts v2 a v4), com a revisão humana da v4.
 - [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md): roteiro da demo, plano B e perguntas prováveis.
 - [`infra/`](infra/README.md): o mesmo ambiente em Terraform (provider Docker, local, sem custo).
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
@@ -168,4 +169,5 @@ Cada frente registra aqui como usou assistentes de IA (agentic coding) e como re
 
 - **Dados:** os scripts de carga, os esquemas SQL e a documentação foram escritos com apoio do Claude e revisados e testados pelo responsável da frente.
 - **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas.
-- **Modelo e GenAI:** a completar por cada frente.
+- **Modelo:** a completar pela frente.
+- **GenAI:** o código do parecer, os prompts e os documentos da frente foram escritos com apoio do Claude, guiado pelos guias da frente em `skills/regras_negocio/` ([`normas_rag`](skills/regras_negocio/normas_rag/SKILL.md), [`parecer_genai`](skills/regras_negocio/parecer_genai/SKILL.md) e [`avaliacao_parecer`](skills/regras_negocio/avaliacao_parecer/SKILL.md)) e pelos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). As propostas maiores (template, cadeia em LangChain, prompts v3 e v4) também passaram pela revisão de uma segunda IA. A responsável leu cada mudança antes de aplicá-la e conferiu o resultado com os testes automáticos (`tests/genai/`), a avaliação dos 20 casos e a revisão humana dos pareceres (`genai/avaliacao/`).

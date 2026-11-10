@@ -27,8 +27,8 @@ Contrato (formulário do painel ou carteira)
   → modelo de risco: PD + faixa A–E + motivos SHAP          (regras_negocio/modelo_risco)
   → juro justo por fluxo de caixa + margem de incerteza      (regras_negocio/juro_justo)
   → situação do preço: acima / abaixo / dentro / revisão manual
-  → busca das normas (RAG, pgvector)                         (regras_negocio/parecer_genai)
-  → parecer em JSON (LLM; ou template de reserva)
+  → busca das normas (RAG, pgvector)                         (regras_negocio/normas_rag)
+  → parecer em JSON (LLM; ou template de reserva)            (regras_negocio/parecer_genai)
   → checagem dos números e das regras do parecer por código
   → painel do analista (Streamlit)                           (regras_negocio/painel)
   → decisão humana registrada: manter / revisar / compliance
@@ -43,7 +43,7 @@ Em paralelo, um **processo em lote** pontua a carteira inteira, estima a diferen
 | Dados | pandas, pandera, PostgreSQL 16, SQLAlchemy 2, psycopg2 |
 | Vetores | pgvector, extensão no **mesmo** PostgreSQL (imagem `pgvector/pgvector:pg16`) |
 | Modelo | scikit-learn, XGBoost, SHAP, scipy (brentq), joblib |
-| Parecer | Gemini (`google-genai`), sentence-transformers multilíngue, prompts versionados em Markdown |
+| Parecer | LangChain (chain LCEL), Gemini (`langchain-google-genai`), sentence-transformers multilíngue, prompts versionados em Markdown |
 | Serviço e app | FastAPI + uvicorn, Streamlit |
 | Infra e qualidade | Docker + Docker Compose, pytest, GitHub Actions |
 | Linguagem | Python 3.14 (ver `ambiente-e-infra`) |
@@ -54,7 +54,7 @@ Em paralelo, um **processo em lote** pontua a carteira inteira, estima a diferen
 |---|---|---|
 | Dados e processo | Marcos | `dados`, BPMN, `docs/qualidade_dados.md`, glossário, tabela de decisões |
 | Modelo e juro justo | Samuel | `modelo_risco`, `juro_justo`, `auditoria_carteira` (lote), `DECISOES.md` |
-| GenAI | Maria | `parecer_genai`, `FORMATO_JSON.md`, `REGRAS_PARECER.md` |
+| GenAI | Maria | `normas_rag`, `parecer_genai`, `avaliacao_parecer`, `FORMATO_JSON.md`, `REGRAS_PARECER.md` |
 | App e infraestrutura | Yasmin | `api`, `painel`, `ambiente-e-infra`, vídeo da demo |
 
 **Contratos entre frentes só mudam com aviso a todas** (ver `regras_negocio/contratos_dados`).

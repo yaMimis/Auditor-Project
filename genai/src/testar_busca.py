@@ -7,7 +7,10 @@ Como rodar (na pasta raiz, depois do indexar.py):
 """
 from sentence_transformers import SentenceTransformer
 
-from indexar import MODELO, TABELA, conectar
+try:  # funciona como arquivo e como módulo (-m)
+    from genai.src.indexar import MODELO, TABELA, conectar
+except ImportError:
+    from indexar import MODELO, TABELA, conectar
 
 QUANTOS = 3
 

@@ -127,10 +127,23 @@ def html_kpi(rotulo: str, valor: str, unidade: str = "", sub: str = "", extra: s
     """)
 
 
+def casas_juros(r: dict) -> int:
+    """Casas decimais dos juros: 1; ou 2 quando dois juros diferentes ficariam iguais com 1 casa
+    (mesma regra do parecer, genai/src/checagem.py: evita "30,6% abaixo de 30,6%")."""
+    juros = [v for v in (r.get("juro_cobrado"), r.get("juro_justo"), r.get("juro_justo_min"),
+                         r.get("juro_justo_max")) if v is not None]
+    for i, a in enumerate(juros):
+        for b in juros[i + 1:]:
+            if abs(a - b) > 1e-9 and pct(a) == pct(b):
+                return 2
+    return 1
+
+
 def kpis_revisao(r: dict) -> list[str]:
     """Os 4 cartões do topo: risco, juro cobrado, juro justo e situação."""
     situacao = r.get("situacao_preco", "revisao_manual")
     s = SITUACOES.get(situacao, SITUACOES["revisao_manual"])
+    casas = casas_juros(r)
     ic = r.get("pd_ic95")
     ic_txt = f"IC 95%: {pct(ic[0])} – {pct(ic[1])}" if ic else "Chance estimada de não pagar"
     faixa = r.get("faixa")
@@ -140,7 +153,7 @@ def kpis_revisao(r: dict) -> list[str]:
     if r.get("juro_justo") is None:
         justo_sub = "Não calculado: dados fora da faixa de treino"
     else:
-        justo_sub = f"Margem de incerteza: {pct(r.get('juro_justo_min'))} – {pct(r.get('juro_justo_max'))}"
+        justo_sub = f"Margem de incerteza: {pct(r.get('juro_justo_min'), casas)} – {pct(r.get('juro_justo_max'), casas)}"
     if r.get("juro_pares_mediana") is not None:  # segunda opinião: não muda a situação
         justo_sub += f"<br>Mediana dos pares: {pct(r['juro_pares_mediana'])}"
 
@@ -156,8 +169,8 @@ def kpis_revisao(r: dict) -> list[str]:
     return [
         html_kpi("Risco de inadimplência", pd_valor, "", esc(ic_txt),
                  extra=f'<div class="ap-kpi-foot">{faixa_html}</div>'),
-        html_kpi("Juro cobrado", pct(r.get("juro_cobrado")), UNIDADE_JURO, "Taxa do contrato"),
-        html_kpi("Juro justo calculado", pct(r.get("juro_justo")), UNIDADE_JURO if r.get("juro_justo") else "",
+        html_kpi("Juro cobrado", pct(r.get("juro_cobrado"), casas), UNIDADE_JURO, "Taxa do contrato"),
+        html_kpi("Juro justo calculado", pct(r.get("juro_justo"), casas), UNIDADE_JURO if r.get("juro_justo") else "",
                  justo_sub),  # justo_sub só tem números formatados por pct() e texto fixo
         html_kpi("Situação do preço", f'{s["icone"]} {esc(s["rotulo"])}', "", esc(sit_sub), destaque=s),
     ]
@@ -189,9 +202,9 @@ def html_barra_juros(r: dict) -> str:
             <div class="ap-ruler-track">
                 <div class="ap-ruler-band" style="left:{pos(jmin)}%;width:{pos(jmax) - pos(jmin)}%"></div>
                 <div class="ap-ruler-mark" style="left:{pos(justo)}%;background:#e4bd7d"></div>
-                <div class="ap-ruler-label ap-up" style="left:{pos(justo)}%;color:#e4bd7d">Justo {pct(justo)}</div>
+                <div class="ap-ruler-label ap-up" style="left:{pos(justo)}%;color:#e4bd7d">Justo {pct(justo, casas_juros(r))}</div>
                 <div class="ap-ruler-mark" style="left:{pos(cobrado)}%;background:{cor_cobrado}"></div>
-                <div class="ap-ruler-label ap-down" style="left:{pos(cobrado)}%;color:{cor_cobrado}">Cobrado {pct(cobrado)}</div>
+                <div class="ap-ruler-label ap-down" style="left:{pos(cobrado)}%;color:{cor_cobrado}">Cobrado {pct(cobrado, casas_juros(r))}</div>
             </div>
             <div class="ap-ruler-ticks">{marcas}</div>
         </div>

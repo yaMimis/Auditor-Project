@@ -1,5 +1,9 @@
-#docker compose build (para rodar as imagens)
-#docker compose up -d (para rodar o container e colocar o app no ar)
+# Auditor de Preço Justo: banco (PostgreSQL + pgvector), API (8000) e painel (8501).
+#   docker compose up -d            sobe tudo (usa a imagem já construída)
+#   docker compose up -d --build    reconstrói a imagem antes (mudou código ou requirements)
+#   docker compose down             para tudo (os dados do banco ficam no volume)
+# No Windows, o atalho é o .\iniciar.ps1.
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -12,11 +16,17 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d
+      - ./db:/docker-entrypoint-initdb.d   # só na 1ª criação do volume (subpastas são ignoradas)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auditor_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     restart: unless-stopped
 
   api:
     build: .
+    image: auditor-preco-justo:latest   # a mesma imagem serve o painel: um build só
     container_name: auditor_api
     ports:
       - "8000:8000"
@@ -29,11 +39,20 @@ services:
       - ./modelos_salvos:/app/modelos_salvos   # pacote_prever_v1.joblib (fora do Git)
       - cache_modelos_hf:/root/.cache/huggingface   # modelo de busca nas normas: baixa uma vez só
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # A 1ª subida baixa o modelo de busca nas normas (~0,5 GB): por isso o start_period longo.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=5)"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 180s
     restart: unless-stopped
 
   streamlit:
-    build: .
+    image: auditor-preco-justo:latest   # construída pelo serviço api
+    pull_policy: never
     container_name: auditor_streamlit
     command: streamlit run src/app/main.py --server.port=8501 --server.address=0.0.0.0
     ports:
@@ -43,7 +62,8 @@ services:
     volumes:
       - ./docs/resultados:/app/docs/resultados   # carteira_auditoria.csv e equidade.json do lote
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

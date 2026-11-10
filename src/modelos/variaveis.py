@@ -113,7 +113,7 @@ ROTULOS = {
     "score_es_equifax": "score de crédito Equifax",
     "score_es_microl": "score de crédito MicroL",
 }
-}
+
 
 FREQ_MINIMA = 0.01  # categorias com menos de 1% dos contratos viram "outros"
 

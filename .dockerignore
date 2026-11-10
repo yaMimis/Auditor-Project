@@ -1,17 +1,30 @@
-# Controle de versão
+# Controle de versão e CI
 .git/
 .gitignore
+.github/
 
 # Ambientes virtuais e cache do Python
 .venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .pytest_cache/
+.ipynb_checkpoints/
 
-# Variáveis de ambiente sensíveis
+# Segredos
 .env
 
-# Dados brutos pesados que não devem ir para a imagem da aplicação
+# Dados brutos e modelo: entram por volume, nunca pela imagem
 data/raw/
+modelos_salvos/*.joblib
+
+# O que a aplicação não usa para rodar (deixa a imagem menor e o build mais rápido)
+notebooks/
+tests/
+skills/
+infra/
+docs/figuras/
+docs/bpmn/
+iniciar.ps1

@@ -108,10 +108,11 @@ ROTULOS = {
     "refinanciamento_passivos": "pedido para quitar outras dívidas",
     "renda_assistencial_sobre_renda": "parte da renda vinda de auxílios",
     "renda_pensao_sobre_renda": "parte da renda vinda de pensão",
-    "score_ee_mini": "score de crédito (Estônia)",
-    "score_fi_asiakastieto": "score de crédito (Finlândia)",
-    "score_es_equifax": "score de crédito Equifax (Espanha)",
-    "score_es_microl": "score de crédito MicroL (Espanha)",
+    "score_ee_mini": "score de crédito Mini",
+    "score_fi_asiakastieto": "score de crédito Asiakastieto",
+    "score_es_equifax": "score de crédito Equifax",
+    "score_es_microl": "score de crédito MicroL",
+}
 }
 
 FREQ_MINIMA = 0.01  # categorias com menos de 1% dos contratos viram "outros"

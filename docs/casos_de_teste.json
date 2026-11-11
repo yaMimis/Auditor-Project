@@ -95,7 +95,7 @@
         },
         {
           "variavel": "score_ee_mini",
-          "rotulo": "score de crédito (Estônia)",
+          "rotulo": "score de crédito Mini",
           "efeito": "reduz_risco",
           "valor": 1000.0,
           "peso": 0.099
@@ -152,7 +152,7 @@
         },
         {
           "variavel": "score_ee_mini",
-          "rotulo": "score de crédito (Estônia)",
+          "rotulo": "score de crédito Mini",
           "efeito": "aumenta_risco",
           "valor": null,
           "peso": 0.072
@@ -207,7 +207,7 @@
         },
         {
           "variavel": "score_ee_mini",
-          "rotulo": "score de crédito (Estônia)",
+          "rotulo": "score de crédito Mini",
           "efeito": "aumenta_risco",
           "valor": null,
           "peso": 0.061
@@ -326,7 +326,7 @@
         },
         {
           "variavel": "score_ee_mini",
-          "rotulo": "score de crédito (Estônia)",
+          "rotulo": "score de crédito Mini",
           "efeito": "aumenta_risco",
           "valor": null,
           "peso": 0.05

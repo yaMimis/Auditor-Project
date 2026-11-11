@@ -1,6 +1,7 @@
 """Painel do analista — Auditor de Preço Justo (Streamlit).
 
 Telas: Revisão de contrato · Auditoria da carteira · Registro de decisões.
+O estilo fica em src/app/estilo.css; os blocos de HTML do resultado, em componentes.py.
 O painel só EXIBE: todos os números vêm da API (prever() do Samuel) ou dos arquivos
 do lote da carteira; o parecer vem da GenAI (ou do template de reserva).
 """
@@ -23,7 +24,7 @@ from src.app import carteira as cart  # noqa: E402
 from src.app.componentes import (PAISES, RECOMENDACOES, SITUACOES, badge, badge_situacao,  # noqa: E402
                                  compactar, data_br, esc, eur, html_barra_juros,
                                  html_barras_faixa, html_motivos, html_parecer,
-                                 html_tabela_equidade, kpis_revisao, pct)
+                                 html_tabela_equidade, icone, kpis_revisao, pct)
 
 FUSO = timezone(timedelta(hours=-3))
 CASOS_REAIS = RAIZ / "docs" / "casos_de_teste.json"          # saídas reais do prever() (Samuel)
@@ -34,7 +35,7 @@ EXEMPLOS_PREVER = RAIZ / "docs" / "exemplos_prever.json"     # reserva: exemplos
 # ==========================================
 st.set_page_config(
     page_title="Auditor de Preço Justo | Auditoria de Crédito",
-    page_icon="⚖️",
+    page_icon=":material/balance:",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -44,217 +45,17 @@ TIMEOUT_S = 30  # cobre a busca nas normas + LLM (20 s) + queda para o template
 TIMEOUT_CONSULTA_S = 5  # leituras rápidas (decisões)
 
 # ==========================================
-# 2. ESTILIZAÇÃO CSS CUSTOMIZADA (FINTECH / LEGAL-TECH)
+# 2. ESTILO (src/app/estilo.css)
 # ==========================================
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+ESTILO = Path(__file__).with_name("estilo.css")
 
-    :root {
-        --gold: #c89a58;
-        --gold-light: #e4bd7d;
-        --dark-bg: #121315;
-        --card-bg: #1c1d21;
-        --card-border: rgba(200, 154, 88, 0.2);
-        --text-light: #f0f2f4;
-        --text-muted: #9aa5b5;
-    }
-    html { scroll-behavior: smooth; }
-    #MainMenu, header, footer, [data-testid="stSidebar"] { display: none !important; }
-    .block-container { padding: 0 !important; max-width: 100% !important; }
-    body { background-color: var(--dark-bg); color: var(--text-light); font-family: 'DM Sans', sans-serif; }
 
-    /* --- NAVBAR SUPERIOR FIXA --- */
-    .top-navbar {
-        position: fixed; top: 0; left: 0; width: 100%; height: 70px;
-        background-color: rgba(18, 19, 21, 0.95); backdrop-filter: blur(10px);
-        border-bottom: 1px solid var(--card-border);
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0 4rem; z-index: 9999;
-    }
-    .nav-brand {
-        font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;
-        color: #ffffff !important; letter-spacing: 1px; text-decoration: none;
-        display: flex; align-items: center; gap: 10px;
-    }
-    .nav-links { display: flex; gap: 2.5rem; align-items: center; }
-    .nav-link { color: #ffffff !important; text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: color 0.3s ease; }
-    .nav-link:hover { color: var(--gold); }
-    .nav-analyst { color: var(--text-muted); font-size: .82rem; }
-    .nav-analyst b { color: var(--gold-light); font-weight: 600; }
+def carregar_estilo() -> None:
+    """O CSS mora em estilo.css; aqui só é injetado na página."""
+    st.markdown(f"<style>{ESTILO.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
-    /* --- HERO SECTION --- */
-    .hero-container {
-        margin-top: 0px;
-        background-image: linear-gradient(to right, rgba(18, 19, 21, 0.95) 25%, rgba(18, 19, 21, 0.7) 100%),
-                          url('https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000&auto=format&fit=crop');
-        background-color: #16171a;
-        background-size: cover; background-position: center;
-        padding: 25rem 4rem 4rem 4rem;
-        border-bottom: 5px solid var(--card-border);
-    }
-    .hero-title { font-family: 'Playfair Display', serif; font-size: 3.8rem; font-weight: 700; color: var(--text-light); line-height: 1.15; margin-bottom: 1rem; }
-    .hero-title span { color: var(--gold); font-style: italic; }
-    .hero-subtitle { font-size: 1.15rem; color: var(--text-muted); max-width: 680px; margin-bottom: 2rem; line-height: 1.6; }
 
-    /* --- FAIXA ESCURA COM 3 BLOCOS EXPLICATIVOS --- */
-    .features-strip { background-color: #0b0c0e; border-bottom: 1px solid var(--card-border); padding: 2.5rem 4rem; }
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1300px; margin: 0 auto; }
-    .feature-item { display: flex; align-items: flex-start; gap: 1.2rem; background: rgba(28, 29, 33, 0.15); padding: 1.5rem; border-radius: 12px; }
-    .feature-icon { font-size: 1.8rem; color: var(--gold); }
-    .feature-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--text-light); margin-bottom: 0.4rem; }
-    .feature-desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
-
-    /* --- SEÇÕES --- */
-    .section-wrapper { padding: 4rem 4rem; max-width: 1400px; margin: 0 auto; }
-    .section-header { text-align: center; margin-bottom: 2rem; }
-    .section-header h2 { font-family: 'Playfair Display', serif; font-size: 2.6rem; color: var(--text-light); }
-    .section-header p { color: var(--text-muted); font-size: 1.05rem; }
-    .gold-divider { width: 60px; height: 3px; background-color: var(--gold); margin: 1rem auto; border-radius: 2px; }
-
-    /* --- SOBRE (EQUIPE) --- */
-    .team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8rem; margin-top: 2.5rem; padding: 0 4rem 4rem 4rem; max-width: 1400px; margin-left: auto; margin-right: auto; }
-    .team-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.2rem; text-align: left; transition: transform 0.3s ease, border-color 0.3s ease; }
-    .team-card:hover { transform: translateY(-5px); border-color: var(--gold); }
-    .team-avatar {
-        width: 100%; height: 150px; border-radius: 8px; margin-bottom: 1rem;
-        display: flex; align-items: center; justify-content: center;
-        background: radial-gradient(circle at 30% 20%, rgba(228,189,125,.22), rgba(18,19,21,1) 70%);
-        border: 1px solid rgba(255,255,255,0.05);
-        font-family: 'Playfair Display', serif; font-size: 3rem; color: var(--gold-light); letter-spacing: 2px;
-    }
-    .team-name { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--text-light); margin-bottom: 0.2rem; }
-    .team-role { font-size: 0.82rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 0.6rem; }
-    .team-bio { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
-
-    /* --- COMPONENTES STREAMLIT --- */
-    [data-testid="stAppViewContainer"], [data-testid="stMain"] { background: var(--dark-bg); color: var(--text-light); }
-    [data-testid="stMain"] .block-container { padding-top: 1.5rem !important; padding-bottom: 4rem !important; }
-
-    [data-testid="stButton"] button, [data-testid="stDownloadButton"] button {
-        min-height: 52px; width: 100%; white-space: pre-wrap !important; text-align: center !important;
-        line-height: 1.55 !important; padding: 1.1rem 1rem !important; border-radius: 14px !important;
-        border: 1px solid rgba(200, 154, 88, 0.34) !important;
-        background: linear-gradient(145deg, #202126 0%, #17181c 100%) !important;
-        color: var(--text-light) !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-    }
-    [data-testid="stButton"] button:hover, [data-testid="stDownloadButton"] button:hover {
-        transform: translateY(-3px); border-color: var(--gold-light) !important; box-shadow: 0 12px 28px rgba(200, 154, 88, 0.12);
-    }
-    [data-testid="stButton"] button[data-testid="stBaseButton-primary"],
-    [data-testid="stButton"] button[kind="primary"] {
-        background: linear-gradient(135deg, #d7b9b8 0%, #c8a2a0 100%) !important;
-        color: #171315 !important; border: 1px solid #e5c5c3 !important; font-weight: 700 !important;
-    }
-
-    .audit-workspace-label { color: var(--gold-light); font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin: .15rem 0 .4rem 0; }
-    .st-key-audit_select_personal button, .st-key-audit_select_loan button, .st-key-audit_select_history button {
-        min-height: 104px !important; height: 104px !important; padding: .55rem .35rem !important;
-        border-radius: 10px !important; font-size: .74rem !important; line-height: 1.35 !important; box-shadow: none !important;
-    }
-    .st-key-audit_select_personal button[kind="primary"], .st-key-audit_select_loan button[kind="primary"], .st-key-audit_select_history button[kind="primary"] {
-        background: linear-gradient(135deg, #c89a58 0%, #e4bd7d 100%) !important; color: #171315 !important; border: 1px solid #e4bd7d !important;
-    }
-    .audit-review-progress { height: 7px; width: 100%; background: rgba(238, 233, 229, .12); border-radius: 10px; overflow: hidden; margin: .75rem 0 1.35rem 0; }
-    .audit-review-progress-fill { height: 100%; background: linear-gradient(90deg, #c89a58, #e4bd7d); border-radius: 10px; transition: width .25s ease; }
-    .audit-review-status { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .95rem 0 .45rem 0; color: #e8e5df; font-size: .76rem; font-weight: 600; }
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: linear-gradient(145deg, rgba(31, 32, 37, .96), rgba(23, 24, 28, .96));
-        border: 1px solid rgba(200, 154, 88, .24) !important; border-radius: 16px !important; padding: 1.1rem 1.2rem !important;
-    }
-    [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input, [data-testid="stDateInput"] input,
-    [data-testid="stTextArea"] textarea, [data-testid="stSelectbox"] [data-baseweb="select"] > div {
-        background: #141519 !important; color: var(--text-light) !important;
-        border-color: rgba(200, 154, 88, .28) !important; border-radius: 8px !important;
-    }
-    .audit-eyebrow { color: var(--gold-light); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin-bottom: .45rem; }
-    .audit-panel-title { color: var(--text-light); font-family: 'Playfair Display', serif; font-size: 1.65rem; margin: 0 0 .35rem 0; }
-    .audit-progress-title { color: var(--text-light); font-family: 'Playfair Display', serif; font-size: 1.25rem; margin: 0 0 .3rem 0; }
-    .skill-track { width: 100%; height: 7px; background: #eee9e5; border-radius: 1px; overflow: hidden; }
-    .skill-fill { height: 100%; background: #171719; border-radius: 1px; transition: width .25s ease; }
-    .audit-note {
-        background: rgba(200, 154, 88, .08); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0;
-        padding: .8rem .95rem; color: #c6c2bb; font-size: .8rem; line-height: 1.5; margin-top: .8rem;
-    }
-
-    /* --- ABAS --- */
-    [data-testid="stTabs"] [data-baseweb="tab-list"] { gap: .4rem; border-bottom: 1px solid var(--card-border); }
-    [data-testid="stTabs"] [data-baseweb="tab"] {
-        background: transparent; color: var(--text-muted); font-weight: 600; letter-spacing: .04em;
-        padding: .7rem 1.2rem; border-radius: 10px 10px 0 0;
-    }
-    [data-testid="stTabs"] [aria-selected="true"] { color: var(--gold-light) !important; background: rgba(200,154,88,.08); }
-    [data-testid="stTabs"] [data-baseweb="tab-highlight"] { background-color: var(--gold) !important; }
-
-    /* --- BLOCOS DO RESULTADO (ap-*) --- */
-    .ap-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; margin: 1.6rem 0 .6rem 0; }
-    .ap-title { font-family: 'Playfair Display', serif; font-size: 2.1rem; color: var(--text-light); line-height: 1.1; }
-    .ap-meta { color: var(--text-muted); font-size: .9rem; margin-top: .35rem; }
-    .ap-chips { display: flex; flex-wrap: wrap; gap: .45rem; margin: .6rem 0 1.1rem 0; }
-    .ap-chip { font-size: .74rem; color: #d9d4cb; background: rgba(255,255,255,.04); border: 1px solid rgba(200,154,88,.22); border-radius: 999px; padding: .28rem .7rem; }
-    .ap-chip-gold { color: #171315; background: var(--gold-light); border-color: var(--gold-light); font-weight: 700; }
-    .ap-badge { display: inline-block; font-size: .72rem; font-weight: 700; border: 1px solid; border-radius: 999px; padding: .2rem .65rem; white-space: nowrap; }
-
-    .ap-kpi { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.1rem 1.2rem; min-height: 152px; }
-    .ap-kpi-label { color: var(--text-muted); font-size: .78rem; font-weight: 600; letter-spacing: .04em; }
-    .ap-kpi-value { font-family: 'Playfair Display', serif; font-size: 2.25rem; color: var(--gold-light); margin: .35rem 0 .2rem 0; line-height: 1.1; }
-    .ap-kpi-unit { font-family: 'DM Sans', sans-serif; font-size: .85rem; color: var(--text-muted); margin-left: .3rem; }
-    .ap-kpi-sub { color: #b9b4ab; font-size: .78rem; line-height: 1.4; }
-    .ap-kpi-foot { margin-top: .55rem; }
-    .ap-faixa { display: inline-block; background: #0b0c0e; color: var(--gold-light); border: 1px solid var(--gold); border-radius: 6px; padding: .15rem .55rem; font-size: .75rem; font-weight: 700; }
-    .ap-faixa-off { color: var(--text-muted); border-color: rgba(154,165,181,.4); }
-
-    .ap-card { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.25rem 1.35rem; margin-top: 1rem; }
-    .ap-card-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--text-light); margin-bottom: .2rem; }
-    .ap-card-sub { color: var(--text-muted); font-size: .8rem; margin-bottom: 1rem; }
-    .ap-alert { border-left: 3px solid #9aa5b5; background: rgba(154,165,181,.08); border-radius: 0 10px 10px 0; padding: .9rem 1rem; color: #d7dbe2; font-size: .86rem; line-height: 1.5; margin-top: 1rem; }
-
-    .ap-ruler { padding: 2.1rem .4rem .2rem .4rem; }
-    .ap-ruler-track { position: relative; height: 14px; background: #0f1013; border-radius: 8px; border: 1px solid rgba(255,255,255,.04); }
-    .ap-ruler-band { position: absolute; top: 0; bottom: 0; background: rgba(228,189,125,.28); border-radius: 8px; }
-    .ap-ruler-mark { position: absolute; top: -9px; width: 3px; height: 32px; border-radius: 2px; transform: translateX(-50%); }
-    .ap-ruler-label { position: absolute; transform: translateX(-50%); font-size: .76rem; font-weight: 700; white-space: nowrap; }
-    .ap-up { top: -32px; }
-    .ap-down { top: 28px; }
-    .ap-ruler-ticks { position: relative; height: 22px; margin-top: 2.2rem; }
-    .ap-tick { position: absolute; transform: translateX(-50%); font-size: .7rem; color: var(--text-muted); }
-
-    .ap-legend { display: flex; flex-wrap: wrap; gap: 1.1rem; color: var(--text-muted); font-size: .74rem; margin-top: .9rem; align-items: center; }
-    .ap-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: .4rem; vertical-align: -1px; }
-
-    .ap-factor { display: grid; grid-template-columns: 1.25fr 1fr 2.6rem; gap: .8rem; align-items: center; margin: .55rem 0; }
-    .ap-factor-name { font-size: .85rem; color: #e8e5df; line-height: 1.3; }
-    .ap-factor-bar { height: 9px; background: #0f1013; border-radius: 6px; overflow: hidden; }
-    .ap-factor-bar div { height: 100%; border-radius: 6px; }
-    .ap-factor-w { font-size: .72rem; color: var(--text-muted); text-align: right; }
-
-    .ap-parecer-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem; margin-bottom: .6rem; }
-    .ap-sec { color: var(--gold-light); font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin: 1rem 0 .35rem 0; }
-    .ap-text { color: #e8e5df; font-size: .9rem; line-height: 1.6; margin: 0; }
-    .ap-list { margin: 0; padding-left: 1.1rem; color: #e8e5df; font-size: .88rem; line-height: 1.6; }
-    .ap-foot { color: var(--text-muted); font-size: .7rem; margin-top: .9rem; }
-    .ap-muted { color: var(--text-muted); }
-    .ap-small { font-size: .72rem; }
-    .ap-empty { color: var(--text-muted); font-size: .85rem; padding: .6rem 0; }
-    .ap-mercado { border-left: 3px solid #7fa7d9; background: rgba(127,167,217,.08); border-radius: 0 8px 8px 0;
-        padding: .7rem .9rem; color: #d7dbe2; font-size: .84rem; line-height: 1.55; }
-
-    .ap-stack-row { display: grid; grid-template-columns: 4.2rem 1fr 3.2rem; gap: .8rem; align-items: center; margin: .5rem 0; }
-    .ap-stack-label { font-size: .84rem; font-weight: 700; color: #e8e5df; }
-    .ap-stack { display: flex; height: 16px; border-radius: 6px; overflow: hidden; background: #0f1013; }
-    .ap-stack div { height: 100%; }
-    .ap-stack-n { font-size: .72rem; color: var(--text-muted); text-align: right; }
-
-    .ap-table { width: 100%; border-collapse: collapse; font-size: .84rem; color: #e8e5df; }
-    .ap-table th { text-align: left; color: var(--text-muted); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; padding: .55rem .5rem; border-bottom: 1px solid rgba(200,154,88,.3); }
-    .ap-table td { padding: .65rem .5rem; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: middle; }
-    .ap-table tr:hover td { background: rgba(200,154,88,.04); }
-
-    .ap-status { display: inline-flex; align-items: center; gap: .45rem; font-size: .76rem; color: var(--text-muted); }
-    .ap-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    </style>
-""", unsafe_allow_html=True)
+carregar_estilo()
 
 
 def md(bloco: str) -> None:
@@ -404,7 +205,7 @@ def csv_da_fila(anos, pais, faixa) -> bytes:
 analista_nav = esc(st.session_state.analista) or "não identificado"
 md(f"""
     <div class="top-navbar">
-        <a href="#home" class="nav-brand"><span>⚖️</span> AUDITOR DE PREÇO JUSTO</a>
+        <a href="#home" class="nav-brand">{icone('balanca', 20)} AUDITOR DE PREÇO JUSTO</a>
         <div class="nav-links">
             <a href="#home" class="nav-link">Home</a>
             <a href="#auditor" class="nav-link">Auditoria</a>
@@ -426,25 +227,25 @@ md("""
     </div>
 """)
 
-md("""
+md(f"""
     <div class="features-strip">
         <div class="features-grid">
             <div class="feature-item">
-                <div class="feature-icon">📊</div>
+                <div class="feature-icon">{icone('grafico', 26)}</div>
                 <div>
                     <div class="feature-title">Juro justo por fluxo de caixa</div>
                     <div class="feature-desc">Custo do dinheiro (Euribor da época), perda esperada ao longo do contrato e custos calibrados na carteira, com margem de incerteza.</div>
                 </div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🤖</div>
+                <div class="feature-icon">{icone('chip', 26)}</div>
                 <div>
                     <div class="feature-title">Modelo de risco explicável</div>
                     <div class="feature-desc">XGBoost calibrado estima a probabilidade de default; os principais fatores de cada contrato aparecem com nomes legíveis.</div>
                 </div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">📜</div>
+                <div class="feature-icon">{icone('documento', 26)}</div>
                 <div>
                     <div class="feature-title">Parecer com normas e checagem</div>
                     <div class="feature-desc">IA generativa com busca em CDC, LGPD e normas do CMN. Os números do texto são conferidos por código; se algo falhar, entra o template.</div>
@@ -494,8 +295,42 @@ with area:
 # ------------------------------------------
 # 6.1 Formulário em etapas
 # ------------------------------------------
+ETAPAS = ("personal", "loan", "history")
+CAMPOS_DA_ETAPA = {
+    "personal": ("age", "gender", "country", "income_total"),
+    "loan": ("loan_id", "amount", "interest", "loan_duration", "data_emprestimo"),
+    "history": ("liabilities_total",),
+}
+ETAPA_DO_CAMPO = {campo: etapa for etapa, campos in CAMPOS_DA_ETAPA.items() for campo in campos}
+
+
+def _desmarcar_revisao(step_name: str) -> None:
+    st.session_state[f"audit_reviewed_{step_name}"] = False
+    if f"_audit_review_widget_{step_name}" in st.session_state:
+        st.session_state[f"_audit_review_widget_{step_name}"] = False
+
+
 def _persist_audit_input(field_name: str) -> None:
     st.session_state[f"audit_{field_name}"] = st.session_state[f"_audit_widget_{field_name}"]
+    # dado alterado depois de revisado → a etapa precisa ser revisada de novo
+    _desmarcar_revisao(ETAPA_DO_CAMPO.get(field_name, "history"))
+
+
+def etapa_revisada(step_name: str) -> bool:
+    return bool(st.session_state.get(f"audit_reviewed_{step_name}"))
+
+
+def etapa_liberada(step_name: str) -> bool:
+    """Uma etapa só abre quando todas as anteriores estão marcadas como revisadas."""
+    return all(etapa_revisada(e) for e in ETAPAS[:ETAPAS.index(step_name)])
+
+
+def todas_revisadas() -> bool:
+    return all(etapa_revisada(e) for e in ETAPAS)
+
+
+def primeira_pendente() -> str:
+    return next((e for e in ETAPAS if not etapa_revisada(e)), ETAPAS[-1])
 
 
 def _prepare_audit_widget(field_name: str) -> str:
@@ -542,8 +377,18 @@ def audit_review_checkbox(step_name: str) -> None:
                 on_change=_persist_review, args=(step_name,))
 
 
-STEP_CARDS = [("personal", "\n\nDADOS PESSOAIS\n\n"), ("loan", "\n\nEMPRÉSTIMO\n\n"),
-              ("history", "\n\nDÍVIDAS & HISTÓRICO\n\n")]
+def botao_proxima(step_name: str) -> None:
+    """Atalho para a etapa seguinte; só funciona com a etapa atual marcada como revisada."""
+    seguinte = ETAPAS[ETAPAS.index(step_name) + 1]
+    rotulo = dict(STEP_CARDS)[seguinte]
+    if st.button(f"Avançar para {rotulo}", key=f"audit_next_{step_name}", icon=":material/arrow_forward:",
+                 disabled=not etapa_revisada(step_name)):
+        st.session_state.audit_active_step = seguinte
+        st.rerun()
+
+
+STEP_CARDS = [("personal", "Dados pessoais"), ("loan", "Empréstimo"), ("history", "Dívidas & histórico")]
+ICONES_ETAPA = {"personal": ":material/person:", "loan": ":material/payments:", "history": ":material/history:"}
 STEP_DETAILS = {
     "personal": {"number": "01", "title": "Dados pessoais",
                  "copy": "Perfil do tomador no momento do pedido. Gênero e idade ficam registrados só para a auditoria de equidade e nunca entram no modelo."},
@@ -556,13 +401,25 @@ STEP_DETAILS = {
 
 def formulario() -> bool:
     """Desenha o formulário em 3 etapas. Devolve True quando o botão de auditoria é clicado."""
-    _, nav_center, _ = st.columns([0.35, 2.3, 0.35], gap="small")
-    with nav_center:
+    # Etapa aberta que deixou de estar liberada (ex.: desmarcou a revisão anterior) → volta
+    # para a primeira etapa pendente. Voltar é sempre permitido; avançar, só revisando.
+    if not etapa_liberada(st.session_state.audit_active_step):
+        st.session_state.audit_active_step = primeira_pendente()
+
+    with st.container(key="audit_steps"):
         for column, (step_key, step_label) in zip(st.columns(3, gap="small"), STEP_CARDS):
             with column:
                 ativo = st.session_state.audit_active_step == step_key
-                if st.button(step_label, key=f"audit_select_{step_key}",
-                             type="primary" if ativo else "secondary", use_container_width=True):
+                liberada = etapa_liberada(step_key)
+                if not liberada:
+                    icone_etapa = ":material/lock:"
+                elif etapa_revisada(step_key):
+                    icone_etapa = ":material/check_circle:"
+                else:
+                    icone_etapa = ICONES_ETAPA[step_key]
+                if st.button(step_label, key=f"audit_select_{step_key}", disabled=not liberada, icon=icone_etapa,
+                             type="primary" if ativo else "secondary",
+                             help=None if liberada else "Marque “Confirmo que revisei” na etapa anterior para liberar."):
                     st.session_state.audit_active_step = step_key
                     st.rerun()
 
@@ -592,6 +449,7 @@ def formulario() -> bool:
                 st.markdown('<div class="audit-note">Valores em euro (€). Renda e passivos da Estônia até 2010 '
                             'foram convertidos de coroas estonianas na carga.</div>', unsafe_allow_html=True)
                 audit_review_checkbox("personal")
+                botao_proxima("personal")
 
             elif active_step == "loan":
                 audit_text("ID do contrato", "loan_id", max_chars=40)
@@ -604,6 +462,7 @@ def formulario() -> bool:
                             'Para meses após o fim da série, o modelo usa o último valor disponível. '
                             'Juros acima de 100% a.a. existem na base e são legítimos.</div>', unsafe_allow_html=True)
                 audit_review_checkbox("loan")
+                botao_proxima("loan")
 
             else:
                 audit_number("Total de dívidas em outras instituições (€)", "liabilities_total",
@@ -614,8 +473,14 @@ def formulario() -> bool:
                 audit_review_checkbox("history")
 
             st.markdown("<div style='height:.35rem'></div>", unsafe_allow_html=True)
-            clicou = st.button("⚖️ EXECUTAR AUDITORIA DE PREÇO", key="audit_execute",
+            liberado = todas_revisadas()
+            if not liberado:
+                faltam = [d["title"] for e, d in STEP_DETAILS.items() if not etapa_revisada(e)]
+                md(f'<div class="audit-lock-note">{icone("cadeado", 14)} A auditoria libera depois das 3 confirmações. '
+                   f'Falta revisar: {esc(", ".join(faltam))}.</div>')
+            clicou = st.button("EXECUTAR AUDITORIA DE PREÇO", key="audit_execute", icon=":material/balance:", disabled=not liberado,
                                type="primary", use_container_width=True)
+            clicou = clicou and liberado  # trava também no código, não só no botão
 
     with progress_column:
         with st.container(border=True):

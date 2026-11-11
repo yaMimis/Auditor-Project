@@ -9,7 +9,7 @@ requests>=2.31.0
 python-dotenv
 
 # Painel
-streamlit>=1.37.0
+streamlit>=1.44.0   # st.container(key=...) e ícones nos botões (etapas do formulário)
 
 # Banco de Dados
 sqlalchemy>=2.0.0

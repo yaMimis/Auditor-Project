@@ -5,6 +5,7 @@
 #     .\iniciar.ps1 -Build     reconstroi a imagem antes (mudou codigo ou requirements)
 #     .\iniciar.ps1 -Parar     para tudo (os dados do banco continuam no volume)
 #     .\iniciar.ps1 -SemNavegador   nao abre o navegador no final
+# Ou de clique duplo no iniciar.bat (mesmo efeito, sem mexer na ExecutionPolicy).
 # Se o Windows bloquear o script, rode antes, na mesma janela:
 #     Set-ExecutionPolicy Bypass -Scope Process
 #
@@ -52,6 +53,27 @@ if ($Parar) {
     exit 0
 }
 
+# Portas livres? 8000 (API) e 8501 (painel) precisam estar livres para o navegador.
+# A 5432 so gera aviso: a API fala com o banco pela rede interna do Docker, entao um PostgreSQL
+# instalado no Windows (comum em PC de laboratorio) nao atrapalha.
+$nossos = @("auditor_postgres", "auditor_api", "auditor_streamlit")
+$programas_docker = @("com.docker.backend", "wslrelay", "vpnkit", "com.docker.proxy", "dockerd", "docker")
+foreach ($porta in 5432, 8000, 8501) {
+    $outro = docker ps --filter "publish=$porta" --format "{{.Names}}" | Where-Object { $nossos -notcontains $_ }
+    if ($outro) { Parar "A porta $porta esta com o container '$outro'. Pare com:  docker stop $outro  e rode de novo." }
+    $con = Get-NetTCPConnection -LocalPort $porta -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($con) {
+        $proc = Get-Process -Id $con.OwningProcess -ErrorAction SilentlyContinue
+        if ($proc -and ($programas_docker -notcontains $proc.ProcessName)) {
+            if ($porta -eq 5432) {
+                Aviso "A porta 5432 tambem tem um '$($proc.ProcessName)' do Windows. Tudo bem: a API usa o banco do Docker pela rede interna."
+            } else {
+                Parar "A porta $porta esta ocupada pelo programa '$($proc.ProcessName)'. Feche-o com:  Stop-Process -Id $($proc.Id)  e rode de novo."
+            }
+        }
+    }
+}
+
 # 1. .env (fica fora do Git): cria um modelo se nao existir, sem sobrescrever o seu
 Passo "1/6 Conferindo o .env e o modelo"
 if (-not (Test-Path ".env")) {
@@ -93,10 +115,6 @@ docker exec auditor_postgres psql -q -U postgres -d auditor_db -v ON_ERROR_STOP=
 if ($LASTEXITCODE -ne 0) { Parar "Erro ao aplicar db\05_decisoes_analista.sql. Rode o comando a mao para ver a mensagem." }
 Ok "tabela decisao_analista"
 
-$contratos = docker exec auditor_postgres psql -tA -U postgres -d auditor_db -c "SELECT count(*) FROM emprestimo" 2>$null
-if ("$contratos".Trim() -eq "0") {
-    Aviso "O banco esta sem os contratos (cargas do README, passo 5). O painel funciona, mas sem a referencia de mercado do BC."
-}
 
 # 4. Imagem: so constroi se nao existir ou se pedirem -Build
 Passo "4/6 Imagem da aplicacao"
@@ -110,8 +128,8 @@ if ($Build -or $LASTEXITCODE -ne 0) {
     Ok "imagem ja existe (use -Build se mudou codigo ou requirements)"
 }
 
-# 5. Normas do parecer no pgvector (dentro do container: nao precisa de Python local)
-Passo "5/6 Normas do parecer"
+# 5. Normas do parecer no pgvector e referencia de mercado do BC (dentro do container: sem Python local)
+Passo "5/6 Normas do parecer e referencia do BC"
 $trechos = docker exec auditor_postgres psql -tA -U postgres -d auditor_db -c "SELECT count(*) FROM trechos_normas" 2>$null
 if ("$trechos".Trim() -match "^[1-9]") {
     Ok "normas ja indexadas ($("$trechos".Trim()) trechos)"
@@ -119,6 +137,23 @@ if ("$trechos".Trim() -match "^[1-9]") {
     docker compose run --rm --no-deps api python genai/src/indexar.py
     if ($LASTEXITCODE -ne 0) { Aviso "Nao consegui indexar as normas: o parecer funciona, mas sai sem fontes." }
     else { Ok "normas indexadas" }
+}
+
+# Referencia do BC: series mensais de 4 CSVs pequenos em data\raw (a base do Bondora nao e necessaria).
+# Mesma carga que o completar.sh faz na VM da nuvem (infra/cloud-init.yaml).
+$meses_bc = docker exec auditor_postgres psql -tA -U postgres -d auditor_db -c "SELECT count(*) FROM bc_credito_pessoal_mensal" 2>$null
+if ("$meses_bc".Trim() -match "^[1-9]") {
+    Ok "referencia do BC ja carregada ($("$meses_bc".Trim()) meses)"
+} elseif (-not ((Test-Path "data\raw\bcdata.sgs.20742.csv") -or (Test-Path "data\raw\bcdata_sgs_20742.csv"))) {
+    Aviso "Sem a referencia de mercado do BC: falta data\raw\bcdata.sgs.20742.csv (baixe em https://api.bcb.gov.br/dados/serie/bcdata.sgs.20742/dados?formato=csv) e rode de novo."
+} elseif ((Test-Path "data\raw\ECB_Euribor_Serie-Mensal-3-Meses.csv") -and
+          (Test-Path "data\raw\BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv")) {
+    $pasta_raw = (Resolve-Path "data\raw").Path
+    docker compose run --rm --no-deps -v "${pasta_raw}:/app/data/raw:ro" api python src/dados/carga_macro.py --ddl db/02_schema_macro.sql
+    if ($LASTEXITCODE -ne 0) { Aviso "A carga das series do BC falhou (veja a mensagem acima). O painel funciona sem a referencia de mercado." }
+    else { Ok "Euribor, Selic e taxa do BC carregadas" }
+} else {
+    Aviso "Sem a referencia de mercado do BC. Coloque em data\raw os CSVs da Euribor (12 e 3 meses) e da Selic (peca ao Marcos) e rode de novo."
 }
 
 # 6. API e painel em segundo plano; espera a API ficar saudavel

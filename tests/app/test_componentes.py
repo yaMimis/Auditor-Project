@@ -125,3 +125,12 @@ def test_duas_casas_quando_os_juros_ficariam_iguais():
     assert "30,56%" in cartoes[1] and "30,58%" in cartoes[2]
     assert "Cobrado 30,56%" in html_barra_juros(r)
     assert "24,9%" in kpis_revisao(POR_SITUACAO["acima_do_justo"])[1]  # caso normal: 1 casa
+
+
+def test_icones_de_linha_sem_emoji():
+    from src.app.componentes import icone
+    svg = icone("cadeado", 14)
+    assert svg.startswith("<svg") and 'width="14"' in svg and 'stroke="currentColor"' in svg
+    assert icone("nao-existe") == ""
+    for nome in ("balanca", "grafico", "chip", "documento"):
+        assert "<path" in icone(nome) or "<rect" in icone(nome)

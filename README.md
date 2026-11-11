@@ -50,7 +50,7 @@ docs/         decisões de modelagem (DECISOES.md), glossário, BPMN, resultados
 genai/        formato JSON, regras, normas, prompts e código do parecer
 notebooks/    EDA e etapas do modelo (coortes, variáveis, XGBoost, LGD, margem)
 src/api/      API FastAPI
-src/app/      painel Streamlit
+src/app/      painel Streamlit (main.py = telas, estilo.css = visual, componentes.py = blocos HTML)
 src/dados/    cargas do Bondora e das séries de juros
 src/modelos/  modelo de risco e juro justo (prever())
 modelos_salvos/  pacote do modelo (.joblib, fora do Git)
@@ -62,11 +62,11 @@ tests/        testes
 
 Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
-**Atalho (Windows):** com o banco já carregado (passos 2 a 5 abaixo, uma vez), use o `iniciar.ps1`:
+**Atalho (Windows):** clique duplo no `iniciar.bat` (ou `.\iniciar.ps1`). Num PC novo basta Docker Desktop, `.env`, o `.joblib` do modelo e os 4 CSVs de custo do dinheiro em `data/raw/` (para a referência do BC): veja [`docs/RODAR_EM_QUALQUER_PC.md`](docs/RODAR_EM_QUALQUER_PC.md). A base do Bondora só é necessária para refazer os dados e o modelo (passos 2 a 5 abaixo).
 
 | Comando | O que faz |
 | --- | --- |
-| `.\iniciar.ps1` | confere `.env` e modelo, sobe o banco, aplica a tabela de decisões, indexa as normas (se faltar), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
+| `.\iniciar.ps1` | confere portas, `.env` e modelo, sobe o banco, aplica a tabela de decisões, indexa as normas e carrega a referência do BC (se faltarem), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
 | `.\iniciar.ps1 -Build` | o mesmo, reconstruindo a imagem (mudou código ou requirements) |
 | `.\iniciar.ps1 -Parar` | para tudo; os dados do banco ficam guardados |
 
@@ -84,7 +84,7 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 
 2. **Dados.** Todos os arquivos ficam numa pasta compartilhada do Drive, fora do Git (o repositório é público). Peça o link ao grupo e coloque os arquivos em `data/raw/`, com estes nomes:
    - `LoanData_Bondora.csv` (confira o SHA-256 em `DATA.md`)
-   - `ECB_Euribor_Serie-Mensal-12-Meses_csv.csv` e `ECB_Euribor_Serie-Mensal-3-Meses.csv`
+   - `ECB_Euribor_Serie-Mensal-12-Meses.csv` (o download do BCE às vezes vem como `..._csv.csv`: os dois nomes funcionam) e `ECB_Euribor_Serie-Mensal-3-Meses.csv`
    - `BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv`
    - `BC-Meta_Selic_Mensal.csv` (opcional, só conferência)
    - `bcdata.sgs.20742.csv` (opcional, referência de mercado do BC)
@@ -141,8 +141,10 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 - [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
 - [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
+- [`genai/avaliacao/`](genai/avaliacao/CRITERIOS.md): critérios, os 20 casos de avaliação e os resultados do parecer (prompts v2 a v4), com a revisão humana da v4.
 - [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md): roteiro da demo, plano B e perguntas prováveis.
-- [`infra/`](infra/README.md): o mesmo ambiente em Terraform (provider Docker, local, sem custo).
+- [`infra/`](infra/README.md): Terraform que cria na Google Cloud uma VM rodando o mesmo Docker Compose (para a demo na nuvem).
+- [`docs/RODAR_EM_QUALQUER_PC.md`](docs/RODAR_EM_QUALQUER_PC.md): como rodar em qualquer PC da equipe e a diferença entre Docker e Terraform.
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 
 ## Governança e ética
@@ -167,5 +169,6 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 Cada frente registra aqui como usou assistentes de IA (agentic coding) e como revisou o resultado.
 
 - **Dados:** os scripts de carga, os esquemas SQL e a documentação foram escritos com apoio do Claude e revisados e testados pelo responsável da frente.
-- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas.
-- **Modelo e GenAI:** a completar por cada frente.
+- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas. O formulário com etapas travadas, a separação do visual em `estilo.css` e os scripts `iniciar` seguiram o mesmo processo.
+- **Modelo:** a completar pela frente.
+- **GenAI:** o código do parecer, os prompts e os documentos da frente foram escritos com apoio do Claude, guiado pelos guias da frente em `skills/regras_negocio/` ([`normas_rag`](skills/regras_negocio/normas_rag/SKILL.md), [`parecer_genai`](skills/regras_negocio/parecer_genai/SKILL.md) e [`avaliacao_parecer`](skills/regras_negocio/avaliacao_parecer/SKILL.md)) e pelos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). As propostas maiores (template, cadeia em LangChain, prompts v3 e v4) também passaram pela revisão de uma segunda IA. A responsável leu cada mudança antes de aplicá-la e conferiu o resultado com os testes automáticos (`tests/genai/`), a avaliação dos 20 casos e a revisão humana dos pareceres (`genai/avaliacao/`).

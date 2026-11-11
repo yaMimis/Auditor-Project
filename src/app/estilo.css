@@ -94,10 +94,29 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 [data-testid="stButton"] button:hover, [data-testid="stDownloadButton"] button:hover {
     transform: translateY(-3px); border-color: var(--gold-light) !important; box-shadow: 0 12px 28px rgba(200, 154, 88, 0.12);
 }
+/* botão principal (Revisar preço, Revisar, Abrir caso...): dourado da paleta */
 [data-testid="stButton"] button[data-testid="stBaseButton-primary"],
 [data-testid="stButton"] button[kind="primary"] {
-    background: linear-gradient(135deg, #d7b9b8 0%, #c8a2a0 100%) !important;
-    color: #171315 !important; border: 1px solid #e5c5c3 !important; font-weight: 700 !important;
+    background: linear-gradient(135deg, #c89a58 0%, #e4bd7d 100%) !important;
+    color: #171315 !important; border: 1px solid #e4bd7d !important; font-weight: 700 !important;
+}
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"] p,
+[data-testid="stButton"] button[kind="primary"] p { color: #171315 !important; }
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover,
+[data-testid="stButton"] button[kind="primary"]:hover {
+    filter: brightness(1.06); box-shadow: 0 12px 28px rgba(200, 154, 88, 0.25);
+}
+
+/* EXECUTAR AUDITORIA DE PREÇO: branco com borda dourada */
+.st-key-audit_execute button, .st-key-audit_execute button[kind="primary"],
+.st-key-audit_execute button[data-testid="stBaseButton-primary"] {
+    background: #ffffff !important; color: #171315 !important;
+    border: 2px solid var(--gold) !important; font-weight: 700 !important; letter-spacing: .06em;
+}
+.st-key-audit_execute button p, .st-key-audit_execute button [data-testid="stIconMaterial"] { color: #171315 !important; }
+.st-key-audit_execute button:hover:not(:disabled) {
+    background: #fbf6ee !important; border-color: var(--gold-light) !important; filter: none;
+    box-shadow: 0 12px 28px rgba(200, 154, 88, 0.28);
 }
 
 .audit-workspace-label { color: var(--gold-light); font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin: .15rem 0 .4rem 0; }
@@ -176,18 +195,23 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 }
 [data-testid="stTabs"] [data-baseweb="tab"] {
     height: 104px !important; min-height: 104px; width: 100%; justify-content: center; align-items: center;
-    padding: .55rem .35rem !important; border-radius: 10px !important;
-    border: 1px solid rgba(200, 154, 88, 0.34) !important;
-    background: linear-gradient(145deg, #202126 0%, #17181c 100%) !important;
-    color: var(--text-light) !important; transition: transform .2s ease, border-color .2s ease;
+    padding: .55rem .35rem !important; border-radius: 16px !important;
+    border: 1.5px solid rgba(200, 154, 88, 0.55) !important;
+    background: linear-gradient(145deg, #25262c 0%, #1a1b20 100%) !important;
+    color: var(--gold-light) !important; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 [data-testid="stTabs"] [data-baseweb="tab"] p {
-    font-size: .74rem !important; font-weight: 700 !important; letter-spacing: .1em; color: inherit !important;
+    font-size: .82rem !important; font-weight: 700 !important; letter-spacing: .12em; color: inherit !important;
 }
-[data-testid="stTabs"] [data-baseweb="tab"]:hover { transform: translateY(-3px); border-color: var(--gold-light) !important; }
+[data-testid="stTabs"] [data-baseweb="tab"]:hover {
+    transform: translateY(-3px); border-color: var(--gold-light) !important;
+    box-shadow: 0 14px 30px rgba(200, 154, 88, 0.18);
+}
 [data-testid="stTabs"] [aria-selected="true"] {
     background: linear-gradient(135deg, #c89a58 0%, #e4bd7d 100%) !important;
-    color: #171315 !important; border: 1px solid #e4bd7d !important;
+    color: #171315 !important; border: 1.5px solid #f0d29b !important;
+    box-shadow: 0 14px 34px rgba(200, 154, 88, 0.35);
 }
 [data-testid="stTabs"] [data-baseweb="tab-highlight"], [data-testid="stTabs"] [data-baseweb="tab-border"] { display: none !important; }
 

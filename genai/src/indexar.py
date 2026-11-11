@@ -17,7 +17,10 @@ from pgvector.psycopg2 import register_vector
 from psycopg2.extras import execute_values
 from sentence_transformers import SentenceTransformer
 
-from dividir import dividir_normas
+try:  # funciona como "python genai/src/indexar.py" e como "python -m genai.src.indexar"
+    from genai.src.dividir import dividir_normas
+except ImportError:
+    from dividir import dividir_normas
 
 MODELO = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"  # multilíngue, 384 dimensões
 DIMENSAO = 384

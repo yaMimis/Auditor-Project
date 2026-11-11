@@ -12,7 +12,7 @@ Esta pasta descreve o projeto **por setor**, para que uma IA (ou uma pessoa nova
 
 Marcadores usados: **[PRONTO]** já existe e funciona · **[EM ANDAMENTO]** alguém está fazendo (nome entre parênteses) · **[PENDENTE]** ainda não começou · **[A DECIDIR]** depende de decisão do grupo (o texto diz a escolha padrão).
 
-Atualizado em **06/11/2026**, a partir do repositório nessa data.
+Atualizado em **06/11/2026**, a partir do repositório nessa data. Skills da GenAI (`normas_rag`, `parecer_genai`, `avaliacao_parecer`) atualizadas em **10/11/2026**.
 
 ## Mapa
 
@@ -29,7 +29,9 @@ skills/
     ├── modelo_risco/             variáveis, XGBoost, calibração, métricas, faixas, revisão manual, SHAP
     ├── juro_justo/               fluxo de caixa, convenção nominal, LGD, margem, incerteza, situação do preço
     ├── contratos_dados/          formatos JSON entre as frentes (prever, parecer, API, carteira)
-    ├── parecer_genai/            regras do parecer, RAG, prompt, LLM, checagem e template
+    ├── normas_rag/               normas brasileiras, divisão em trechos, indexação no pgvector e busca
+    ├── parecer_genai/            regras do parecer, prompt, cadeia com o Gemini, conferência e template
+    ├── avaliacao_parecer/        os 20 casos, critérios, métricas e revisão humana do parecer
     ├── auditoria_carteira/       lote da carteira, equidade, backtest, ROI e segmentação
     ├── api/                      FastAPI: rotas, schemas e conversões
     └── painel/                   Streamlit: telas, blocos, design e decisão do analista
@@ -38,7 +40,7 @@ skills/
 ## Ordem de leitura
 
 - **Para entender o projeto:** `visao-geral` → `regras_negocio/governanca` → `regras_negocio/contratos_dados`.
-- **Para construir do zero:** `estrutura-projeto` → `boas-praticas-python` → `ambiente-e-infra` → `dados` → `modelo_risco` → `juro_justo` → `contratos_dados` → `parecer_genai` → `api` → `painel` → `auditoria_carteira`.
+- **Para construir do zero:** `estrutura-projeto` → `boas-praticas-python` → `ambiente-e-infra` → `dados` → `modelo_risco` → `juro_justo` → `contratos_dados` → `normas_rag` → `parecer_genai` → `avaliacao_parecer` → `api` → `painel` → `auditoria_carteira`.
 - **Para mexer em um setor:** leia o `SKILL.md` dele, os setores em "Leia antes" e, sempre, `governanca` e `contratos_dados`.
 
 ## Como usar com uma IA

@@ -1,11 +1,11 @@
 ---
 name: auditor-parecer-genai
-description: Use para construir ou alterar o parecer automatizado do Auditor de Preço Justo — quem decide o quê, linguagem, números, recomendação escolhida pelo código, RAG sobre normas brasileiras com pgvector, prompt versionado, chamada ao Gemini, checagem por código, template de reserva e avaliação.
+description: Use para construir ou alterar o parecer automatizado do Auditor de Preço Justo — quem decide o quê, linguagem, números, recomendação escolhida pelo código, prompt versionado, cadeia LCEL com o Gemini, conferência por código, ajustes de estilo e template de reserva. Normas e busca ficam em normas_rag; avaliação em avaliacao_parecer.
 ---
 
 # Parecer com GenAI
 
-> Leia antes: `regras_negocio/governanca`, `regras_negocio/contratos_dados`. Dono: Maria (GenAI). Documentos do dono: `genai/REGRAS_PARECER.md` (v1.3), `genai/FORMATO_JSON.md` (v1.4).
+> Leia antes: `regras_negocio/governanca`, `regras_negocio/contratos_dados`. Junto: `regras_negocio/normas_rag` (busca) e `regras_negocio/avaliacao_parecer` (avaliação). Dono: Maria (GenAI). Documentos do dono: `genai/REGRAS_PARECER.md` (v1.7), `genai/FORMATO_JSON.md` (v1.5).
 
 ## Objetivo
 
@@ -13,14 +13,14 @@ Transformar a saída do `prever()` num **parecer curto, em português, apoiado e
 
 ## Arquivos
 
-`genai/normas/*.md` + `FONTES.md`; `genai/src/dividir.py`, `indexar.py`, `testar_busca.py`, `checagem.py` (pydantic + `conferir_parecer`), `template.py` (`montar_template`, `escolher_recomendacao`), `prompt.py` (`montar_mensagens`), `testar_llm.py`; `genai/prompts/parecer_v1.md`; `genai/avaliacao/`; `tests/genai/`.
+`genai/src/checagem.py` (pydantic, `conferir_parecer`, `ajustar_resposta`, formatação dos números), `template.py` (`montar_template`, `escolher_recomendacao`), `prompt.py` (`montar_mensagens`, `VERSAO_PROMPT`), `cadeia.py` (`gerar_parecer`, `buscar_trechos`, `carregar_modelo_embeddings`), `testar_llm.py`; `genai/prompts/parecer_v1.md` a `parecer_v4.md`; `tests/genai/`. As normas e a busca estão em `normas_rag`; a avaliação, em `avaliacao_parecer`.
 
 ## Quem decide o quê
 
 | Quem | Faz |
 |---|---|
 | `prever()` | todos os números e a marcação de revisão manual |
-| Código da cadeia | escolhe a recomendação, decide LLM × template, formata números, busca normas, confere o resultado, escreve `contexto_mercado` |
+| Código da cadeia | escolhe a recomendação, decide LLM × template, formata números, busca normas, confere o resultado, faz os ajustes de estilo, escreve `contexto_mercado` |
 | **LLM** | **só escreve**: resumo, pontos de atenção, texto da recomendação, escolha das fontes entre os trechos recebidos |
 | Analista | decisão final; só ele encaminha ao compliance |
 
@@ -40,53 +40,58 @@ Transformar a saída do `prever()` num **parecer curto, em português, apoiado e
 - PT-BR, frases curtas, sem jargão. Resumo ≤ 2 frases; ≤ 3 pontos de atenção. Modo hipotético: "se este contrato fosse de um banco brasileiro". A recomendação **sempre termina** com "A decisão final é do analista."
 - Usar "indício", "ponto de atenção", "recomenda-se revisar", "recomenda-se encaminhar ao compliance". Palavras proibidas em `governanca`, regra 4 (regex `PALAVRAS_PROIBIDAS`; "discriminar" no sentido de detalhar é permitido).
 - Fatores pelo `rotulo`, nunca pelo nome técnico.
-- Só podem aparecer: PD, juro cobrado, juro justo, mínimo e máximo da margem (e a faixa). O LLM **copia** os números já formatados ("24,9% ao ano"); não recalcula, não arredonda, não calcula diferenças. Campo `null` nunca é citado. Todo número do texto entra em `numeros_citados` com o valor exato.
+- Só podem aparecer: PD, juro cobrado, juro justo, mínimo e máximo da margem (e a faixa). O LLM **copia** os números já formatados ("24,9% ao ano (nominal)"); não recalcula, não arredonda, não calcula diferenças. Campo `null` nunca é citado. Todo número do texto entra em `numeros_citados` com o valor exato.
+- Juros com **1 casa decimal**; com **2** quando dois juros diferentes ficariam iguais com 1 casa (ex.: 30,56% e 30,58%, que virariam "30,6% abaixo de 30,6%"). Vale para o prompt e para o template (`casas_decimais`).
+- Unidade: `UNIDADE_JURO = "ao ano (nominal)"` (mensal = anual ÷ 12, como o Bondora e o `prever()`).
 - Não falar de CET, tarifas, encargos ou média de mercado. **Números do REF nunca aparecem** no parecer (v1.3): os trechos do REF só explicam a composição do custo do crédito.
+- A média de mercado do BC vai só em `contexto_mercado`, uma **frase fixa escrita pelo código** (série 20742, efetiva, convertida para nominal: 12 × ((1 + e)^(1/12) − 1)); o LLM nunca a escreve. Sem o dado (antes de 03/2011) → `null`.
+- Nenhuma regra do prompt nomeia um artigo de lei (v4): na v3, o exemplo "art. 6º, III" virou alucinação.
 
 ## Ética e privacidade
 
 - Nada de identificador ao LLM (nem `contrato_id`, nem `versao_modelo`); o código reinsere.
-- Gênero, idade e país nunca aparecem; `motivos_permitidos()` filtra motivos sensíveis antes do prompt.
+- Gênero, idade e país nunca aparecem; `motivos_permitidos()` filtra motivos sensíveis antes do prompt e tira o país entre parênteses dos rótulos (ex.: "score de crédito (Estônia)").
 
-## RAG
+## Normas e busca
 
-- Normas em `genai/normas/`, copiadas de fonte oficial e limpas (sem anotações, revogados ou vetados), com `FONTES.md` (arquivo, norma, artigos, URL, data de acesso):
-  - `lgpd.md` Lei 13.709/2018, arts. 5º, 6º, 7º, 11, 12, 20
-  - `cdc.md` Lei 8.078/1990, arts. 2º, 3º, 4º, 6º, 30, 31, 39, 42, 42-A, 46, 47, 52, 54, 54-A a 54-D, 54-F, 54-G, 104-A a 104-C
-  - `cet.md` Res. CMN 4.881/2020, arts. 1º a 9º
-  - `credito_oferta.md` Res. CMN 5.004/2022, arts. 1º a 9º
-  - `ref.md` Relatório de Estabilidade Financeira do BC (maio/2026), seção 2.1 e apêndice, dividido por parágrafo
-- **Divisão:** um trecho por artigo; longos quebrados entre incisos/parágrafos (`TAMANHO_MAXIMO = 1000`, sobra < `TAMANHO_MINIMO = 300` junta à anterior, repete `TAMANHO_CAPUT = 150` caracteres do caput).
-- **`trecho_id`:** `<arquivo>-art<número>-<parte>` (`cdc-art6-1`, `cdc-art54b-1`, `lgpd-art20-1`); REF `ref-p<parágrafo>-1`. O inciso vai no campo `artigo` da fonte ("art. 6º, III").
-- **Indexação:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensões) na tabela `trechos_normas` do pgvector.
-- **Busca:** top 3–5 trechos com `norma`, `artigo`, `trecho_id`, `texto`. O LLM cita só o que recebeu. Sem trecho pertinente → `fontes: []`; a tela mostra "Não encontrei base normativa para este caso."
+Detalhes em `regras_negocio/normas_rag`. O que importa aqui: a cadeia recebe até 5 trechos (`norma`, `artigo`, `trecho_id`, `texto`); o LLM cita só o que recebeu; sem trecho pertinente → `fontes: []`, e a tela mostra "Não encontrei base normativa para este caso." Sem banco, o parecer sai sem fontes e nunca falha.
 
 ## Prompt e LLM
 
 - Prompt versionado em `genai/prompts/parecer_vN.md`; `prompt.py` lê só as seções "Mensagem do sistema" e "Mensagem do usuário" e preenche `{situacao}`, `{recomendacao}`, `{faixa}`, `{numeros}`, `{fatores}`, `{trechos}`. Qualquer mudança de regra = novo arquivo, com o motivo anotado nas notas.
-- LLM: **Gemini** via `google-genai`, chave `GOOGLE_API_KEY` no `.env`, **saída estruturada** no formato `RespostaLLM`. Timeout de **20 s**.
-- `gerar_parecer(saida_prever) -> Parecer`: valida a entrada → escolhe a recomendação → revisão manual? template : (busca → prompt → LLM → `conferir_parecer`) → falhou? template → preenche `contrato_id`, `recomendacao`, `origem`, `versao_prompt`, `gerado_em` (−03:00).
+- Versão atual: **`parecer_v4`** (`VERSAO_PROMPT` em `prompt.py`). A v1, a v2 e a v3 continuam no repositório; o motivo de cada versão está nas notas do arquivo.
+- LLM: **Gemini** (`MODELO_LLM`, padrão `gemini-3.5-flash-lite`; plano B `gemini-3.1-flash-lite`) via **LangChain** (`langchain-google-genai`, `ChatGoogleGenerativeAI.with_structured_output`), chave `GOOGLE_API_KEY` no `.env`, **saída estruturada** num esquema plano (`_RespostaGemini`: o Gemini não aceita dicionário livre) convertida para `RespostaLLM`. **10 s por tentativa** (mínimo aceito pelo Gemini), **2 tentativas** (a 2ª só em erro temporário, como 503).
+- **Cadeia LCEL, fixa, sem agente e sem memória:** `busca_normas | monta_prompt | gemini | conferencia` (`RunnableLambda`). Cada parecer depende só do contrato. Sem LangChain instalado, `_CadeiaSemLangChain` roda os mesmos passos em ordem. Os imports do LangChain e do `sentence-transformers` ficam dentro das funções, para o CI testar sem torch.
+- `gerar_parecer(saida_prever) -> dict`: valida a entrada → escolhe a recomendação → revisão manual? template : cadeia → erro ou conferência reprovada? template : ajustes de estilo → preenche `contrato_id`, `recomendacao`, `origem`, `versao_prompt`, `gerado_em` (−03:00), `contexto_mercado`. **Nunca lança exceção.**
+- A API carrega o modelo de embeddings na subida (`carregar_modelo_embeddings()`), para a 1ª busca não demorar.
 
 ## Checagem (`conferir_parecer`)
 
-Entrada válida (`EntradaPrever`; inválida → revisão manual) · resposta válida (`RespostaLLM`) · cada valor de `numeros_citados` igual ao da entrada e cada número do texto ligado a um valor recebido (tolerância **0,051 pp**) · todo `trecho_id` entre os recuperados · nenhuma palavra proibida · nenhum atributo sensível · tamanho do resumo e dos pontos. **Qualquer falha → template.**
+Entrada válida (`EntradaPrever`; inválida → revisão manual) · resposta válida (`RespostaLLM`) · cada valor de `numeros_citados` igual ao da entrada e cada número do texto ligado a um valor recebido (tolerância **0,051 pp**) · todo `trecho_id` entre os recuperados · **artigos** (v4): o artigo de cada fonte é o do próprio trecho, e todo "art. N" do texto é o artigo de um trecho recuperado (compara número e letra, ignora inciso; o REF não tem artigo; "Lei nº" e "Resolução" não contam) · nenhuma palavra proibida · nenhum atributo sensível · tamanho do resumo e dos pontos. **Qualquer falha → template.**
+
+## Ajustes de estilo (`ajustar_resposta`, depois da conferência)
+
+Só rodam **depois** que a conferência aprova, que sempre vê a resposta original do LLM. **Só tiram, nunca acrescentam**, e não mandam para o template:
+- pontos de atenção que começam com "Recomenda-se" saem; frases do resumo que começam assim saem se sobrar outra frase (duas versões do prompt não resolveram a repetição);
+- a LGPD art. 20 sai das fontes quando o texto não fala de revisão de decisão automatizada (citação decorativa).
+
+O que foi ajustado vai para o log. As métricas da avaliação medem o LLM **antes** desses ajustes.
 
 ## Template de reserva
 
-Usado em revisão manual, falha da API, timeout > 20 s, JSON inválido ou checagem reprovada. Texto só com faixa, situação, números formatados e até 3 rótulos de motivos (em revisão manual, só o juro cobrado). `origem: "template"`, `versao_prompt: "template_v1"`, `fontes: []`, mesma recomendação da tabela, fuso −03:00.
+Usado em revisão manual, falha da API, timeout (2 tentativas de 10 s), JSON inválido ou conferência reprovada. Texto só com faixa, situação, números formatados e até 3 rótulos de motivos (em revisão manual, só o juro cobrado). `origem: "template"`, `versao_prompt: "template_v1"`, `fontes: []`, mesma recomendação da tabela, fuso −03:00.
 
-## Avaliação (`genai/avaliacao/CRITERIOS.md`, critérios definidos **antes** dos resultados)
+## Avaliação
 
-20 casos: 5 acima, 4 abaixo, 4 dentro, 2 revisão manual, 5 difíceis (motivo com gênero, número extremo, trecho irrelevante). Critérios: recuperação no top 3 (meta ≥ 80%; a busca v1 atinge 8/10), fidelidade, consistência numérica (por código), citação correta, alucinação (meta zero na demo), regras, clareza (1–5). Cada caso rodado 2 vezes.
+Antes de trocar o prompt, o modelo ou a busca, rodar a avaliação dos 20 casos (`regras_negocio/avaliacao_parecer`). Na v4: recomendação 40/40, sem palavra proibida 40/40, alucinação 0/17 na revisão humana.
 
 ## Pronto quando
 
-`tests/genai/` passa: `test_checagem`, `test_conferencia` (números, fontes, tamanho), `test_regras` (palavras e atributos), `test_template` (recomendação por situação, sem LLM em revisão manual), `test_prompt`. A avaliação dos 20 casos está registrada.
+`tests/genai/` passa (164 testes em 10/11, sem internet e sem banco: o LLM e a busca são trocados por versões falsas): `test_checagem`, `test_conferencia` (números, fontes, tamanho), `test_regras` (palavras e atributos), `test_template` (recomendação por situação, sem LLM em revisão manual), `test_prompt`, `test_cadeia` e `test_cadeia_langchain` (cadeia, fallback e LCEL), `test_avaliacao`, `test_ajustes_v2`, `test_v3`, `test_v4` (checagem de artigos), `test_ajustes_finais`. A avaliação está registrada (`regras_negocio/avaliacao_parecer`).
 
-## Estado em 06/11/2026
+## Estado em 10/11/2026
 
-- **[PRONTO]** normas, divisão, indexação, busca v1, checagem, template, prompt v1 + `montar_mensagens`, teste da chave do Gemini.
-- **[EM ANDAMENTO] (Maria, até 08/11)** `gerar_parecer()`; avaliação dos 20 casos.
-- **[EM ANDAMENTO] (Maria + Yasmin)** `contexto_mercado` (ver `contratos_dados`, seção 3).
-- **[A DECIDIR]** `REGRAS_PARECER.md` v1.3 aguardando o grupo; saída do `FORMATO_JSON.md` aguardando a Yasmin.
-- Integração: a API hoje chama `montar_template` em `_parecer()`; trocar por `gerar_parecer()` é uma linha (ver `regras_negocio/api`).
+- **[PRONTO]** checagem (com artigos), ajustes de estilo, template, prompts v1 a v4, `gerar_parecer()` em cadeia LCEL, `contexto_mercado`. Normas e busca: ver `normas_rag`; avaliação: ver `avaliacao_parecer`.
+- **[PRONTO]** integração: a API chama `gerar_parecer()` e carrega o modelo de embeddings na subida; `iniciar.ps1` indexa as normas.
+- **[A DECIDIR]** `REGRAS_PARECER.md` v1.7 e `FORMATO_JSON.md` v1.5 aguardando o ok do grupo.
+- **[PENDENTE] (Maria, até 14/11)** cache dos pareceres dos casos da demo (`docs/ROTEIRO_DEMO.md`).

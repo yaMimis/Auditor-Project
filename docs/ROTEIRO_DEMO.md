@@ -8,19 +8,20 @@ Demo ao vivo de cerca de **8 minutos**, no dia 15/11, seguida da mesma sequênci
 
 ## 1. Antes de começar (no dia, 30 min antes)
 
-- [ ] Docker Desktop aberto; rodar `.\iniciar.ps1` e esperar o "Pronto".
+- [ ] Docker Desktop aberto; rodar  `.\iniciar.ps1`, ou `docker compose up -d` e esperar o "Pronto".
 - [ ] Em http://localhost:8000/: `modelo_carregavel: true` e `banco_disponivel: true`.
 - [ ] Fazer **uma auditoria de aquecimento** pelo formulário: a 1ª chamada ao Gemini e à busca nas normas é a mais lenta.
 - [ ] Preencher "Analista responsável" no topo da seção de auditoria.
 - [ ] Navegador em tela cheia, zoom em 90% a 100%, abas abertas: painel (8501) e documentação da API (8000/docs).
 - [ ] Vídeo gravado aberto em outra janela, pronto para o plano B.
+- [ ] Print do `terraform plan` ("Plan: 5 to add") num slide, para mostrar a infraestrutura na nuvem sem depender da internet da sala.
 
 ## 2. Sequência
 
 | # | Tempo | Na tela | Frase-chave | Prova |
 |---|---|---|---|---|
 | 1 | 0:00 | Capa do painel | "Para cada contrato: qual o risco, se o juro é justo para esse risco e se clientes de mesmo risco pagam diferente. Quem decide é o analista." | Ideia e enquadramento |
-| 2 | 0:45 | Aba **Revisão de contrato** → formulário (3 etapas) → **Executar auditoria** | "Gênero e idade ficam registrados só para auditoria: não entram no modelo nem no parecer." | Governança: atributos sensíveis só auditam |
+| 2 | 0:45 | Aba **Revisão de contrato** → formulário (3 etapas, cada uma só abre depois de "Confirmo que revisei") → **Executar auditoria** (libera com as 3 caixas) | "Ninguém audita sem conferir os dados. E gênero e idade ficam registrados só para auditoria: não entram no modelo nem no parecer." | Governança: atributos sensíveis só auditam |
 | 3 | 1:45 | Cartões, régua e motivos do resultado | "O juro justo vem do fluxo de caixa: custo do dinheiro da época, perda esperada e margem da safra, com margem de incerteza do bootstrap." | Modelo e juro justo |
 | 4 | 2:45 | Parecer "Gerado por IA", fontes e referência de mercado do BC | "A IA só escreve. Recomendação e números vêm do código, e cada número do texto é conferido; se falhar, entra o template." | GenAI com checagem |
 | 5 | 3:45 | **Caso de exemplo → Acima do justo · 98ffaaa4-0b86** (faixa D: cobrado 39,0%, justo 34,0%, margem 31,7%–36,8%) | "Indício a investigar, não conclusão." | Linguagem de indício |
@@ -58,4 +59,4 @@ Demo ao vivo de cerca de **8 minutos**, no dia 15/11, seguida da mesma sequênci
 
 | Versão | Data | Mudança |
 |---|---|---|
-| 1.0 | 10/11/2026 | Primeira versão do roteiro. |
+| 1.0 | 11/11/2026 | Primeira versão do roteiro. |

@@ -53,7 +53,9 @@ if ($Parar) {
     exit 0
 }
 
-# Portas livres? (5432 banco, 8000 API, 8501 painel). Outro container ou programa nelas impede a subida.
+# Portas livres? 8000 (API) e 8501 (painel) precisam estar livres para o navegador.
+# A 5432 so gera aviso: a API fala com o banco pela rede interna do Docker, entao um PostgreSQL
+# instalado no Windows (comum em PC de laboratorio) nao atrapalha.
 $nossos = @("auditor_postgres", "auditor_api", "auditor_streamlit")
 $programas_docker = @("com.docker.backend", "wslrelay", "vpnkit", "com.docker.proxy", "dockerd", "docker")
 foreach ($porta in 5432, 8000, 8501) {
@@ -63,7 +65,11 @@ foreach ($porta in 5432, 8000, 8501) {
     if ($con) {
         $proc = Get-Process -Id $con.OwningProcess -ErrorAction SilentlyContinue
         if ($proc -and ($programas_docker -notcontains $proc.ProcessName)) {
-            Parar "A porta $porta esta ocupada pelo programa '$($proc.ProcessName)'. Feche-o com:  Stop-Process -Id $($proc.Id)  e rode de novo."
+            if ($porta -eq 5432) {
+                Aviso "A porta 5432 tambem tem um '$($proc.ProcessName)' do Windows. Tudo bem: a API usa o banco do Docker pela rede interna."
+            } else {
+                Parar "A porta $porta esta ocupada pelo programa '$($proc.ProcessName)'. Feche-o com:  Stop-Process -Id $($proc.Id)  e rode de novo."
+            }
         }
     }
 }

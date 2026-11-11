@@ -84,8 +84,7 @@ Tema do Streamlit (`.streamlit/config.toml`): `base="dark"`, `primaryColor="#D4A
 
 - **[PRONTO]** as três abas, formulário, casos reais, valores legíveis dos motivos, decisão na sessão.
 - **[A CONFIRMAR] (Marcos)** rótulos dos códigos de escolaridade, moradia e verificação (`CODIGOS` em `componentes.py`, tirados do dicionário do Bondora).
-- **[PENDENTE] (Yasmin)** mostrar "a.a. nominal" ao lado dos juros.
-- **[PENDENTE] (depende de outras frentes)** `juro_pares_mediana` como referência ao lado do juro justo ("Mediana dos pares: X%", oculto quando `null`; até 09/11); `contexto_mercado` do BC no parecer; decisões gravadas no banco e marcação "já decidido" na fila; dados reais da carteira (08/11 e 09/11).
+- **[PRONTO] (09/11)** "a.a. nominal" ao lado dos juros; mediana dos pares ao lado do juro justo; `contexto_mercado` do BC no parecer; decisões gravadas no banco com "Decisão atual" na fila; dados reais da carteira.
 
 ## Estado em 10/11/2026
 

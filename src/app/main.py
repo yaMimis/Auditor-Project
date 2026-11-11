@@ -87,7 +87,6 @@ for step_name in ("personal", "loan", "history"):
 st.session_state.setdefault("audit_active_step", "personal")
 st.session_state.setdefault("audit_last_result", None)
 st.session_state.setdefault("audit_last_contexto", {})
-st.session_state.setdefault("audit_last_payload", None)
 st.session_state.setdefault("audit_last_error", None)
 st.session_state.setdefault("historico", [])   # contratos auditados nesta sessão
 st.session_state.setdefault("decisoes", [])    # decisões registradas pelo analista
@@ -683,12 +682,6 @@ def render_revisao(r: dict, ctx: dict) -> None:
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     bloco_decisao(r)
 
-    with st.expander("Dados técnicos da consulta"):
-        if st.session_state.audit_last_payload and not ctx.get("ilustrativo"):
-            st.markdown("**Enviado à API**")
-            st.json(st.session_state.audit_last_payload)
-        st.markdown("**Resposta da API**")
-        st.json(r)
 
 
 # ------------------------------------------
@@ -701,7 +694,6 @@ with aba_revisao:
     if modo == "Novo contrato (formulário)":
         if formulario():
             payload = montar_payload()
-            st.session_state.audit_last_payload = payload
             with st.spinner("Calculando risco, juro justo e parecer..."):
                 resposta, erro = chamar_api("/prever", payload)
             if erro:

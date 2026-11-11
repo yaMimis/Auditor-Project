@@ -186,9 +186,9 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
 **Abertas:**
 
-- [ ] Campo da referência de mercado: desenho proposto pela Maria (campo opcional `bc_credito_pessoal_aa` na entrada e `contexto_mercado` na saída, frase escrita pelo código, conversão para nominal; seção 9). Falta a Yasmin passar o valor da view e mostrar o campo, e avisar todos da mudança de formato.
-- [ ] Registro de decisões (seção 13): a Yasmin faz as rotas da API, a conexão com o banco e o uso da tabela no painel. Confirmar com ela que a justificativa é obrigatória, que as taxas vão em fração ao ano e que o JSON gravado é só a resposta do `prever()` e o parecer (sem a solicitação, que tem gênero e idade).
-- [ ] Todos: quem já tem o banco montado aplica `db/05_decisoes_analista.sql` uma vez (seção 13).
+- [x] Campo da referência de mercado: desenho proposto pela Maria (campo opcional `bc_credito_pessoal_aa` na entrada e `contexto_mercado` na saída, frase escrita pelo código, conversão para nominal; seção 9). Feito (Yasmin, 09/11): a API busca a taxa do mês na `bc_credito_pessoal_mensal` (ou na view, pelo contrato) e o painel mostra o bloco "Referência de mercado (Brasil)" no parecer.
+- [x] Registro de decisões (seção 13): feito (Yasmin, 09/11). Rotas `POST /decisoes`, `GET /decisoes` e `GET /decisoes/atuais`; justificativa obrigatória; taxas em fração ao ano; o JSON gravado é só a resposta do `prever()` e o parecer (sem a solicitação, que tem gênero e idade); revisão manual grava nulos.
+- [x] Todos: quem já tem o banco montado aplica `db/05_decisoes_analista.sql` uma vez (seção 13). O `iniciar.ps1` aplica sozinho a cada subida.
 - [ ] Samuel (08 e 09/11): `carteira_auditoria.csv` e `equidade.json`; o backtest do retorno realizado usa a `vw_retorno_realizado` como está, com as recuperações já dentro dos pagamentos (seção 14).
 - [ ] Marcos e Samuel (14/11): ROI em euros da carteira.
 - [ ] Marcos (14/11): datasheet dos dados.

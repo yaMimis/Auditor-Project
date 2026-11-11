@@ -395,3 +395,25 @@ def html_tabela_equidade(linhas: list[dict]) -> str:
             <tbody>{"".join(corpo)}</tbody>
         </table>
     """)
+
+# ---------------------------------------------------------------- ícones
+# Traço fino (estilo "line icons"), cor pelo texto em volta (currentColor): brancos no painel.
+# Substituem os emojis no HTML; nos botões do Streamlit usamos os ícones Material (icon=":material/...:").
+
+_ICONES = {
+    "balanca": '<path d="M12 3v18M7 21h10M5 7h14"/><path d="M5 7l-3 7a3.5 3.5 0 0 0 6 0L5 7zM19 7l-3 7a3.5 3.5 0 0 0 6 0l-3-7z"/>',
+    "grafico": '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    "chip": '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    "documento": '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    "cadeado": '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+}
+
+
+def icone(nome: str, tamanho: int = 18, classe: str = "ap-ico") -> str:
+    """SVG inline de um ícone de linha. Nome desconhecido → string vazia (nunca quebra a tela)."""
+    corpo = _ICONES.get(nome)
+    if not corpo:
+        return ""
+    return (f'<svg class="{esc(classe)}" width="{tamanho}" height="{tamanho}" viewBox="0 0 24 24" fill="none" '
+            f'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" '
+            f'aria-hidden="true">{corpo}</svg>')

@@ -35,7 +35,7 @@ output "comando_esperar_vm" {
 
 output "comando_enviar_arquivos" {
   description = "Envia o modelo e os CSVs de custo do dinheiro, que não estão no Git"
-  value       = "scp -i ${local.chave} modelos_salvos/pacote_prever_v1.joblib data/raw/ECB_Euribor_Serie-Mensal-12-Meses_csv.csv data/raw/ECB_Euribor_Serie-Mensal-3-Meses.csv data/raw/BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv data/raw/bcdata_sgs_20742.csv ${var.usuario}@${local.ip}:~/envio/"
+  value       = "scp -i ${local.chave} modelos_salvos/pacote_prever_v1.joblib data/raw/ECB_Euribor_Serie-Mensal-12-Meses.csv data/raw/ECB_Euribor_Serie-Mensal-3-Meses.csv data/raw/BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv data/raw/bcdata.sgs.20742.csv data/raw/bcdata.sgs.25464.csv ${var.usuario}@${local.ip}:~/envio/"
 }
 
 output "comando_completar" {

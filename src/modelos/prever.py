@@ -23,7 +23,6 @@ VERSAO = "xgboost_v2"
 FAIXAS = [(0.30, "A"), (0.45, "B"), (0.60, "C"), (0.75, "D"), (1.01, "E")]
 LGD_PADRAO = 0.60      
 LGD_POR_PAIS = {"EE": 0.34, "ES": 0.76, "FI": 0.55}   # LGD realizada, defaults 2014–2015 (notebook 07)    
-MARGEM_PADRAO = 0.05       # custos + margem ao ano, provisório
 # custos + margem ao ano por safra (notebook 08: média do justo = média do cobrado).
 # 2016–2021: recalibrada pela MEDIANA em 08/11 (src/modelos/carteira.py) e lida de
 # docs/resultados/margem_por_safra.json: em cada safra, metade dos contratos fica acima

@@ -14,8 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from genai.src.checagem import EntradaPrever, Motivo, Parecer
 
-# Sem data, vale a de hoje (combinado com o Samuel em 05/11). A API sempre envia a data
-# ao prever(), para funcionar antes e depois do PR samuel-margem.
+# Sem data, vale a de hoje (combinado com o Samuel em 05/11). A API sempre envia a data ao prever().
 
 
 # ---------- Entrada (o que o Streamlit envia) ----------
@@ -65,7 +64,7 @@ class RespostaPrever(EntradaPrever):
     motivos: list[MotivoPrever] = []
     pd_ic95: list[float] | None = None
     diferenca_pp: float | None = None
-    juro_pares_mediana: float | None = None  # o Samuel vai acrescentar no prever()
+    juro_pares_mediana: float | None = None  # mediana do juro dos pares (null sem grupo)
     parecer_ia: Parecer | None = None
 
 

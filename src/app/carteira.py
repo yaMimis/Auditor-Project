@@ -35,7 +35,7 @@ OBRIGATORIAS = ["contrato_id", "ano", "pais", "pd", "faixa", "juro_cobrado", "ju
 FAIXAS = ["A", "B", "C", "D", "E"]
 SITUACOES_PRECO = ["abaixo_do_justo", "dentro_da_margem", "acima_do_justo"]
 
-# Linhas que aparecem enquanto a análise de equidade não chega (mesmo layout do protótipo).
+# Linhas mostradas quando o arquivo equidade.json não existe (mesmo layout do protótipo).
 EQUIDADE_VAZIA = [
     {"atributo": "Gênero", "comparacao": "feminino × masculino (dentro do país)"},
     {"atributo": "Idade", "comparacao": "18–25 × 35–44 anos"},

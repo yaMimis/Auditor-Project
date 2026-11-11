@@ -1,53 +1,33 @@
 # Skills do Auditor de Preço Justo
 
-Esta pasta descreve o projeto **por setor**, para que uma IA (ou uma pessoa nova no grupo) consiga construir, manter ou replicar cada parte sem ler tudo de uma vez. Cada pasta tem um `SKILL.md` com o mesmo formato:
-
-1. **Objetivo**: o que o setor entrega.
-2. **Leia antes**: de quais outros setores ele depende.
-3. **Arquivos**: onde fica no repositório.
-4. **Regras**: requisitos. Número, nome de campo ou regra escrita aqui **é requisito, não sugestão**.
-5. **Como construir**: ordem dos passos.
-6. **Pronto quando**: testes e conferências que provam que está certo.
-7. **Estado atual e pendências**: o que já existe e o que falta (com a escolha padrão até a decisão). É a única parte que muda a cada entrega: atualize no mesmo PR que entregar ou decidir algo.
-
-Marcadores usados: **[PRONTO]** já existe e funciona · **[EM ANDAMENTO]** alguém está fazendo (nome entre parênteses) · **[PENDENTE]** ainda não começou · **[A DECIDIR]** depende de decisão do grupo (o texto diz a escolha padrão).
-
-Atualizado em **06/11/2026**, a partir do repositório nessa data. Skills da GenAI (`normas_rag`, `parecer_genai`, `avaliacao_parecer`) atualizadas em **10/11/2026**.
+Instruções para uma IA trabalhar neste projeto. Cada `SKILL.md` fala direto com a IA: diz quando aplicar (`description`), o que fazer, o que não fazer e como conferir no fim. Para uma tarefa, entregue à IA **a skill da parte que vai mudar + `auditor-governanca`** (que vale sempre e traz as regras de trabalho).
 
 ## Mapa
 
-```
-skills/
-├── README.md                     este índice
-├── visao-geral/                  a ideia, o enquadramento, o fluxo e as frentes da equipe
-├── estrutura-projeto/            pastas, arquivos e onde cada coisa mora
-├── boas-praticas-python/         idioma, estilo, testes, documentação, versionamento de contratos
-├── ambiente-e-infra/             venv, .env, Docker, Compose, CI e ordem de execução
-└── regras_negocio/
-    ├── governanca/               regras éticas e de LGPD que valem para todos os setores
-    ├── dados/                    fontes, banco, carga, alvo, recorte, divisão, grupos de colunas
-    ├── modelo_risco/             variáveis, XGBoost, calibração, métricas, faixas, revisão manual, SHAP
-    ├── juro_justo/               fluxo de caixa, convenção nominal, LGD, margem, incerteza, situação do preço
-    ├── contratos_dados/          formatos JSON entre as frentes (prever, parecer, API, carteira)
-    ├── normas_rag/               normas brasileiras, divisão em trechos, indexação no pgvector e busca
-    ├── parecer_genai/            regras do parecer, prompt, cadeia com o Gemini, conferência e template
-    ├── avaliacao_parecer/        os 20 casos, critérios, métricas e revisão humana do parecer
-    ├── auditoria_carteira/       lote da carteira, equidade, backtest, ROI e segmentação
-    ├── api/                      FastAPI: rotas, schemas e conversões
-    └── painel/                   Streamlit: telas, blocos, design e decisão do analista
-```
+| Pasta | Skill (`name`) | Aplique ao… | Dono |
+|---|---|---|---|
+| `projeto/visao-geral` | `auditor-visao-geral` | começar uma tarefa ou explicar o projeto | grupo |
+| `projeto/governanca` | `auditor-governanca` | **qualquer tarefa** (ética, LGPD, regras de trabalho) | grupo |
+| `projeto/contratos-dados` | `auditor-contratos-dados` | mexer em dado que passa entre frentes | Maria (documento) |
+| `projeto/estrutura` | `auditor-estrutura` | criar, mover ou procurar arquivos; back × front | Yasmin |
+| `projeto/boas-praticas-python` | `auditor-boas-praticas-python` | escrever qualquer código, teste, commit ou documento | grupo |
+| `dados/base-de-dados` | `auditor-base-de-dados` | cargas, tabelas, views, qualidade dos dados | Marcos |
+| `modelo/risco` | `auditor-modelo-risco` | modelo de PD, variáveis, faixas, motivos | Samuel |
+| `modelo/juro-justo` | `auditor-juro-justo` | juro justo, margem, incerteza, pares | Samuel |
+| `modelo/auditoria-carteira` | `auditor-auditoria-carteira` | lote da carteira, equidade, backtest | Samuel |
+| `genai/normas-rag` | `auditor-normas-rag` | normas, trechos, indexação, busca | Maria |
+| `genai/parecer` | `auditor-parecer` | texto do parecer, prompt, Gemini, checagem | Maria |
+| `genai/avaliacao-parecer` | `auditor-avaliacao-parecer` | medir o parecer antes de trocar prompt ou modelo | Maria |
+| `backend/api` | `auditor-api` | rotas, schemas, banco, erros da API | Yasmin |
+| `frontend/painel` | `auditor-painel` | telas, formulário, visual, chamadas à API | Yasmin |
+| `infra/ambiente-docker-ci` | `auditor-infra` | requirements, Docker, `iniciar.ps1`, CI | Yasmin (Terraform: Marcos) |
 
-## Ordem de leitura
+## Formato de cada skill
 
-- **Para entender o projeto:** `visao-geral` → `regras_negocio/governanca` → `regras_negocio/contratos_dados`.
-- **Para construir do zero:** `estrutura-projeto` → `boas-praticas-python` → `ambiente-e-infra` → `dados` → `modelo_risco` → `juro_justo` → `contratos_dados` → `normas_rag` → `parecer_genai` → `avaliacao_parecer` → `api` → `painel` → `auditoria_carteira`.
-- **Para mexer em um setor:** leia o `SKILL.md` dele, os setores em "Leia antes" e, sempre, `governanca` e `contratos_dados`.
+- **Frontmatter:** `name` (`auditor-...`) e `description` começando por "Aplique ao/em...": é o que a IA lê para decidir usar a skill.
+- **Abertura:** "Ao criar, alterar ou revisar X, siga estas regras" + as outras skills que valem junto, pelo `name`.
+- **Seções no imperativo:** onde colocar cada coisa, regras, o que não fazer.
+- **Ao terminar:** comandos e conferências antes de dar a tarefa por pronta.
+- **Situação atual (data):** o que já existe (não refazer), o que está em andamento com outra pessoa (não alterar) e o que está a decidir (usar o padrão). É a única seção que muda a cada entrega: atualize no mesmo PR.
 
-## Como usar com uma IA
-
-Envie à IA o `SKILL.md` do setor que ela vai trabalhar **junto** com `governanca` e `contratos_dados`. Peça que ela:
-
-1. siga os números, nomes de campos e regras como requisitos;
-2. não mude contratos de dados sem dizer explicitamente que é uma mudança de versão;
-3. respeite os marcadores: em **[A DECIDIR]**, usar a escolha padrão e avisar; em **[EM ANDAMENTO]**, não reescrever o trabalho de outra frente;
-4. só dê o setor por pronto quando a seção "Pronto quando" passar.
+Organização atualizada em **11/11/2026**.

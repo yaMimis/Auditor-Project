@@ -1,6 +1,5 @@
 """prever() com um modelo pequeno treinado aqui mesmo: as 4 situações saem
 quando devem, com bootstrap e pares, e todas respeitam o contrato da Maria."""
-import numpy as np
 import pandas as pd
 import pytest
 

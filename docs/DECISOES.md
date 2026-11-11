@@ -232,7 +232,7 @@ Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano,
 - [X] Baseline (adiantado de 01/11 para 31/10)
 - [X] Preencher os resultados da v3
 - [X] Maria: proposta da v1.2 aceita (acima do justo → `revisar_preco`; `REGRAS_PARECER.md` v1.2)
-- [ ] Yasmin: aprovar o formato para as telas
+- [X] Yasmin: formato do `prever()` aprovado para as telas (API e painel usam os contratos de `genai/src/checagem.py`)
 - [X] Marcos: Euribor e taxas do BC até 01/11; view das coortes
 - [X] 03/11: XGBoost + calibração + SHAP
 - [X] **04/11: entregar o `prever()`**

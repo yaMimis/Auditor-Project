@@ -4,6 +4,8 @@ GET  /portfolio/overview · GET /contracts · /contracts/ids · /contracts/expor
      o lote da carteira (prever() rodado em toda a base), para a Home e a lista de contratos.
 GET  /contracts/{id}/analysis: contrato da base buscado no banco → prever() ao vivo → parecer,
      com as variáveis usadas, os parâmetros do preço e o desfecho real (quando existe).
+POST /contracts/{id}/scenario: Laboratório; o mesmo contrato com campos trocados → prever() de novo,
+     com o original ao lado e o efeito de cada campo trocado sozinho.
 POST /predict:  dados de um contrato → prever() real (Samuel) → parecer (gerar_parecer, Maria).
 POST /opinion:  parecer para uma saída do prever() já calculada (casos de exemplo, carteira).
 POST/GET /decisions: trilha das decisões do analista no banco (tabela do Marcos).
@@ -23,9 +25,10 @@ from typing import Any, Literal
 from fastapi import FastAPI, HTTPException, Query, Response
 
 from genai.src import cadeia
-from src.api import contract_analysis, database, portfolio
+from src.api import contract_analysis, database, portfolio, scenario
 from src.api.schemas import (ContractAnalysis, ContractList, CurrentDecision, LoanRequest, NewDecision, Parecer,
-                             PortfolioOverview, PredictionResponse, RecordedDecision)
+                             PortfolioOverview, PredictionResponse, RecordedDecision, ScenarioChanges,
+                             ScenarioResult)
 from src.modelos import prever as modelo
 from src.modelos.prever import PACOTE_PADRAO, prever
 
@@ -285,6 +288,47 @@ def analyze_contract(contrato_id: str):
             "fora_do_dominio": bool(resultado.get("alerta_dados")),
             "modo": "ao_vivo",
             "incerteza": _uncertainty(resultado),
+            **contract_analysis.package_identity(PACOTE_PADRAO, package),
+        },
+    }
+
+
+# ---------- Laboratório ----------
+
+@app.post("/contracts/{contrato_id}/scenario", response_model=ScenarioResult)
+def contract_scenario(contrato_id: str, changes: ScenarioChanges):
+    """O contrato do banco com os campos trocados, recalculado pelo prever() (o original vem junto).
+
+    Sem trocas: devolve só o original e os campos do formulário (com os limites). Sem plano B:
+    um cenário precisa do modelo ao vivo, então banco ou modelo fora = 503. Fora dos limites = 422."""
+    started = time.perf_counter()
+    try:
+        row = database.load_contract(contrato_id)
+    except database.DatabaseUnavailable as exc:
+        raise HTTPException(status_code=503, detail=f"O Laboratório precisa do banco: {exc}")
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Contrato {contrato_id} não encontrado no banco.")
+    try:
+        package = modelo._pacote()
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail=MODEL_MISSING.format(PACOTE_PADRAO.name))
+    wanted = changes.model_dump(exclude_none=True)
+    problems = scenario.check(wanted, package)
+    if problems:
+        raise HTTPException(status_code=422, detail="; ".join(problems))
+    out = scenario.run(row, wanted, package, prever)
+    return {
+        "contrato_id": out["original"]["contrato_id"],
+        "alteracoes": wanted,
+        **out,
+        "procedencia": {
+            "versao_modelo": out["cenario"].get("versao_modelo") or modelo.VERSAO,
+            "calculado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "tempo_ms": int((time.perf_counter() - started) * 1000),
+            "origem_dados": "banco (emprestimo, cliente, historico_credito) + campos trocados + prever() ao vivo",
+            "fora_do_dominio": bool(out["cenario"].get("alerta_dados")),
+            "modo": "ao_vivo",
+            "incerteza": _uncertainty(out["cenario"]),
             **contract_analysis.package_identity(PACOTE_PADRAO, package),
         },
     }

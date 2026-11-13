@@ -1,92 +1,57 @@
 ---
 name: auditor-painel
-description: Use para construir ou alterar o painel Streamlit do Auditor de Preço Justo — telas de revisão de contrato, auditoria da carteira e registro de decisões, formulário em etapas, blocos visuais, paleta e tipografia, chamada à API e regras do que pode ou não aparecer na tela.
+description: Use para construir ou alterar o painel Streamlit do Auditor de Preço Justo — páginas Home, Contratos da base, Análise do contrato, Laboratório, Auditoria, Registro e Sobre, chamadas à API, estilo, ícones e o que pode ou não aparecer na tela.
 ---
 
 # Painel do analista (Streamlit)
 
-> Leia antes: `regras_negocio/governanca`, `regras_negocio/contratos_dados`, `regras_negocio/api`. Dono: Yasmin. Código: `src/app/main.py` (telas), `src/app/estilo.css` (todo o CSS; o `main.py` só injeta), `src/app/componentes.py` (formatação e HTML, sem Streamlit), `src/app/carteira.py` (leitura e resumo do lote); testes `tests/app/`.
+> Leia antes: `regras_negocio/governanca`, `regras_negocio/contratos_dados`, `regras_negocio/api`. Dono: Yasmin. Código: `src/app/main.py` (páginas e chamadas à API), `src/app/styles.css` (todo o CSS; o `main.py` só injeta), `src/app/components.py` (formatação e HTML, sem Streamlit); testes `tests/app/test_components.py`.
 
 ## Objetivo
 
-Dar ao analista, em uma tela, **o risco, o preço, o porquê e o parecer** de cada contrato, uma visão da carteira e um registro das decisões, sem que o painel calcule ou decida nada.
+Dar ao analista, para cada contrato da base, **o risco, o preço, o porquê, o parecer e um lugar para testar cenários**, mais o panorama da carteira e o registro das decisões, sem que o painel calcule, leia arquivo ou decida nada.
 
 ## Regras
 
-1. O painel **só exibe**: todo número vem da API ou dos arquivos do lote. Nenhum cálculo de juro, PD ou equidade na tela.
-2. Chama `POST {API_URL}/prever` e `POST {API_URL}/parecer`, `API_URL` padrão `http://localhost:8000`, **timeout 30 s** (cobre a busca, o LLM com 20 s e a queda para o template). Erros de conexão, timeout, 422 e 503 viram mensagens amigáveis.
-3. Formatação pelo `componentes.py`: fração → "24,9%", nulo → "—", € com ponto de milhar, todo texto da API passa por `html.escape`. HTML compactado antes do `st.markdown` (linha indentada vira bloco de código no Markdown).
-4. **Nunca** mostrar no resultado de um contrato: gênero, idade, rating ou PD do Bondora. País aparece só no cabeçalho do contrato, nunca como motivo.
-5. A decisão é sempre do analista: três botões, **justificativa obrigatória**, nome do analista obrigatório, nova taxa opcional (só em "Revisar preço").
-6. Estado em `st.session_state`; sidebar recolhida; widgets com chave própria para persistir entre etapas.
+1. O painel **só pede e mostra**. Nenhum cálculo de juro, PD, parcela, situação ou equidade, e nem leitura de `docs/resultados/`: o lote vem da API (`/portfolio/overview`, `/contracts...`). Os filtros vão como parâmetros para a API.
+2. Não importe `src.api`, `src.modelos` nem `genai.src` no painel. Fale com a API só pelas funções da seção 4 do `main.py` (`api_status`, `post_api`, `get_api`, `get_list`) e por `post_decision`. Endereço em `API_URL` (Docker `http://api:8000`; local `http://localhost:8000`); timeout de 30 s para análise e cenário.
+3. Todo erro técnico vira frase em português; nunca JSON cru na tela. Todo texto vindo da API passa por `html.escape`; HTML compactado antes do `st.markdown`.
+4. **Nunca** mostrar na Análise nem no Laboratório: gênero, idade, rating ou PD do Bondora. Gênero e idade só na Auditoria, em números agregados (ou no teste de invariância, sem os valores reais).
+5. **País:** aparece no cabeçalho e em "Dados considerados" (é dado de entrada). Não aparece entre os motivos: o cartão diz que o modelo considera o mercado do contrato (país), que ele fica fora da lista por regra do projeto e que os pesos foram calculados sem ele.
+6. **Procedência e selos honestos:** "Calculado agora pelo modelo" só quando `procedencia.modo == "ao_vivo"`; com `modo == "lote"`, selo "Valores do lote", aviso no topo e a linha "Por que o lote". A incerteza mostra o número de reamostragens; sem bootstrap, diz "PD sem intervalo" e que os ±2 p.p. são margem do juro justo.
+7. **Decisão:** justificativa e nome do analista obrigatórios; nova taxa só em "Revisar preço"; `requisicao_id` novo a cada clique. Banco fora = **"Decisão NÃO registrada"** (erro, não aviso), rascunho em `st.session_state.pending_decisions` e "Tentar gravar de novo" no Registro (mesmo `requisicao_id`). O Registro conta e exporta só o que veio do banco. Nunca mostrar como concluída uma decisão que só existe na memória da tela.
+8. Sem emoji: `components.line_icon()` (SVG) no HTML e `icon=":material/...:"` nos botões.
 
-## Estrutura da página
+## Páginas
 
-- **Navbar fixa** (marca, links Home / Auditoria / Sobre, nome do analista) · **Hero** ("O preço acompanha o risco?") · **Faixa de 3 blocos** (juro justo por fluxo de caixa, modelo explicável, parecer com checagem).
-- **Seção Auditoria:** indicador da API (no ar / sem modelo / fora do ar), campo "Analista responsável" e três abas:
+Menu do topo com botões (não `st.tabs`, porque o painel troca de página sozinho); a página aberta fica em `st.session_state.page` e troca por callback (`go_to`).
 
-### Aba 1 — Revisão de contrato
-
-- Origem: **Novo contrato (formulário)** ou **Caso de exemplo**: os 8 casos reais de `docs/casos_de_teste.json` (reserva: `docs/exemplos_prever.json`), abertos com parecer via `/parecer`.
-- **Formulário em 3 etapas travadas**, com "Confirmo que revisei" por etapa, barra de progresso REVISADO/PENDENTE e resumo do pedido:
-  - uma etapa só abre com todas as anteriores revisadas (🔒 e botão desabilitado); voltar é sempre permitido; "Avançar para …" só com a caixa marcada;
-  - mudar um campo depois de revisado **desmarca** a revisão daquela etapa; desmarcar uma etapa anterior leva de volta à primeira pendente;
-  - 01 Dados pessoais: idade, gênero (0 Masculino · 1 Feminino · 2 Não informado; só auditoria), país (EE/FI/ES), renda mensal (€)
-  - 02 Empréstimo: ID, valor (€), juro cobrado (% a.a.), prazo (3–60 meses), data de concessão (01/01/2009 até hoje; padrão hoje)
-  - 03 Dívidas & histórico: total de dívidas (€); os demais campos seguem "sem informação"
-  - Botão "⚖️ EXECUTAR AUDITORIA DE PREÇO" **desabilitado até as 3 caixas**, com o aviso "Falta revisar: …"; o código também confere antes de chamar a API.
-- **Resultado:**
-  - cabeçalho: contrato, país, data, valor, prazo, etiqueta da situação, chips ("Custo do dinheiro: Euribor da época", "Parecer: análise hipotética pela lei brasileira", versão do modelo, "Caso real da base", "Exemplo ilustrativo" ou "Aberto da carteira");
-  - 4 cartões: risco de inadimplência (PD, IC 95% quando houver, faixa) · juro cobrado · juro justo com margem · situação do preço (cor da situação, pp além da margem);
-  - **régua** "Juro cobrado × juro justo": faixa da margem, marca do justo acima, marca do cobrado abaixo, escala que cresce com juros > 100%; some em revisão manual (aparece um aviso no lugar);
-  - **motivos** (SHAP): barras com o peso relativo, cor pelo efeito, rótulo + valor legível (`valor_legivel`: códigos viram texto, proporções da renda viram "6,1× a renda mensal", parcela vira "12% da renda", euros com ponto de milhar);
-  - **parecer**: resumo, pontos de atenção, recomendação do sistema, fontes em chips (ou "Não encontrei base normativa para este caso."), origem ("Gerado por IA · revise antes de decidir" ou "Template de reserva · sem IA"), versão do texto;
-  - **decisão do analista**; expander "Dados técnicos da consulta" (JSON enviado e recebido).
-
-### Aba 2 — Auditoria da carteira
-
-- Lê `docs/resultados/carteira_auditoria.csv` e `equidade.json` (`contratos_dados`, seção 5); reestruturados fora; país nunca como grupo.
-- Filtros: período, país, faixa. Cartões: contratos auditados (+ revisão manual), % acima, % abaixo, pago a mais (€, soma de `excesso_eur`), perda não coberta (€, soma de `perda_nao_coberta_eur` dos abaixo do justo; só encerrados).
-- Barras empilhadas da situação por faixa; tabela de equidade (diferença, IC 95%, leitura "Sem indício" / "Indício · investigar" e ressalvas); backtest por faixa × situação quando houver `rentabilidade_realizada`.
-- Fila de revisão ordenada pela distância da margem, 50 na tela, exportação CSV completa, "Revisar" abre o contrato na aba 1 com parecer.
-- Sem arquivos: campos entre colchetes (`[N]`, `[X%]`, `€ [VALOR]`) e a lista mostra os contratos auditados na sessão.
-
-### Aba 3 — Registro de decisões
-
-Cartões (decisões, diferentes da recomendação, encaminhadas ao compliance), tabela, exportação CSV e JSON. Campos em `contratos_dados`, seção 6.
-
-- **Sobre o projeto:** texto do bootcamp e cartões da equipe com **iniciais** (sem fotos de banco de imagens).
+- **Home:** hero, faixa explicativa e Panorama da carteira (filtros, cartões, situação por faixa, equidade, backtest).
+- **Contratos da base:** busca única (filtra a cada caractere; escolher ou digitar um ID abre), chips de situação, "Exportar CSV" e lista com **Abrir** por linha.
+- **Análise do contrato** (`GET /contracts/{id}/analysis`): cabeçalho e selos → Procedência → alerta de revisão manual → cartões → régua → Precificação → motivos (SHAP) | parecer com o selo "Simulação normativa pela lei brasileira" → Dados considerados (17 fornecidas × 4 derivadas, com a nota de que o valor total das dívidas só entra na conta de "dívidas em relação à renda") → Resultado observado → decisão. Botão **"Abrir no Laboratório"** (desligado no modo lote).
+- **Laboratório** (`POST /contracts/{id}/scenario`): ao abrir, pede o original e os campos (`{}`); formulário com valor, prazo, renda, valor e número de dívidas, empréstimos anteriores, tempo no emprego e verificação da renda (limites da API: do treino ou provisórios, com a fonte no "?" do campo) e o **juro cobrado à parte** (não é variável do modelo). "Recalcular com o modelo" manda só o que mudou. Mostra **Original × recalculado** (PD, faixa, juro justo, margem, juro cobrado, parcela, situação; o que mudou em dourado) e **O que mudou o risco** (cada campo trocado sozinho). Com erro, nenhum cenário anterior fica na tela. **"Usar como proposta"** (só se o juro mudou) leva o juro para "Nova taxa proposta" na Análise, **sem registrar nada**. "Voltar aos valores do contrato" limpa o formulário.
+- **Auditoria:** equidade agregada (teste de invariância na Etapa 3). **Registro:** contadores, tabela, exportação CSV e JSON, rascunhos pendentes à parte. **Sobre:** equipe e onde cada parte do estudo aparece.
 
 ## Design
 
 | Token | Valor |
 |---|---|
-| Fundo | `#121315` (faixa `#0b0c0e`) |
-| Cartão | gradiente `#1f2025 → #17181c`, borda `rgba(200,154,88,.24)`, raio 16 px |
-| Dourado | `#c89a58` (destaque `#e4bd7d`) |
+| Fundo / cartão | `#121315` / gradiente `#1f2025 → #17181c`, borda dourada translúcida, raio 16 px |
+| Dourado / destaque | `#c89a58` / `#e4bd7d` (também marca o que mudou no Laboratório) |
 | Texto / secundário | `#f0f2f4` / `#9aa5b5` |
-| Botão principal | rosé `#d7b9b8 → #c8a2a0`, texto `#171315` |
-| Acima do justo | `#e8a462` · Abaixo `#c3a6f0` · Dentro `#8cc7a1` · Revisão manual `#9aa5b5` |
-| Aumenta / reduz risco | `#d9825b` / `#7fa7d9` |
 | Fontes | títulos Playfair Display; texto DM Sans |
-| Abas principais (Revisão · Carteira · Registro) | cartões de 104 px, gradiente escuro; aba ativa com gradiente dourado `#c89a58 → #e4bd7d` e texto `#171315` |
-| Etapas do formulário (Dados pessoais · Empréstimo · Dívidas) | abas de texto pequenas, alinhadas à esquerda, sem caixa: cinza `#9aa5b5`, hover só muda a cor, ativa dourada `#e4bd7d` com traço de 2 px `#c89a58`; travada com opacidade 38% |
-| Ícones | nada de emoji: ícones de linha brancos (`componentes.icone()`, SVG) no HTML e Material (`icon=":material/...:"`) nos botões; etapa revisada `check_circle`, travada `lock` |
-
-Tema do Streamlit (`.streamlit/config.toml`): `base="dark"`, `primaryColor="#D4AD70"`, `backgroundColor="#080D16"`, `secondaryBackgroundColor="#101A2A"`, `textColor="#F1F0EB"`, `headless=true`, `gatherUsageStats=false`.
+| Selos da Análise | "Calculado agora" fundo `#c89a58` · "Valores do lote" fundo `#f2b48a`, texto `#121315` |
+| Situações | acima `#e8a462` · abaixo `#c3a6f0` · dentro `#8cc7a1` · revisão manual `#9aa5b5` |
+| Motivos e efeitos | aumenta risco `#d9825b` · reduz `#7fa7d9` |
 
 ## Pronto quando
 
-- `pytest tests/app -v` passa (formatação, régua, motivos, parecer com escape, equidade, leitura e resumo da carteira).
-- No navegador: as 4 situações abrem pelos exemplos sem erro; revisão manual mostra aviso sem quebrar; uma decisão é registrada e exportada; a aba da carteira funciona com e sem arquivos.
+- `pytest tests/app -v` passa.
+- No navegador: abrir um contrato pela busca e outro pela lista; conferir procedência, precificação, motivos, dados considerados e resultado observado; desligar o banco e ver o plano B ("Por que o lote"); abrir um contrato em revisão manual; no Laboratório, mudar só o juro (PD e juro justo iguais, situação e parcela mudam) e depois o prazo (o modelo recalcula a PD); "Usar como proposta" preenche a taxa na Análise; registrar uma decisão e vê-la no Registro; com o banco fora, a decisão aparece como não registrada.
 
-## Estado em 06/11/2026 e pendências
+## Estado em 13/11/2026
 
-- **[PRONTO]** as três abas, formulário, casos reais, valores legíveis dos motivos, decisão na sessão.
-- **[A CONFIRMAR] (Marcos)** rótulos dos códigos de escolaridade, moradia e verificação (`CODIGOS` em `componentes.py`, tirados do dicionário do Bondora).
-- **[PRONTO] (09/11)** "a.a. nominal" ao lado dos juros; mediana dos pares ao lado do juro justo; `contexto_mercado` do BC no parecer; decisões gravadas no banco com "Decisão atual" na fila; dados reais da carteira.
-
-## Estado em 10/11/2026
-
-- **[PRONTO]** emojis trocados por ícones brancos; CSS separado em `estilo.css`; abas principais como cartões e etapas como abas de texto pequenas; etapas travadas e execução só com as 3 confirmações.
-- **[DECIDIDO]** sem tela de login: o sistema roda no PC de cada pessoa e o nome do analista é digitado (obrigatório para decidir). Login só faria sentido com o site publicado.
+- **[EM ANDAMENTO] (Yasmin)** Etapas 1 e 2 implementadas, com simulação do painel e testes locais; **não concluídas** até a conferência com o pacote oficial (`scripts/conferir_analise.py` 20/20).
+- **[DECIDIDO]** sem formulário de contrato novo e sem "caso de exemplo": o analista trabalha com contratos da base. Sem tela de login; o nome do analista é digitado.
+- **[PENDENTE] (Yasmin)** Etapa 3: teste de invariância na Auditoria.
+- **[A CONFIRMAR] (Marcos)** rótulos dos códigos de escolaridade, moradia e verificação (`CODE_LABELS` em `components.py`, do dicionário do Bondora).

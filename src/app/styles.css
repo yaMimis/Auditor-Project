@@ -219,3 +219,8 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .st-key-contract_list [data-testid="stHorizontalBlock"] { border-bottom: 1px solid rgba(255,255,255,.05); padding: .15rem 0; }
 .st-key-contract_list [data-testid="stButton"] button { min-height: 34px; padding: .1rem .6rem; }
 
+/* Laboratório */
+.ap-lab-table td:nth-child(2), .ap-lab-table td:nth-child(3) { text-align: right; }
+.ap-lab-table th:nth-child(2), .ap-lab-table th:nth-child(3) { text-align: right; }
+.ap-lab-table td.ap-changed { color: #e4bd7d; font-weight: 700; }
+.ap-lab-effects { margin: .4rem 0 0; padding-left: 1.1rem; color: #e8e5df; font-size: .88rem; line-height: 1.7; }

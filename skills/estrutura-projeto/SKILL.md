@@ -53,16 +53,18 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
 │   ├── dados/01_eda.ipynb
 │   └── modelos/01_coortes … 10_bootstrap.ipynb   (numerados por etapa)
 ├── src/
-│   ├── api/       main.py (FastAPI), schemas.py (pydantic)
-│   ├── app/       main.py (tela Streamlit), componentes.py (formatação e HTML), carteira.py (leitura do lote)
+│   ├── api/       main.py (rotas), schemas.py (pydantic), database.py (PostgreSQL), contract_analysis.py (tela Análise),
+│   │              scenario.py (Laboratório), portfolio.py (lote da carteira, lido só pela API)
+│   ├── app/       main.py (páginas Streamlit), styles.css (CSS), components.py (formatação e HTML)
 │   ├── dados/     carga_bondora, carga_macro, validacao, relatorio_qualidade, moeda
 │   └── modelos/   dados, variaveis, treino, xgb, prever, incerteza, segmentacao
 ├── modelos_salvos/              pacote_prever_v1.joblib (FORA do Git) + .gitkeep
 ├── infra/                       (reservado)
 ├── skills/                      guia do projeto por setor (este conjunto)
 └── tests/
-    ├── api/       test_api
-    ├── app/       test_componentes, test_carteira
+    ├── api/       test_api, test_contract_analysis, test_scenario, test_portfolio, test_portfolio_routes,
+    │              test_integracao_analise (só com banco, pacote e lote reais)
+    ├── app/       test_components
     ├── dados/     test_validacao, test_relatorio, test_moeda, test_esquema_sql, test_view_retorno, _dados_exemplo.py
     ├── modelos/   test_seguranca, test_contrato_prever, test_xgb, test_segmentacao, test_treino
     └── genai/     test_checagem, test_conferencia, test_regras, test_template, test_prompt

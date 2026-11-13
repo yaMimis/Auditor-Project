@@ -81,5 +81,5 @@ O pacote do modelo guarda a sua própria série Euribor 12m (01/1994–09/2026),
 - **[PRONTO]** carga, validação, relatório, EDA, views 01–04, DATA.md sem itens [A CONFIRMAR].
 - **[EM ANDAMENTO] (Marcos)** tabela das decisões do analista (ver `regras_negocio/api` e `painel`).
 - **[PENDENTE]** atualizar o comentário do `03_view_modelagem.sql` sobre os reestruturados (texto antigo) e a lista de variáveis do DATA.md (o modelo atual tem 21; ver `modelo_risco`).
-- **[A CONFIRMAR]** rótulos dos códigos de `escolaridade`, `tipo_moradia` e `tipo_verificacao`: o painel já usa os do dicionário do Bondora (`CODIGOS` em `src/app/componentes.py`); conferir e registrar no glossário.
+- **[A CONFIRMAR]** rótulos dos códigos de `escolaridade`, `tipo_moradia` e `tipo_verificacao`: o painel já usa os do dicionário do Bondora (`CODE_LABELS` em `src/app/components.py`); conferir e registrar no glossário.
 - **[A DECIDIR]** estender as séries Euribor e BC no banco além de 07/2021 (o modelo já usa a série própria do pacote).

@@ -155,6 +155,63 @@ class ContractAnalysis(BaseModel):
     procedencia: Provenance
 
 
+
+# ---------- Laboratório (POST /contracts/{id}/scenario) ----------
+
+class ScenarioChanges(BaseModel):
+    """Campos trocados no Laboratório (os outros ficam como no banco). Nenhum campo = só o original.
+
+    Gênero, idade, estado civil e dependentes não existem aqui: um campo fora da lista é recusado (422)."""
+    model_config = {"extra": "forbid"}
+
+    valor_concedido: float | None = Field(default=None, gt=0, description="€")
+    prazo_meses: int | None = Field(default=None, ge=1, le=120)
+    renda_total: float | None = Field(default=None, ge=0, description="€ por mês")
+    passivos_total: float | None = Field(default=None, ge=0, description="valor total das dívidas, €")
+    passivos_existentes: int | None = Field(default=None, ge=0, description="número de dívidas em aberto")
+    n_emprestimos_anteriores: int | None = Field(default=None, ge=0)
+    tempo_emprego_atual: str | None = None
+    tipo_verificacao: int | None = None
+    juro_aa: float | None = Field(default=None, gt=0, le=500,
+                                  description="juro cobrado em % a.a. nominal, como no banco (não entra no modelo)")
+
+
+class ScenarioField(BaseModel):
+    campo: str
+    rotulo: str
+    tipo: Literal["numero", "inteiro", "categoria"]
+    valor_atual: Any = None
+    minimo: float | None = None
+    maximo: float | None = None
+    opcoes: list[Any] | None = None
+    limite: Literal["treino", "provisorio", "nenhum"] = Field(
+        description="treino = faixa guardada no pacote do modelo; provisorio = até o Samuel passar a do treino")
+
+
+class ScenarioEffect(BaseModel):
+    """O que um campo, trocado sozinho, fez com a PD (o prever() rodado só com essa troca)."""
+    campo: str
+    rotulo: str
+    valor_original: Any = None
+    valor_novo: Any = None
+    pd_original: float | None = None
+    pd_so_este_campo: float | None = None
+    diferenca_pd: float | None = None
+    efeito: Literal["aumenta", "reduz", "neutro", "revisao_manual", "sem_pd"]
+
+
+class ScenarioResult(BaseModel):
+    contrato_id: str
+    alteracoes: dict[str, Any]
+    original: PredictionResponse
+    cenario: PredictionResponse
+    parcela_original: float | None = Field(default=None, description="€ por mês, no juro cobrado original")
+    parcela_cenario: float | None = Field(default=None, description="€ por mês, no juro cobrado do cenário")
+    efeitos: list[ScenarioEffect]
+    campos: list[ScenarioField]
+    procedencia: Provenance
+
+
 # ---------- Decisão do analista (db/05_decisoes_analista.sql) ----------
 
 AnalystDecision = Literal["manter_preco", "revisar_preco", "encaminhar_compliance"]

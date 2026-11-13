@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from src.app import components
 from src.app.components import (readable_value, compact, margin_distance_pp, eur, html_rate_bar,
                                  html_reasons, html_opinion, html_fairness_table, review_kpis,
                                  fairness_reading, pct, pp)
@@ -143,3 +144,32 @@ def test_margin_label_says_when_there_is_no_bootstrap():
     assert "Incerteza (bootstrap)" in with_ci and "Margem de incerteza" in with_ci
     assert "Incerteza (bootstrap)" not in without_ci and "Margem padrão de ±2 p.p. (sem bootstrap)" in without_ci
     assert "Sem intervalo da PD" in without_ci
+
+
+# ---------- Laboratório
+
+def _lab_result(**changes):
+    base = {"pd": 0.30, "faixa": "A", "juro_justo": 0.22, "juro_justo_min": 0.20, "juro_justo_max": 0.24,
+            "juro_cobrado": 0.3895, "situacao_preco": "acima_do_justo"}
+    return base, {**base, **changes}
+
+
+def test_scenario_table_highlights_only_what_changed():
+    original, scenario = _lab_result(juro_cobrado=0.20, situacao_preco="dentro_da_margem")
+    out = components.html_scenario_table(original, scenario, 132.5, 98.1)
+    assert out.count("ap-changed") == 3  # juro cobrado, parcela e situação; PD e juro justo iguais
+    assert "38,95%" in out and "20,00%" in out and "€ 132,50" in out and "Dentro da margem" in out
+
+
+def test_scenario_effects_read_like_a_sentence():
+    out = components.html_scenario_effects([
+        {"campo": "prazo_meses", "rotulo": "prazo do empréstimo", "valor_original": 60, "valor_novo": 36,
+         "pd_original": 0.30, "pd_so_este_campo": 0.204, "efeito": "reduz"},
+        {"campo": "tempo_emprego_atual", "rotulo": "tempo no emprego atual", "valor_original": "UpTo1Year",
+         "valor_novo": "MoreThan5Years", "pd_original": 0.30, "pd_so_este_campo": 0.30, "efeito": "neutro"}])
+    assert "60 meses → 36 meses" in out and "reduz o risco" in out and "PD 30,0% → 20,4%" in out
+    assert "até 1 ano → mais de 5 anos" in out and "quase não muda o risco" in out
+
+
+def test_scenario_effects_without_model_fields():
+    assert "não é variável do modelo" in components.html_scenario_effects([])

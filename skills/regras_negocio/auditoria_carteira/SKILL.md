@@ -39,11 +39,11 @@ K-Means de perfis (`regras_negocio/modelo_risco`), só para descrever a carteira
 
 ## Pronto quando
 
-- Os dois arquivos existem em `docs/resultados/`, passam nas colunas obrigatórias e abrem no painel (`tests/app/test_carteira.py` cobre a leitura e o resumo).
+- Os dois arquivos existem em `docs/resultados/`, passam nas colunas obrigatórias e são servidos pela API ao painel (`tests/api/test_portfolio.py` cobre a leitura e o resumo; `test_portfolio_routes.py`, as rotas).
 - O backtest e as diferenças de equidade estão registrados no `DECISOES.md` com as ressalvas.
 
 ## Estado em 06/11/2026
 
-- **[PRONTO]** `vw_retorno_realizado` e `test_view_retorno` (Marcos); leitura, filtros, resumo, fila de revisão e backtest no painel (`src/app/carteira.py`).
+- **[PRONTO]** `vw_retorno_realizado` e `test_view_retorno` (Marcos); leitura, filtros, resumo, lista e backtest servidos pela API (`src/api/portfolio.py`, rotas `/portfolio/overview` e `/contracts`).
 - **[EM ANDAMENTO] (Samuel)** `carteira_auditoria.csv` até **08/11** (formato aprovado em 06/11); `equidade.json` e backtest até **09/11**.
 - **[A DECIDIR]** conferir a distribuição acima/dentro/abaixo com a margem de 2016 aplicada à carteira de 2017–2021 (ver `juro_justo`).

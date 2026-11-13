@@ -104,6 +104,13 @@ def tabelas_validas() -> dict[str, pd.DataFrame]:
         "principal_perdido": [max(1000.0 - a, 0.0) for a in recebido_principal],
         "recuperado_eur": [0.0, 150.0, 0.0, 0.0],
     })
+    # todos os contratos de exemplo estão na vw_retorno_realizado, então todos têm desfecho
+    desfecho = retorno[["loan_id", "ano", "pais"]].copy()
+    desfecho["tem_desfecho"] = True
+    desfecho["motivo_sem_desfecho"] = None
+    for coluna in ("inadimplente", "valor_concedido", "recebido_total", "resultado_eur",
+                   "retorno_realizado", "principal_perdido", "conjunto", "reestruturado"):
+        desfecho[coluna] = retorno[coluna]
     agora = pd.Timestamp("2026-11-05 14:00", tz="UTC")
     decisoes = pd.DataFrame({
         "decisao_id": [1, 2],
@@ -145,5 +152,6 @@ def tabelas_validas() -> dict[str, pd.DataFrame]:
                                   "situacao_preco"]].reset_index(drop=True)
     return {"emprestimo": e, "cliente": c, "historico_credito": h, "euribor_mensal": euribor,
             "selic_mensal": selic, "bc_credito_pessoal_mensal": bc, "vw_base_modelagem": vw,
-            "vw_retorno_realizado": retorno, "decisao_analista": decisoes,
+            "vw_retorno_realizado": retorno, "vw_desfecho_contrato": desfecho,
+            "decisao_analista": decisoes,
             "vw_decisao_atual": decisao_atual}

@@ -154,6 +154,30 @@ def _retorno_com_contrato_a_menos(t):
     t["vw_retorno_realizado"] = t["vw_retorno_realizado"].iloc[:-1]
 
 
+def _desfecho_com_loan_id_repetido(t):
+    t["vw_desfecho_contrato"].loc[1, "loan_id"] = t["vw_desfecho_contrato"].loc[0, "loan_id"]
+
+
+def _desfecho_com_contrato_a_menos(t):
+    t["vw_desfecho_contrato"] = t["vw_desfecho_contrato"].iloc[:-1]
+
+
+def _sem_desfecho_mas_com_inadimplente(t):
+    d = t["vw_desfecho_contrato"]
+    d.loc[0, "tem_desfecho"] = False
+    d.loc[0, "motivo_sem_desfecho"] = "concedido depois de 2016"
+
+
+def _com_desfecho_e_com_motivo(t):
+    t["vw_desfecho_contrato"].loc[0, "motivo_sem_desfecho"] = "concedido depois de 2016"
+
+
+def _motivo_fora_do_combinado(t):
+    d = t["vw_desfecho_contrato"]
+    d.loc[0, "tem_desfecho"] = False
+    d.loc[0, "motivo_sem_desfecho"] = "sem dados"
+
+
 CASOS = [
     ("loan_id duplicado", _loan_id_duplicado, "emprestimo", "loan_id"),
     ("idade negativa", _idade_negativa, "cliente", "idade"),
@@ -195,6 +219,16 @@ CASOS = [
      "recuperado_eur <= recebido_total"),
     ("view de retorno com contrato a menos", _retorno_com_contrato_a_menos, "(cruzamento)",
      "vw_retorno_realizado com contratos diferentes"),
+    ("desfecho com loan_id repetido", _desfecho_com_loan_id_repetido, "vw_desfecho_contrato", "loan_id"),
+    ("desfecho com contrato a menos", _desfecho_com_contrato_a_menos, "(cruzamento)",
+     "vw_desfecho_contrato com contratos diferentes de emprestimo"),
+    ("sem desfecho mas com inadimplente", _sem_desfecho_mas_com_inadimplente, "vw_desfecho_contrato",
+     "inadimplente so preenchido quando ha desfecho"),
+    ("sem desfecho fora da vw_retorno_realizado", _sem_desfecho_mas_com_inadimplente, "(cruzamento)",
+     "contratos com desfecho diferentes da vw_retorno_realizado"),
+    ("com desfecho e com motivo", _com_desfecho_e_com_motivo, "vw_desfecho_contrato",
+     "motivo_sem_desfecho vazio so quando ha desfecho"),
+    ("motivo fora do combinado", _motivo_fora_do_combinado, "vw_desfecho_contrato", "motivo_sem_desfecho"),
 ]
 
 
@@ -207,6 +241,26 @@ def test_cada_regra_de_erro_pega_o_problema():
         if not _achou(res, tabela, trecho):
             nao_pegou.append(nome)
     assert not nao_pegou, f"regras que não pegaram o problema: {nao_pegou}"
+
+
+def test_contrato_sem_desfecho_bem_formado_passa():
+    """Contrato fora da vw_retorno_realizado: sem desfecho, com motivo e colunas do desfecho vazias."""
+    t = tabelas_validas()
+    t["vw_retorno_realizado"] = t["vw_retorno_realizado"].iloc[:-1]
+    t["vw_base_modelagem"] = t["vw_base_modelagem"].iloc[:-1]
+    d = t["vw_desfecho_contrato"]
+    d.loc[3, "tem_desfecho"] = False
+    # como o banco devolve: números com vazio viram float; texto e booleano com vazio viram object
+    for coluna in ("inadimplente", "valor_concedido", "recebido_total", "resultado_eur",
+                   "retorno_realizado", "principal_perdido"):
+        d[coluna] = d[coluna].astype(float)
+        d.loc[3, coluna] = float("nan")
+    for coluna in ("motivo_sem_desfecho", "conjunto", "reestruturado"):
+        d[coluna] = d[coluna].astype(object)
+        d.loc[3, coluna] = None
+    d.loc[3, "motivo_sem_desfecho"] = "não encerrado até o corte de 20/07/2021"
+    res = _erros(validar_tabelas(t, parcial=True))
+    assert res.empty, res.to_string()
 
 
 # --- comportamento geral ------------------------------------------------------------------

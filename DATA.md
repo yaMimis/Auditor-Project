@@ -215,3 +215,25 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **Primeira leitura** (2009–2016, encerrados, sem a Eslováquia): 73,0 mi € concedidos e resultado de −0,01 mi €. Por país: Estônia +6,05 mi € (+15%), Espanha −3,89 mi € (−31%) e Finlândia −2,17 mi € (−11%). Por safra, o retorno cai de +28% (2013) para −13% (2016). Reestruturados: +1,34 mi €; os demais: −1,35 mi €.
 - **Limites:** não desconta o tempo; só vale para contratos encerrados (as safras de 2015 e 2016 podem ter recuperações ainda por chegar); não existe para 2017–2021.
 - **Uso:** `perda_nao_coberta_eur` e `rentabilidade_realizada` do `carteira_auditoria.csv` do painel vêm desta view (`src/app/carteira.py`). Figura 7 do EDA (`notebooks/dados/01_eda.ipynb`).
+
+### Desfecho por contrato (`vw_desfecho_contrato`)
+
+- **O que é:** a view `vw_desfecho_contrato` (`db/06_view_desfecho_contrato.sql`), com **uma linha para cada contrato de `emprestimo`** (179.235). Serve à tela "Análise do contrato": mostra o que aconteceu com o contrato ou, quando não há desfecho, por quê.
+- **Colunas:** `loan_id`, `ano`, `pais`, `tem_desfecho`, `motivo_sem_desfecho` e, da `vw_retorno_realizado` (por `LEFT JOIN`, vazias sem desfecho): `inadimplente`, `valor_concedido`, `recebido_total`, `resultado_eur`, `retorno_realizado`, `principal_perdido`, `conjunto` e `reestruturado`. Sem gênero, idade, estado civil e dependentes.
+- **Quem tem desfecho:** os contratos da `vw_retorno_realizado` (29.916). Os demais recebem um motivo, testado na mesma ordem dos filtros da `vw_base_modelagem` (seção 4):
+
+  | Motivo (`motivo_sem_desfecho`) | Regra | Contratos |
+  | --- | --- | --- |
+  | `concedido depois de 2016` | `data_emprestimo` depois de 31/12/2016 | 147.978 |
+  | `Eslováquia (fora da base)` | `pais = 'SK'` | 296 |
+  | `não encerrado até o corte de 20/07/2021` | nem `Repaid` nem `data_default` | 1.045 |
+  | *(vazio: tem desfecho)* | está na `vw_retorno_realizado` | 29.916 |
+
+- **Consulta da API** (o `loan_id` fica em minúsculas: normalizar com `.strip().lower()` antes):
+
+  ```sql
+  SELECT * FROM vw_desfecho_contrato WHERE loan_id = %s;
+  ```
+
+- **Conferência:** a soma de `resultado_eur` é a mesma da `vw_retorno_realizado` (−5.599,99 €, cerca de −0,01 mi €). A `src/dados/validacao.py` confere `loan_id` único, os mesmos contratos de `emprestimo`, desfecho exatamente nos contratos da `vw_retorno_realizado`, motivo preenchido só sem desfecho e `inadimplente` preenchido só com desfecho. O `tests/dados/test_desfecho_sql.py` amarra os textos dos motivos e os filtros ao `db/03` e ao código.
+- **Como aplicar:** em banco já existente, aplique `db/06_view_desfecho_contrato.sql` à mão (comandos no cabeçalho do arquivo).

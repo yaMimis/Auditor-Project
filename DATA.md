@@ -229,7 +229,7 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
   | `não encerrado até o corte de 20/07/2021` | nem `Repaid` nem `data_default` | 1.045 |
   | *(vazio: tem desfecho)* | está na `vw_retorno_realizado` | 29.916 |
 
-- **Consulta da API** (o `loan_id` fica em minúsculas: normalizar com `.strip().lower()` antes):
+- **Consulta da API** (o `loan_id` fica em minúsculas: normalizar o ID digitado com `.strip().lower()` no Python, nunca `lower(loan_id)` na coluna, que desliga o índice). Depois da busca, o `loan_id` que voltou do banco vira o `contrato_id` em todo o fluxo (prever, parecer, taxa do BC e decisão); as simulações mantêm o nome digitado (combinado com o Samuel e a Yasmin; ver a seção 13):
 
   ```sql
   SELECT * FROM vw_desfecho_contrato WHERE loan_id = %s;

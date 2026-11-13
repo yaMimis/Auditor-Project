@@ -18,7 +18,7 @@ from src.modelos.xgb import motivos
 
 RAIZ = Path(__file__).resolve().parents[2]
 PACOTE_PADRAO = RAIZ / "modelos_salvos" / "pacote_prever_v1.joblib"
-VERSAO = "xgboost_v2"
+VERSAO = "xgboost_v3"  # retreino de 05/11 (21 variáveis) + bootstrap de 08/11
 
 FAIXAS = [(0.30, "A"), (0.45, "B"), (0.60, "C"), (0.75, "D"), (1.01, "E")]
 LGD_PADRAO = 0.60      

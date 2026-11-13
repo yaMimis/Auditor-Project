@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.app.carteira import OBRIGATORIAS, carregar_carteira, resumo
+from src.api.portfolio import REQUIRED_COLUMNS, load_portfolio, summarize
 from src.modelos.carteira import juro_justo_vetor, pontuar_lote, selecionar
 from src.modelos.prever import juro_justo, montar_pacote, prever
 from src.modelos.variaveis import criar_variaveis
@@ -65,9 +65,9 @@ def test_colunas_e_regras(pacote, carteira, tmp_path):
     assert (lote["perda_nao_coberta_eur"].dropna() >= 0).all()
 
     lote.to_csv(tmp_path / "carteira_auditoria.csv", index=False)
-    df = carregar_carteira(tmp_path)
-    assert set(OBRIGATORIAS) <= set(df.columns)
-    assert resumo(df)["auditados"] > 0
+    df = load_portfolio(tmp_path)
+    assert set(REQUIRED_COLUMNS) <= set(df.columns)
+    assert summarize(df)["auditados"] > 0
 
 
 def test_selecionar():

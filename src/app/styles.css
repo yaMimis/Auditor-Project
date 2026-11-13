@@ -32,10 +32,16 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
     background: transparent !important; box-shadow: none !important;
     border-bottom: 2px solid transparent !important;
 }
-.st-key-top_nav [data-testid="stButton"] button p { color: #c9ccd2 !important; font-size: .86rem !important; font-weight: 500 !important; white-space: nowrap; }
+.st-key-top_nav [data-testid="stButton"] button p { color: var(--text-light) !important; font-size: .9rem !important; font-weight: 500 !important; white-space: nowrap; }
 .st-key-top_nav [data-testid="stButton"] button:hover p { color: var(--gold-light) !important; }
+/* página aberta: fundo escuro levemente dourado, texto dourado e traço embaixo. Mais específico que a
+   regra geral dos botões principais (gradiente dourado), que deixava texto dourado sobre fundo dourado. */
 .st-key-top_nav [data-testid="stButton"] button[kind="primary"],
-.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"] { border-bottom: 2px solid var(--gold) !important; }
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"],
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover {
+    background: rgba(200, 154, 88, 0.12) !important; border-bottom: 2px solid var(--gold) !important;
+    border-radius: 6px 6px 0 0 !important;
+}
 .st-key-top_nav [data-testid="stButton"] button[kind="primary"] p,
 .st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"] p { color: var(--gold-light) !important; font-weight: 700 !important; }
 .st-key-top_nav [data-testid="stTextInput"] input { min-height: 36px; font-size: .85rem; }
@@ -224,3 +230,8 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-lab-table th:nth-child(2), .ap-lab-table th:nth-child(3) { text-align: right; }
 .ap-lab-table td.ap-changed { color: #e4bd7d; font-weight: 700; }
 .ap-lab-effects { margin: .4rem 0 0; padding-left: 1.1rem; color: #e8e5df; font-size: .88rem; line-height: 1.7; }
+
+/* Botão "Abrir no Laboratório" alinhado à direita, na mesma linha de "Voltar para a lista" */
+.st-key-lab_button_area { align-items: flex-end !important; }
+.st-key-lab_button_area [data-testid="stElementContainer"] { width: 100% !important; }
+.st-key-lab_button_area [data-testid="stButton"] { width: 100%; display: flex; justify-content: flex-end; }

@@ -200,3 +200,31 @@ def test_without_bootstrap_provenance_says_standard_margin(client, monkeypatch):
     monkeypatch.setattr(api, "prever", lambda row, package=None: {**_prediction(row), "pd_ic95": None})
     body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
     assert body["procedencia"]["incerteza"] == "margem_padrao"
+
+
+OPINION_FIELDS = ["contrato_id", "versao_modelo", "juro_cobrado", "situacao_preco", "pd", "faixa", "juro_justo",
+                  "juro_justo_min", "juro_justo_max", "motivos", "alerta_dados", "bc_credito_pessoal_aa"]
+
+
+def test_result_keeps_the_names_the_opinion_reads(client, monkeypatch):
+    """Combinado com o Samuel e a Maria (13/11): o resultado é a saída do prever() com os mesmos nomes,
+    mais bc_credito_pessoal_aa; se um nome mudar, o parecer cai em revisão manual sem erro."""
+    from genai.src.checagem import EntradaPrever
+    monkeypatch.setattr(api.database, "bc_rate", lambda *a, **k: 101.94)
+    r = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["resultado"]
+    assert all(field in r for field in OPINION_FIELDS)
+    assert r["bc_credito_pessoal_aa"] == 101.94
+    assert {"variavel", "rotulo", "efeito"} <= set(r["motivos"][0])
+    entrada = EntradaPrever.model_validate(r)
+    assert not entrada.vai_para_revisao_manual and r["parecer_ia"]["origem"] == "template"
+
+
+def test_batch_mode_also_keeps_the_names(client, monkeypatch):
+    from genai.src.checagem import EntradaPrever
+    _database_down(monkeypatch)
+    manual = {**BATCH_ROW, "faixa": None, "pd": None, "juro_justo": None, "juro_justo_min": None,
+              "juro_justo_max": None, "situacao_preco": "revisao_manual", "versao_modelo": None}
+    _with_batch(monkeypatch, [manual])
+    r = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["resultado"]
+    assert r["faixa"] is None and r["versao_modelo"] == "lote da carteira"
+    assert EntradaPrever.model_validate(r).vai_para_revisao_manual

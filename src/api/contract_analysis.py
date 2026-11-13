@@ -83,11 +83,14 @@ def batch_result(row: dict) -> dict:
     def num(key):
         value = row.get(key)
         return None if value is None or pd.isna(value) else float(value)
+    def text(key):
+        value = row.get(key)
+        return None if value is None or (isinstance(value, float) and pd.isna(value)) or value == "" else str(value)
     ic = (num("pd_ic95_min"), num("pd_ic95_max"))
-    return {
+    return {  # mesmos nomes da saída do prever(): o parecer (EntradaPrever) lê exatamente estes
         "contrato_id": str(row["contrato_id"]),
-        "versao_modelo": str(row.get("versao_modelo") or "lote da carteira"),
-        "pd": num("pd"), "faixa": row.get("faixa") or None,
+        "versao_modelo": text("versao_modelo") or "lote da carteira",
+        "pd": num("pd"), "faixa": text("faixa"),
         "juro_cobrado": float(row["juro_cobrado"]), "juro_justo": num("juro_justo"),
         "juro_justo_min": num("juro_justo_min"), "juro_justo_max": num("juro_justo_max"),
         "situacao_preco": row["situacao_preco"], "motivos": [],

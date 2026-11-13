@@ -215,3 +215,20 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **Primeira leitura** (2009–2016, encerrados, sem a Eslováquia): 73,0 mi € concedidos e resultado de −0,01 mi €. Por país: Estônia +6,05 mi € (+15%), Espanha −3,89 mi € (−31%) e Finlândia −2,17 mi € (−11%). Por safra, o retorno cai de +28% (2013) para −13% (2016). Reestruturados: +1,34 mi €; os demais: −1,35 mi €.
 - **Limites:** não desconta o tempo; só vale para contratos encerrados (as safras de 2015 e 2016 podem ter recuperações ainda por chegar); não existe para 2017–2021.
 - **Uso:** `perda_nao_coberta_eur` e `rentabilidade_realizada` do `carteira_auditoria.csv` do painel vêm desta view (`src/app/carteira.py`). Figura 7 do EDA (`notebooks/dados/01_eda.ipynb`).
+
+### ROI do backtest de 2016 (provisório, modelo `xgboost_v2`)
+
+- **Fonte:** `docs/resultados/carteira_auditoria.csv` do Samuel (gerado em 08/11 com o `xgboost_v2`), conferido contra a `vw_retorno_realizado`: mesmos 9.905 contratos de 2016 encerrados, rentabilidade igual até o arredondamento (0,00005) e mesma perda não coberta. Script: `python src/dados/roi_backtest.py` (com `--dsn`, também o recorte "só teste"); teste: `tests/dados/test_roi_backtest.py`.
+- **Conta:** sem reestruturados (como na auditoria de preço); ROI = resultado em euros ÷ valor concedido, somados por grupo (ponderado pelo valor).
+- **2016, só teste (clientes novos; 5.512 contratos):**
+
+  | Situação | Contratos | Concedido | ROI | Perda não coberta |
+  | --- | --- | --- | --- | --- |
+  | Abaixo do justo | 1.954 | 5,46 mi € | −14,4% | 1,54 mi € |
+  | Dentro da margem | 889 | 2,08 mi € | −20,3% | 0,72 mi € |
+  | Acima do justo | 2.521 | 5,07 mi € | −25,5% | 2,11 mi € |
+  | Revisão manual | 148 | 1,24 mi € | −26,6% | 0,51 mi € |
+  | **Total** | **5.512** | **13,85 mi €** | **−20,5%** | **4,88 mi €** |
+
+- **Leitura:** no agregado, o "abaixo do justo" **perdeu menos** que o "acima do justo", o contrário do que a auditoria espera. Dentro da faixa de risco, a hipótese vale nas faixas A, B e C (o "abaixo" rende menos que o "acima") e falha nas faixas D e E, onde o "acima do justo" teve o pior retorno (−54,2% na E). Com todo o 2016 encerrado (7.141 contratos, incluindo clientes que já estavam no treino), vale só nas faixas B e C.
+- **Limites:** depende do modelo que gerou o CSV; regerar com o `.joblib` oficial (`xgboost_v3`) antes de citar nos slides. Não desconta o tempo. A parte de 2017–2021 (`excesso_eur`) espera a repontuação do Samuel (seção 12).

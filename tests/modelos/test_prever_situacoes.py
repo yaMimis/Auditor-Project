@@ -70,3 +70,17 @@ def test_sem_bootstrap_volta_para_2pp(pacote, contrato):
     assert s["pd_ic95"] is None
     assert s["juro_justo_max"] - s["juro_justo"] == pytest.approx(0.02, abs=1e-4)
     validar_saida_prever(s)
+
+
+def test_aceita_linha_do_banco(pacote, contrato):
+    """psycopg2 devolve NUMERIC como Decimal e DATE como datetime.date."""
+    import datetime as dt
+    from decimal import Decimal
+    linha = {k: Decimal(str(v)) if isinstance(v, float) and not np.isnan(v) else v
+             for k, v in contrato.items()}
+    linha.update(data_emprestimo=dt.date(2019, 5, 10), juro_aa=Decimal("30.0000"),
+                 status="Current", data_default=None, cliente_id="X")
+    saida = prever(linha, pacote)
+    validar_saida_prever(saida)
+    assert saida["pd"] == prever(contrato, pacote)["pd"]
+    assert saida["juro_justo"] == prever(contrato, pacote)["juro_justo"]

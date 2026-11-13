@@ -59,6 +59,7 @@ def fakes(monkeypatch):
     monkeypatch.setattr(api.database, "observed_outcome", lambda cid: dict(OUTCOME))
     monkeypatch.setattr(api.modelo, "_pacote", lambda *a, **k: PACKAGE)
     monkeypatch.setattr(api, "prever", _prediction)
+    monkeypatch.setattr(api.portfolio, "cached_portfolio", lambda *a, **k: None)  # sem lote, salvo se o teste pôr
 
 
 @pytest.fixture
@@ -71,7 +72,7 @@ def test_analysis_runs_model_and_returns_everything(client):
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["resultado"]["pd"] == PD and body["resultado"]["parecer_ia"]["origem"] == "template"
-    assert body["contrato"] == {"pais": "FI", "data_emprestimo": "2016-05-10", "valor_concedido": 5315.0,
+    assert body["contrato"] == {"pais": "FI", "data_emprestimo": "2016-05-10", "ano": 2016, "valor_concedido": 5315.0,
                                 "valor_solicitado": 5315.0, "prazo_meses": 60, "juro_cobrado": 0.3895}
     assert body["procedencia"]["versao_modelo"] == "xgboost_teste"
     assert body["procedencia"]["fora_do_dominio"] is False and body["procedencia"]["tempo_ms"] >= 0
@@ -122,19 +123,77 @@ def test_unknown_contract_is_404(client):
     assert client.get("/contracts/nao-existe/analysis").status_code == 404
 
 
-def test_database_down_is_503(client, monkeypatch):
+def _database_down(monkeypatch):
     def down(cid):
         raise api.database.DatabaseUnavailable("sem banco")
     monkeypatch.setattr(api.database, "load_contract", down)
-    assert client.get(f"/contracts/{ROW['loan_id']}/analysis").status_code == 503
 
 
-def test_missing_model_is_503(client, monkeypatch):
+def _model_missing(monkeypatch):
     def missing(*a, **k):
         raise FileNotFoundError("pacote")
     monkeypatch.setattr(api.modelo, "_pacote", missing)
+
+
+BATCH_ROW = {"contrato_id": ROW["loan_id"], "ano": 2016, "pais": "FI", "faixa": "D", "pd": 0.31,
+             "juro_cobrado": 0.3895, "juro_justo": 0.25, "juro_justo_min": 0.23, "juro_justo_max": 0.27,
+             "situacao_preco": "acima_do_justo", "valor_concedido": 5315.0, "prazo_meses": 60,
+             "pd_ic95_min": 0.28, "pd_ic95_max": 0.34, "versao_modelo": "xgboost_lote"}
+
+
+def _with_batch(monkeypatch, rows=(BATCH_ROW,)):
+    monkeypatch.setattr(api.portfolio, "cached_portfolio", lambda *a, **k: pd.DataFrame(list(rows)))
+
+
+def test_database_down_without_batch_is_503(client, monkeypatch):
+    _database_down(monkeypatch)
+    assert client.get(f"/contracts/{ROW['loan_id']}/analysis").status_code == 503
+
+
+def test_missing_model_without_batch_is_503(client, monkeypatch):
+    _model_missing(monkeypatch)
     r = client.get(f"/contracts/{ROW['loan_id']}/analysis")
     assert r.status_code == 503 and "modelos_salvos" in r.json()["detail"]
+
+
+def _assert_batch_mode(body):
+    """Plano B honesto: marcado como lote, sem horário de cálculo, sem motivos e sem parâmetros."""
+    prov = body["procedencia"]
+    assert prov["modo"] == "lote" and prov["motivo_lote"] and prov["calculado_em"] is None
+    assert "lote" in prov["origem_dados"] and prov.get("pacote_hash") is None
+    r = body["resultado"]
+    assert r["motivos"] == [] and r["pd"] == 0.31 and r["juro_justo_max"] == 0.27 and r["pd_ic95"] == [0.28, 0.34]
+    assert r["parecer_ia"] is not None
+    assert body["precificacao"] is None and body["dados_considerados"] == [] and body["resultado_observado"] is None
+    assert body["contrato"]["ano"] == 2016 and body["contrato"]["data_emprestimo"] is None
+
+
+def test_database_down_falls_back_to_batch(client, monkeypatch):
+    _database_down(monkeypatch)
+    _with_batch(monkeypatch)
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    _assert_batch_mode(body)
+    assert "banco" in body["procedencia"]["motivo_lote"]
+
+
+def test_missing_model_falls_back_to_batch(client, monkeypatch):
+    _model_missing(monkeypatch)
+    _with_batch(monkeypatch)
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    _assert_batch_mode(body)
+    assert "modelos_salvos" in body["procedencia"]["motivo_lote"]
+
+
+def test_contract_only_in_batch_opens_from_batch(client, monkeypatch):
+    other = {**BATCH_ROW, "contrato_id": "so-no-lote"}
+    _with_batch(monkeypatch, [other])
+    _assert_batch_mode(client.get("/contracts/SO-NO-LOTE/analysis").json())
+
+
+def test_live_analysis_is_marked_live(client, monkeypatch):
+    _with_batch(monkeypatch)  # lote presente não muda o caminho normal
+    prov = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["procedencia"]
+    assert prov["modo"] == "ao_vivo" and prov["calculado_em"] and prov["motivo_lote"] is None
 
 
 def test_without_bootstrap_provenance_says_standard_margin(client, monkeypatch):

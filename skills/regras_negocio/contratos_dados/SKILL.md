@@ -2,7 +2,6 @@
 name: auditor-contratos-dados
 description: Use sempre que um formato atravessar frentes no Auditor de Preço Justo — saída do prever(), entrada e saída do parecer, entrada e saída da API, arquivos do lote da carteira e registro de decisões. Define campos, tipos, unidades, nulos e como mudar uma versão.
 ---
-
 # Contratos de dados entre as frentes
 
 > Leia antes: `boas-praticas-python` (unidades e como mudar contrato). Envie **sempre** junto com o setor em que a IA vai trabalhar. Fonte da verdade: modelos pydantic em `genai/src/checagem.py`; documento: `genai/FORMATO_JSON.md` (v1.4, Maria).
@@ -22,7 +21,7 @@ Cada frente trabalha sozinha sabendo **exatamente** o que recebe e o que entrega
 ```json
 {
   "contrato_id": "BO-483449",
-  "versao_modelo": "xgboost_v2",
+  "versao_modelo": "xgboost_v3",
   "pd": 0.184,
   "pd_ic95": null,
   "faixa": "C",
@@ -117,17 +116,17 @@ class Parecer(RespostaLLM):         # o que gerar_parecer() devolve à tela
 
 **Entrada `SolicitacaoEmprestimo`** (nomes do formulário, convertidos na API):
 
-| Campo | Tipo | Vira no `prever()` |
-|---|---|---|
-| `loan_id` | str | `loan_id` |
-| `amount` | float > 0, € | `valor_concedido` |
-| `income_total` | float ≥ 0, € mensal | `renda_total` |
-| `loan_duration` | int 1–120 | `prazo_meses` |
-| `country` | "EE" ou "EE(Estônia)" → só a sigla | `pais` |
-| `interest_cobrado` | float 0–500, **em %** | `juro_aa` |
-| `liabilities_total` | float ≥ 0 ou null, € | `passivos_total` |
-| `data_emprestimo` | data; padrão **hoje**; nunca no futuro | `data_emprestimo` (ISO) |
-| `gender`, `age` | int ou null | **não** vão ao `prever()` (só registro de auditoria) |
+| Campo                 | Tipo                                          | Vira no `prever()`                                            |
+| --------------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| `loan_id`           | str                                           | `loan_id`                                                     |
+| `amount`            | float > 0, €                                 | `valor_concedido`                                             |
+| `income_total`      | float ≥ 0, € mensal                         | `renda_total`                                                 |
+| `loan_duration`     | int 1–120                                    | `prazo_meses`                                                 |
+| `country`           | "EE" ou "EE(Estônia)" → só a sigla         | `pais`                                                        |
+| `interest_cobrado`  | float 0–500, **em %**                  | `juro_aa`                                                     |
+| `liabilities_total` | float ≥ 0 ou null, €                        | `passivos_total`                                              |
+| `data_emprestimo`   | data; padrão **hoje**; nunca no futuro | `data_emprestimo` (ISO)                                       |
+| `gender`, `age`   | int ou null                                   | **não** vão ao `prever()` (só registro de auditoria) |
 
 O dicionário enviado ao `prever()` **precisa conter** também, com `None`: `passivos_existentes`, `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `novo_cliente`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `tipo_verificacao` (faltar a chave quebra o `prever()`).
 
@@ -136,6 +135,7 @@ O dicionário enviado ao `prever()` **precisa conter** também, com `None`: `pas
 ## 5. Arquivos do lote da carteira (Samuel → painel), em `docs/resultados/`
 
 **`carteira_auditoria.csv`** — uma linha por contrato pontuado (juros em fração):
+
 - obrigatórias: `contrato_id`, `ano`, `pais`, `pd`, `faixa`, `juro_cobrado`, `juro_justo`, `juro_justo_min`, `juro_justo_max`, `situacao_preco`
 - opcionais: `valor_concedido`, `prazo_meses`, `fora_da_auditoria`, `versao_modelo` e os valores calculados pelo Samuel:
   - `excesso_eur`: **só `acima_do_justo`**; `prazo × (parcela no juro cobrado − parcela no juro_justo_max)`, com i/12: o que o cliente paga acima do teto da margem se pagar até o fim;
@@ -144,10 +144,12 @@ O dicionário enviado ao `prever()` **precisa conter** também, com `None`: `pas
 - Contratos: 2016 (teste) e 2017–2021, pontuados pelo `prever()`. **Formato aprovado pelo Samuel em 06/11.**
 
 **`equidade.json`** — só gênero e idade (país nunca):
+
 ```json
 [{"atributo": "Gênero", "comparacao": "feminino × masculino (dentro do país)",
   "diferenca_pp": 0.4, "ic95_min": -0.1, "ic95_max": 0.9, "n_grupo_a": 5100, "n_grupo_b": 6200}]
 ```
+
 Leitura: IC 95% que cruza o zero = "Sem indício"; que não cruza = "Indício · investigar".
 
 ## 6. Registro de decisão do analista (painel → banco)

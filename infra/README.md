@@ -122,6 +122,21 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
     ```
     O `scp` espera os arquivos em `modelos_salvos/` e `data/raw/` com os nomes do projeto. Se algum nome for diferente no seu computador, ajuste o comando. O `completar.sh` termina mostrando a resposta da API, com `"modelo_carregavel": true`.
 15. Testar no navegador: `terraform -chdir=infra output painel_url` deve abrir o painel e rodar uma auditoria pelo formulário, e `api_url` deve abrir a documentação da API.
+    - **Abrir um contrato pela busca.** No painel, buscar cada ID abaixo e abrir a tela "Análise do contrato". Os números do contrato (PD, faixa, juro justo e situação do preço) são calculados na hora.
+
+      | Caso | `loan_id` | O que deve aparecer |
+      | --- | --- | --- |
+      | 2016, inadimplente | `0010881b-6ca8-43c1-a2cc-a6c000e3159f` (Espanha) | Desfecho: inadimplente, resultado de −1.590,00 € e principal perdido de 1.590,00 € |
+      | 2016, quitado | `00334763-1d1c-4634-b3a9-a6db00f30214` (Finlândia) | Desfecho: quitado, resultado de +680,03 € e nada de principal perdido |
+      | 2019, sem desfecho | `00011ef9-b8c8-4ecc-b28d-aaa000ec5469` (Espanha) | "Sem desfecho", com o motivo "concedido depois de 2016" |
+
+      Os IDs saem da `vw_desfecho_contrato` (`db/06`) e são sempre os mesmos (`ORDER BY loan_id`; os de 2016 são do teste e não reestruturados):
+      ```sql
+      SELECT loan_id FROM vw_desfecho_contrato
+      WHERE ano = 2016 AND inadimplente = 1 AND conjunto = 'teste' AND NOT reestruturado ORDER BY loan_id LIMIT 1;  -- quitado: inadimplente = 0
+      SELECT loan_id FROM vw_desfecho_contrato WHERE ano = 2019 AND NOT tem_desfecho ORDER BY loan_id LIMIT 1;
+      ```
+      Pré-requisito: o banco da VM precisa ter os contratos do Bondora e a `vw_desfecho_contrato`. Se a busca não achar nenhum dos três IDs, confira com `sudo docker exec auditor_postgres psql -U postgres -d auditor_db -c "SELECT COUNT(*) FROM vw_desfecho_contrato"` dentro da VM (esperado: 179.235).
 
 ### Desligar e entregar
 

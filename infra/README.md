@@ -136,7 +136,9 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
       WHERE ano = 2016 AND inadimplente = 1 AND conjunto = 'teste' AND NOT reestruturado ORDER BY loan_id LIMIT 1;  -- quitado: inadimplente = 0
       SELECT loan_id FROM vw_desfecho_contrato WHERE ano = 2019 AND NOT tem_desfecho ORDER BY loan_id LIMIT 1;
       ```
-      Pré-requisito: o banco da VM precisa ter os contratos do Bondora e a `vw_desfecho_contrato`. Se a busca não achar nenhum dos três IDs, confira com `sudo docker exec auditor_postgres psql -U postgres -d auditor_db -c "SELECT COUNT(*) FROM vw_desfecho_contrato"` dentro da VM (esperado: 179.235).
+      Busca em maiúsculas: buscar `0010881B-6CA8-43C1-A2CC-A6C000E3159F` (o primeiro ID em maiúsculas, com um espaço no fim) deve abrir **o mesmo contrato**. Registrar uma decisão nele: na aba "Auditoria da carteira", a fila deve mostrar o contrato como já decidido (o `contrato_id` gravado é o `loan_id` do banco, em minúsculas; `db/07`).
+
+      Pré-requisito: o banco da VM precisa ter os contratos do Bondora, a `vw_desfecho_contrato` (`db/06`) e o gatilho do `db/07`. Se a busca não achar nenhum dos três IDs, confira com `sudo docker exec auditor_postgres psql -U postgres -d auditor_db -c "SELECT COUNT(*) FROM vw_desfecho_contrato"` dentro da VM (esperado: 179.235).
 
 ### Desligar e entregar
 

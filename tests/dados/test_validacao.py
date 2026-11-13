@@ -125,6 +125,10 @@ def _simulacao_com_contrato_da_carteira(t):
     t["decisao_analista"].loc[1, "contrato_id"] = t["emprestimo"].loc[1, "loan_id"]
 
 
+def _simulacao_com_contrato_da_carteira_em_maiusculas(t):
+    t["decisao_analista"].loc[1, "contrato_id"] = " " + t["emprestimo"].loc[1, "loan_id"].upper() + " "
+
+
 def _view_da_decisao_atual_repetida(t):
     v = t["vw_decisao_atual"]
     t["vw_decisao_atual"] = pd.concat([v, v], ignore_index=True)
@@ -207,6 +211,8 @@ CASOS = [
      "contrato 'carteira' que nao existe"),
     ("simulação com contrato que existe na carteira", _simulacao_com_contrato_da_carteira, "(cruzamento)",
      "contrato 'simulacao' que existe"),
+    ("simulação com contrato da carteira em maiúsculas", _simulacao_com_contrato_da_carteira_em_maiusculas,
+     "(cruzamento)", "contrato 'simulacao' que existe"),
     ("decisão atual repetida na view", _view_da_decisao_atual_repetida, "vw_decisao_atual", "contrato_id"),
     ("decisão registrada no futuro", _decisao_registrada_no_futuro, "decisao_analista",
      "registrada_em nao esta no futuro"),

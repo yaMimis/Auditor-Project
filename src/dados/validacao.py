@@ -539,8 +539,10 @@ def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
         fora = cart.loc[~cart["contrato_id"].isin(ids_carteira), "contrato_id"]
         erro("decisao_analista: contrato 'carteira' que nao existe em emprestimo", len(fora),
              ", ".join(map(str, fora.head(3))))
+        # compara o ID normalizado: uma decisão da carteira digitada em maiúsculas ou com espaços
+        # ficaria como 'simulacao' e sumiria da fila (o db/07 impede isso no banco)
         erro("decisao_analista: contrato 'simulacao' que existe em emprestimo",
-             int(simu["contrato_id"].isin(ids_carteira).sum()))
+             int(simu["contrato_id"].astype(str).str.strip().str.lower().isin(ids_carteira).sum()))
     if d is not None and va is not None and "contrato_id" in va.columns and {"contrato_id", "origem"} <= set(d.columns):
         esperado = set(d.loc[d["origem"] == "carteira", "contrato_id"])
         erro("vw_decisao_atual com contratos diferentes da decisao_analista (carteira)",

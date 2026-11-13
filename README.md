@@ -138,6 +138,7 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 - [`docs/DECISOES.md`](docs/DECISOES.md): decisões de modelagem.
 - [`docs/glossario.md`](docs/glossario.md): siglas e termos do projeto.
 - [`docs/qualidade_dados.md`](docs/qualidade_dados.md): relatório de qualidade dos dados (regras e alertas).
+- [`docs/datasheet.md`](docs/datasheet.md): datasheet dos dados (motivação, composição, coleta, pré-processamento, usos, distribuição e manutenção).
 - [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
 - [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.

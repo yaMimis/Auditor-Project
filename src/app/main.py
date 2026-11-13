@@ -367,50 +367,30 @@ def current_decisions() -> dict[str, str]:
     return {d["contrato_id"]: d["decisao"] for d in data}
 
 
-def portfolio_result(row: dict) -> dict:
-    """Saída do prever() montada a partir de uma linha do lote (plano B, sem motivos)."""
-    return {
-        "contrato_id": str(row["contrato_id"]),
-        "versao_modelo": str(row.get("versao_modelo") or "carteira"),
-        "pd": row.get("pd"), "faixa": row.get("faixa"),
-        "juro_cobrado": row["juro_cobrado"], "juro_justo": row.get("juro_justo"),
-        "juro_justo_min": row.get("juro_justo_min"), "juro_justo_max": row.get("juro_justo_max"),
-        "situacao_preco": row["situacao_preco"], "motivos": [],
-        "alerta_dados": row["situacao_preco"] == "revisao_manual",
-        "juro_pares_mediana": row.get("juro_pares_mediana"),
-        "pd_ic95": ([row["pd_ic95_min"], row["pd_ic95_max"]]
-                    if row.get("pd_ic95_min") is not None and row.get("pd_ic95_max") is not None else None),
-    }
-
-
 def open_contract(row: dict) -> None:
     """Abre um contrato da base na Análise (callback: roda antes da página redesenhar).
 
-    Caminho normal: a API busca o contrato no banco e roda o modelo agora. Se o banco ou o
-    modelo não responderem, abre com os números do lote e avisa (plano B)."""
+    Uma chamada só: a API devolve o cálculo ao vivo ou, se o banco ou o modelo falharem, os
+    números do lote marcados como "lote" (o plano B é decidido na API, não aqui)."""
     cid = str(row["contrato_id"])
-    context = {"origem": "carteira", "pais": row.get("pais"), "ano": row.get("ano"),
-               "valor": row.get("valor_concedido"), "prazo": row.get("prazo_meses"), "lote": row}
     analysis, error_msg = get_api(f"/contracts/{cid}/analysis", timeout=TIMEOUT_S)
-    if isinstance(analysis, dict) and analysis.get("resultado"):
-        contract = analysis.get("contrato") or {}
-        context.update({"fonte": "ao_vivo", "analise": analysis, "data": contract.get("data_emprestimo"),
-                        "pais": contract.get("pais") or context["pais"],
-                        "valor": contract.get("valor_concedido") or context["valor"],
-                        "prazo": contract.get("prazo_meses") or context["prazo"]})
-        store_result(analysis["resultado"], context)
-        st.session_state.audit_open_message = None
-    else:
-        resultado = portfolio_result(row)
-        opinion, opinion_error = post_api("/opinion", resultado)
-        resultado["parecer_ia"] = opinion
-        context["fonte"] = "lote"
-        store_result(resultado, context)
-        notes = [f"O banco ou a rota não respondeu ({error_msg}). A Análise mostra os números do lote, "
-                 "calculados antes, sem os motivos."]
-        if opinion_error:
-            notes.append(f"Parecer indisponível: {opinion_error}")
-        st.session_state.audit_open_message = " ".join(notes)
+    if not (isinstance(analysis, dict) and analysis.get("resultado")):
+        st.session_state.contract_open_error = f"Não foi possível abrir o contrato {cid}: {error_msg}"
+        return  # fica na página atual, com o erro em português
+    st.session_state.contract_open_error = None
+    contract = analysis.get("contrato") or {}
+    prov = analysis.get("procedencia") or {}
+    live = prov.get("modo", "ao_vivo") == "ao_vivo"
+    context = {"origem": "carteira", "fonte": "ao_vivo" if live else "lote", "analise": analysis,
+               "lote": row, "data": contract.get("data_emprestimo"),
+               "pais": contract.get("pais") or row.get("pais"),
+               "ano": contract.get("ano") or row.get("ano"),
+               "valor": contract.get("valor_concedido") or row.get("valor_concedido"),
+               "prazo": contract.get("prazo_meses") or row.get("prazo_meses")}
+    store_result(analysis["resultado"], context)
+    st.session_state.audit_open_message = None if live else (
+        f"A API não calculou este contrato agora ({prov.get('motivo_lote') or 'motivo não informado'}). "
+        "A Análise mostra os números do lote, calculados antes, sem os motivos.")
     go_to("analise")
 
 
@@ -463,6 +443,8 @@ def render_contracts_page() -> None:
                        .replace(",", "."))
         if st.session_state.get("contract_not_found"):
             st.warning(f"Nenhum contrato com o ID {st.session_state.contract_not_found} na base.")
+        if st.session_state.get("contract_open_error"):
+            st.error(st.session_state.contract_open_error)
 
         st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
         with st.container(border=True):
@@ -662,6 +644,7 @@ def provenance_rows(r: dict, ctx: dict) -> list[tuple[str, str]]:
                                                              f'hash {prov["pacote_hash"]}' if prov.get("pacote_hash") else None,
                                                              f'de {prov["pacote_data"]}' if prov.get("pacote_data") else None) if x))]
     return [("Versão do modelo", r.get("versao_modelo") or "—"),
+            ("Por que o lote", prov.get("motivo_lote") or "a API não calculou este contrato agora"),
             ("Data do cálculo", "lote da carteira (calculado antes)"),
             ("Origem dos dados", f"lote ({BATCH_FILE}), servido pela API"),
             ("Dentro do que o modelo conhece?", "não: revisão manual" if manual else "sim"),
@@ -726,8 +709,8 @@ def render_analysis(r: dict, ctx: dict) -> None:
                  else "Sem motivos para este contrato.")
         md(f"""<div class="ap-card"><div class="ap-card-title">O que mais pesou no risco</div>
             <div class="ap-card-sub">Contribuição para a previsão (SHAP), com o valor deste contrato: o que pesou na
-            previsão, não causa e efeito. Gênero e idade não entram no modelo. O país entra no modelo, mas fica fora
-            desta lista por regra do projeto (é contexto, não característica do cliente): a lista não é completa.</div>
+            previsão, não causa e efeito. Gênero e idade não entram no modelo. O modelo também considera o mercado do
+            contrato (país): ele não aparece nesta lista, por regra do projeto, e os pesos foram calculados sem ele.</div>
             {html_reasons(r.get("motivos") or [], empty)}</div>""")
     with col_opinion:
         md(f"""<div class="ap-card"><div class="ap-seal">Simulação normativa pela lei brasileira ·

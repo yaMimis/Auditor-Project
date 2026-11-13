@@ -119,7 +119,8 @@ class ObservedOutcome(BaseModel):
 
 class ContractSummary(BaseModel):
     pais: str | None = None
-    data_emprestimo: str
+    data_emprestimo: str | None = None   # null no modo lote (o lote guarda só o ano)
+    ano: int | None = None
     valor_concedido: float | None = None
     valor_solicitado: float | None = None
     prazo_meses: int | None = None
@@ -127,8 +128,12 @@ class ContractSummary(BaseModel):
 
 
 class Provenance(BaseModel):
+    modo: Literal["ao_vivo", "lote"] = Field(
+        default="ao_vivo", description="ao_vivo = prever() rodado agora com o contrato do banco; "
+                                       "lote = números calculados antes (plano B), sem motivos nem parâmetros")
+    motivo_lote: str | None = Field(default=None, description="Por que caiu para o lote (só no modo lote)")
     versao_modelo: str
-    calculado_em: str
+    calculado_em: str | None = Field(default=None, description="Quando o prever() rodou; null no modo lote")
     tempo_ms: int
     origem_dados: str
     fora_do_dominio: bool = Field(description="Dados fora do que o modelo viu no treino (revisão manual)")

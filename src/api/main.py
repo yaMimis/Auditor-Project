@@ -201,24 +201,69 @@ MODEL_MISSING = ("Modelo não encontrado em {}. Coloque o arquivo em modelos_sal
                  "(ele não vai para o GitHub).")
 
 
+def _uncertainty(resultado: dict) -> str:
+    return ("nao_calculada" if resultado.get("pd") is None
+            else "bootstrap" if resultado.get("pd_ic95") else "margem_padrao")
+
+
+def _analysis_from_batch(contrato_id: str, reason: str, not_found: bool = False,
+                         database_down: bool = False) -> dict:
+    """Plano B: os números do lote para este contrato, marcados como "lote" (nunca como ao vivo).
+
+    Sem linha no lote: 404 se o contrato não existe no banco; 503 se o banco ou o modelo caiu."""
+    try:
+        batch = portfolio.cached_portfolio()
+    except (ValueError, OSError):
+        batch = None
+    row = portfolio.find_contract(batch, contrato_id) if batch is not None else None
+    if row is None:
+        if not_found:
+            raise HTTPException(status_code=404, detail=f"Contrato {contrato_id} não encontrado no banco nem no lote.")
+        raise HTTPException(status_code=503, detail=f"{reason[0].upper()}{reason[1:]}; o contrato também não está no lote.")
+    resultado = contract_analysis.batch_result(row)
+    if database_down:  # sem banco: nem tenta a referência do BC (evita esperar o timeout de novo)
+        resultado["bc_credito_pessoal_aa"] = None
+        resultado["parecer_ia"] = cadeia.gerar_parecer(dict(resultado))
+    else:
+        resultado["bc_credito_pessoal_aa"] = database.bc_rate(resultado["contrato_id"])
+        resultado["parecer_ia"] = _opinion(resultado)
+    log.warning("análise de %s pelo lote: %s", contrato_id, reason)
+    return {
+        "resultado": resultado,
+        "contrato": contract_analysis.batch_summary(row),
+        "dados_considerados": [],
+        "precificacao": None,
+        "resultado_observado": None,
+        "procedencia": {
+            "modo": "lote", "motivo_lote": reason,
+            "versao_modelo": resultado["versao_modelo"], "calculado_em": None, "tempo_ms": 0,
+            "origem_dados": f"lote ({portfolio.PORTFOLIO_FILE}), calculado antes pelo prever()",
+            "fora_do_dominio": bool(resultado.get("alerta_dados")),
+            "incerteza": _uncertainty(resultado),
+            "pacote_arquivo": portfolio.PORTFOLIO_FILE,
+        },
+    }
+
+
 @app.get("/contracts/{contrato_id}/analysis", response_model=ContractAnalysis)
 def analyze_contract(contrato_id: str):
     """Busca o contrato no banco, roda o prever() agora e devolve tudo o que a tela de análise mostra.
 
-    404: o contrato não está no banco. 503: banco ou modelo indisponível (o painel cai para os
-    números do lote, com aviso)."""
+    Plano B (aqui, não no painel): se o banco ou o modelo falharem, ou o contrato não estiver no
+    banco, devolve os números do lote com procedencia.modo = "lote" e o motivo. 404: não está no
+    banco nem no lote. 503: banco ou modelo fora e o contrato também não está no lote."""
     started = time.perf_counter()
     try:
         row = database.load_contract(contrato_id)
     except database.DatabaseUnavailable as exc:
-        raise _database_down(exc)
+        return _analysis_from_batch(contrato_id, f"banco indisponível ({exc})", database_down=True)
     if row is None:
-        raise HTTPException(status_code=404, detail=f"Contrato {contrato_id} não encontrado no banco.")
+        return _analysis_from_batch(contrato_id, "contrato não encontrado no banco", not_found=True)
     try:
         package = modelo._pacote()
         resultado = prever(row, package)
     except FileNotFoundError:
-        raise HTTPException(status_code=503, detail=MODEL_MISSING.format(PACOTE_PADRAO.name))
+        return _analysis_from_batch(contrato_id, MODEL_MISSING.format(PACOTE_PADRAO.name))
     loan_date = contract_analysis.contract_summary(row)["data_emprestimo"]
     resultado["bc_credito_pessoal_aa"] = database.bc_rate(resultado["contrato_id"], loan_date)
     resultado["parecer_ia"] = _opinion(resultado, loan_date)
@@ -238,8 +283,8 @@ def analyze_contract(contrato_id: str):
             "tempo_ms": int((time.perf_counter() - started) * 1000),
             "origem_dados": "banco (emprestimo, cliente, historico_credito) + prever() ao vivo",
             "fora_do_dominio": bool(resultado.get("alerta_dados")),
-            "incerteza": ("nao_calculada" if resultado.get("pd") is None
-                          else "bootstrap" if resultado.get("pd_ic95") else "margem_padrao"),
+            "modo": "ao_vivo",
+            "incerteza": _uncertainty(resultado),
             **contract_analysis.package_identity(PACOTE_PADRAO, package),
         },
     }

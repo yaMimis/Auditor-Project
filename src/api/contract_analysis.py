@@ -70,11 +70,43 @@ def pricing_parameters(row: dict, resultado: dict, package: dict) -> dict | None
 
 def contract_summary(row: dict) -> dict:
     """Identificação do contrato para o topo da tela (sem atributos protegidos)."""
-    return {"pais": row.get("pais"), "data_emprestimo": _json_value(pd.to_datetime(row["data_emprestimo"]).date()),
+    loan_date = pd.to_datetime(row["data_emprestimo"]).date()
+    return {"pais": row.get("pais"), "data_emprestimo": _json_value(loan_date), "ano": loan_date.year,
             "valor_concedido": _json_value(row.get("valor_concedido")),
             "valor_solicitado": _json_value(row.get("valor_solicitado")),
             "prazo_meses": _json_value(row.get("prazo_meses")),
             "juro_cobrado": round(float(row["juro_aa"]) / 100, 4)}
+
+
+def batch_result(row: dict) -> dict:
+    """Saída do prever() montada a partir de uma linha do lote (plano B): sem motivos."""
+    def num(key):
+        value = row.get(key)
+        return None if value is None or pd.isna(value) else float(value)
+    ic = (num("pd_ic95_min"), num("pd_ic95_max"))
+    return {
+        "contrato_id": str(row["contrato_id"]),
+        "versao_modelo": str(row.get("versao_modelo") or "lote da carteira"),
+        "pd": num("pd"), "faixa": row.get("faixa") or None,
+        "juro_cobrado": float(row["juro_cobrado"]), "juro_justo": num("juro_justo"),
+        "juro_justo_min": num("juro_justo_min"), "juro_justo_max": num("juro_justo_max"),
+        "situacao_preco": row["situacao_preco"], "motivos": [],
+        "alerta_dados": row["situacao_preco"] == "revisao_manual",
+        "juro_pares_mediana": num("juro_pares_mediana"),
+        "pd_ic95": list(ic) if None not in ic else None,
+    }
+
+
+def batch_summary(row: dict) -> dict:
+    """Topo da tela a partir da linha do lote (o lote guarda o ano, não a data)."""
+    def num(key):
+        value = row.get(key)
+        return None if value is None or pd.isna(value) else value
+    return {"pais": row.get("pais"), "data_emprestimo": None,
+            "ano": int(row["ano"]) if num("ano") is not None else None,
+            "valor_concedido": num("valor_concedido"), "valor_solicitado": None,
+            "prazo_meses": int(row["prazo_meses"]) if num("prazo_meses") is not None else None,
+            "juro_cobrado": float(row["juro_cobrado"])}
 
 
 _ARTIFACT_CACHE: dict = {}

@@ -751,7 +751,7 @@ def render_analysis_page() -> None:
         with col_back:
             st.button("Voltar para a lista", key="back_to_contracts", icon=":material/arrow_back:",
                       on_click=go_to, args=("contratos",))
-        with col_lab:
+        with col_lab, st.container(key="lab_button_area"):  # alinhado à direita pelo styles.css
             live = context.get("fonte") == "ao_vivo"
             st.button("Abrir no Laboratório", key="open_lab", icon=":material/science:", on_click=open_lab,
                       args=(result.get("contrato_id"),), disabled=not live,

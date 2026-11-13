@@ -5,6 +5,7 @@ Margem de incerteza (08/11): IC 95% por bootstrap por cliente quando o pacote te
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 from pathlib import Path
 
 import joblib
@@ -129,7 +130,11 @@ def preparar_contrato(contrato: dict, pac: dict) -> tuple[pd.DataFrame, int]:
 
     Usada pelo prever() e pela API (tela "Dados considerados"), para as duas verem
     exatamente a mesma preparação."""
+    # linha do banco (psycopg2): NUMERIC vem como Decimal e DATE como datetime.date
+    contrato = {k: float(v) if isinstance(v, Decimal) else v for k, v in contrato.items()}
     df = pd.DataFrame([contrato])
+    if "data_emprestimo" in df:
+        df["data_emprestimo"] = pd.to_datetime(df["data_emprestimo"], errors="coerce")
     # sem data (contrato novo vindo da API) → hoje
     if "data_emprestimo" not in df or pd.isna(df["data_emprestimo"].iloc[0]):
         df["data_emprestimo"] = pd.Timestamp.today().normalize()

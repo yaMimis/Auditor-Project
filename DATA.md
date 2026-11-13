@@ -1,6 +1,6 @@
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
-> Versão 0.7 (rascunho) · 08/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+> Versão 0.8 (rascunho) · 13/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
 > Legenda: **[DEFINIDO]** = decisão registrada no `docs/DECISOES.md` (Samuel) ou já feita no código; **[JULGADO DEFINIDO]** = não há decisão escrita, mas o texto e o código do grupo já a seguem (vale um aviso se alguém discordar); **[A CONFIRMAR]** = ainda aberto. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (atualizado em 05/11/2026). As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
@@ -100,8 +100,9 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **Zeros no lugar de vazio:** `divida_renda`, `caixa_livre` e `renda_empregador_principal` têm 100% de zeros a partir de 2018 (70% a 72% em 2017). A carga não os pega, porque só troca `-1` por NULL. Ver a seção 6.
 - Gênero 2 ("indefinido") é quase só da Espanha (12.164 de 12.180; cerca de 46% dos contratos espanhóis). Na auditoria, tratar como dado ausente e comparar só 0 e 1, de preferência dentro de cada país.
 - **Codificação do gênero em 2017–2019:** entre os contratos com gênero 0 ou 1, a proporção de mulheres na Estônia vai de 45% em 2016 para 26% em 2017 e 9% em 2018, e volta a 34% em 2019 e 51% em 2020 (Finlândia: 45%, 21%, 23%, 41% e 51%). Além disso, 5.633 clientes aparecem com os dois valores em contratos diferentes, e a idade deles é coerente entre os contratos (0 incoerências em 94.148 pares), ou seja, é a mesma pessoa. É um indício de erro de codificação nesse período; o dicionário do Bondora não o confirma. Gênero fica fora do treino e do teste, então o modelo não é afetado; a análise de gênero será apresentada ao final como achado, com essa ressalva.
-- **[A CONFIRMAR]** `score_es_microl` tem o valor "M" em cerca de 136 mil linhas; confirmar o significado no dicionário.
-- **[A CONFIRMAR]** `novo_cliente` e `n_emprestimos_anteriores` parecem medir coisas diferentes: 15.668 contratos têm `novo_cliente` verdadeiro e empréstimos anteriores, e 303 têm o caso oposto. Confirmar no dicionário antes de validar uma contra a outra.
+- **[DEFINIDO]** `score_es_microl` = "M": marcador **sem nota**, que aparece só a partir de 2017 (136.415 contratos, de 2017 a 2021). O dicionário do Bondora define apenas as notas M1 a M10. Apesar do nome, o "M" vem de todos os países (87.928 da Estônia, 34.734 da Finlândia e 13.753 da Espanha). **Efeito no modelo:** no treino (2009–2015) não existe "M" e, fora da Espanha, o campo era vazio ("sem_info"); na carteira de 2017–2021 o "M" não é categoria conhecida e vira "outros" (`criar_variaveis`), inclusive nos contratos da Estônia e da Finlândia.
+- **[DEFINIDO]** `novo_cliente` e `n_emprestimos_anteriores` medem coisas diferentes. Pelo dicionário, "novo" é quem **não tem pelo menos 3 meses de histórico** no Bondora, e não quem nunca tomou empréstimo. Dos 15.668 contratos "novos" com empréstimo anterior, 99,8% foram concedidos até 92 dias depois do primeiro empréstimo do mesmo cliente na base (99,2% com menos de 92 dias). O caso oposto (não novo e sem empréstimo anterior) tem 303 contratos, mais 4 com o histórico vazio. Não validar uma coluna contra a outra.
+- **[DEFINIDO]** `score_fi_asiakastieto` muda de escala em 2017: até 2016 os valores são RL0 a RL5; a partir de 2017 aparece uma **escala nova, de 1 a 8**, em 35.410 contratos (35.405 da Finlândia e 5 da Estônia), convivendo com 650 contratos finlandeses ainda em RL1 a RL4. É **mudança de regime**, não erro de carga. **Efeito no modelo:** as notas de 1 a 8 não existem no treino e viram "outros" (`criar_variaveis`), então o score finlandês perde a informação justamente na carteira. Fica assim enquanto o Samuel não repontuar a carteira (ver a seção 12).
 
 ## 8. Moeda e unidades
 
@@ -183,6 +184,8 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - [x] Marcos: conversão efetiva → nominal da taxa do BC conferida contra a série mensal oficial 25464 (seção 9; sugestão da Maria).
 - [x] Marcos: `vw_base_modelagem` conferida contra o `DECISOES.md` (20.011 no treino, 7.311 no teste e 2.594 fora).
 - [x] Marcos: `divida_renda`, `caixa_livre` e `renda_empregador_principal` em `COLUNAS_INDISPONIVEIS_RECENTES` (`carga_bondora.py`).
+- [x] **[DEFINIDO]** `novo_cliente`: "novo" é quem não tem pelo menos 3 meses de histórico no Bondora (dicionário); não se valida contra `n_emprestimos_anteriores` (seção 7).
+- [x] **[DEFINIDO]** `score_es_microl` = "M": marcador sem nota a partir de 2017, de todos os países; o dicionário só define M1 a M10 (seção 7).
 
 **Abertas:**
 
@@ -192,7 +195,7 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - [ ] Samuel (08 e 09/11): `carteira_auditoria.csv` e `equidade.json`; o backtest do retorno realizado usa a `vw_retorno_realizado` como está, com as recuperações já dentro dos pagamentos (seção 14).
 - [ ] Marcos e Samuel (14/11): ROI em euros da carteira.
 - [ ] Marcos (14/11): datasheet dos dados.
-- [ ] Marcos: conferir no dicionário o significado de `novo_cliente` frente a `n_emprestimos_anteriores` e o valor "M" do `score_es_microl` (seção 7).
+- [ ] Samuel: repontuar a carteira de 2017–2021 tratando a escala nova do `score_fi_asiakastieto` (1 a 8) e o "M" do `score_es_microl`, que hoje viram "outros" no modelo (seção 7). Até lá, o `excesso_eur` do ROI de 2017–2021 e a figura 9 do EDA ficam em espera.
 
 ## 13. Registro de decisões do analista
 

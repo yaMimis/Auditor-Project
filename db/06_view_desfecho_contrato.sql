@@ -20,8 +20,12 @@
 --
 -- PRIVACIDADE: sem gênero, idade, estado civil e dependentes (a API lê esta view).
 --
--- Consulta da API (o loan_id fica em minúsculas no banco: normalizar antes):
+-- Consulta da API (o loan_id fica em minúsculas no banco: normalizar o ID digitado
+-- com .strip().lower() no Python, nunca lower(loan_id) na coluna, que desliga o índice):
 --   SELECT * FROM vw_desfecho_contrato WHERE loan_id = %s;
+-- Depois da busca, o loan_id que VOLTOU do banco vira o contrato_id em todo o fluxo
+-- (prever, parecer, taxa do BC e decisão); as simulações mantêm o nome digitado.
+-- O db/07 normaliza também no gatilho das decisões, como segunda barreira.
 --
 -- Números esperados (banco completo):
 --   179.235 linhas · 29.916 com desfecho · 147.978 concedidos depois de 2016 ·

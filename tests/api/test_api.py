@@ -14,12 +14,12 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 import src.api.main as api  # noqa: E402
 
-EXEMPLOS = json.loads((Path(__file__).resolve().parents[2] / "docs" / "exemplos_prever.json")
+EXAMPLES = json.loads((Path(__file__).resolve().parents[2] / "docs" / "exemplos_prever.json")
                       .read_text(encoding="utf-8"))
-POR_SITUACAO = {e["situacao_preco"]: e for e in EXEMPLOS}
-_ARQ_CASOS = Path(__file__).resolve().parents[2] / "docs" / "casos_de_teste.json"
-CASOS_REAIS = ([c for lista in json.loads(_ARQ_CASOS.read_text(encoding="utf-8")).values() for c in lista]
-               if _ARQ_CASOS.exists() else [])
+BY_SITUATION = {e["situacao_preco"]: e for e in EXAMPLES}
+_CASES_FILE = Path(__file__).resolve().parents[2] / "docs" / "casos_de_teste.json"
+REAL_CASES = ([c for items_list in json.loads(_CASES_FILE.read_text(encoding="utf-8")).values() for c in items_list]
+               if _CASES_FILE.exists() else [])
 
 PAYLOAD = {
     "loan_id": "EMP-TESTE", "amount": 5000, "income_total": 2500, "loan_duration": 36,
@@ -29,206 +29,206 @@ PAYLOAD = {
 
 
 @pytest.fixture(autouse=True)
-def sem_llm_nem_banco(monkeypatch):
+def no_llm_no_database(monkeypatch):
     """Sem LLM e sem banco: o gerar_parecer() cai no template, como manda a regra."""
-    def sem_llm(*a, **k):
+    def no_llm(*a, **k):
         raise RuntimeError("LLM desligado nos testes")
-    monkeypatch.setattr(api.cadeia, "chamar_llm", sem_llm)
+    monkeypatch.setattr(api.cadeia, "chamar_llm", no_llm)
     monkeypatch.setattr(api.cadeia, "buscar_trechos", lambda *a, **k: [])
-    monkeypatch.setattr(api.banco, "taxa_bc", lambda *a, **k: None)
+    monkeypatch.setattr(api.database, "bc_rate", lambda *a, **k: None)
 
 
 @pytest.fixture
-def cliente():
+def client():
     return TestClient(api.app)
 
 
-def _troca_prever(monkeypatch, saida, capturado=None):
-    def falso(contrato):
-        if capturado is not None:
-            capturado.update(contrato)
-        return saida
-    monkeypatch.setattr(api, "prever", falso)
+def _stub_prever(monkeypatch, output, captured=None):
+    def fake(contract):
+        if captured is not None:
+            captured.update(contract)
+        return output
+    monkeypatch.setattr(api, "prever", fake)
 
 
-def test_contrato_enviado_ao_prever(cliente, monkeypatch):
-    enviado = {}
-    _troca_prever(monkeypatch, POR_SITUACAO["acima_do_justo"], enviado)
-    assert cliente.post("/prever", json=PAYLOAD).status_code == 200
-    assert enviado["pais"] == "EE"
-    assert enviado["prazo_meses"] == 36
-    assert enviado["juro_aa"] == 24.5          # em %, o prever() converte
-    assert enviado["passivos_total"] == 450
-    assert "genero" not in enviado and "idade" not in enviado
-    for chave in ("passivos_existentes", "novo_cliente", "tipo_verificacao"):
-        assert chave in enviado                 # as chaves precisam existir
+def test_contract_sent_to_prever(client, monkeypatch):
+    sent = {}
+    _stub_prever(monkeypatch, BY_SITUATION["acima_do_justo"], sent)
+    assert client.post("/predict", json=PAYLOAD).status_code == 200
+    assert sent["pais"] == "EE"
+    assert sent["prazo_meses"] == 36
+    assert sent["juro_aa"] == 24.5          # em %, o prever() converte
+    assert sent["passivos_total"] == 450
+    assert "genero" not in sent and "idade" not in sent
+    for decision_key in ("passivos_existentes", "novo_cliente", "tipo_verificacao"):
+        assert decision_key in sent                 # as chaves precisam existir
 
 
-@pytest.mark.parametrize("situacao", sorted(POR_SITUACAO))
-def test_as_quatro_situacoes_passam_no_schema(cliente, monkeypatch, situacao):
-    _troca_prever(monkeypatch, POR_SITUACAO[situacao])
-    r = cliente.post("/prever", json=PAYLOAD)
+@pytest.mark.parametrize("situation", sorted(BY_SITUATION))
+def test_all_four_situations_pass_schema(client, monkeypatch, situation):
+    _stub_prever(monkeypatch, BY_SITUATION[situation])
+    r = client.post("/predict", json=PAYLOAD)
     assert r.status_code == 200, r.text
-    corpo = r.json()
-    assert corpo["situacao_preco"] == situacao
-    assert corpo["parecer_ia"]["origem"] == "template"
-    assert "juro_risco" not in corpo
-    if situacao == "revisao_manual":
-        assert corpo["pd"] is None and corpo["parecer_ia"]["recomendacao"] == "revisao_manual"
+    body = r.json()
+    assert body["situacao_preco"] == situation
+    assert body["parecer_ia"]["origem"] == "template"
+    assert "juro_risco" not in body
+    if situation == "revisao_manual":
+        assert body["pd"] is None and body["parecer_ia"]["recomendacao"] == "revisao_manual"
 
 
-@pytest.mark.parametrize("situacao", sorted(POR_SITUACAO))
-def test_parecer_de_saida_pronta(cliente, situacao):
-    r = cliente.post("/parecer", json=POR_SITUACAO[situacao])
+@pytest.mark.parametrize("situation", sorted(BY_SITUATION))
+def test_opinion_from_ready_prediction(client, situation):
+    r = client.post("/opinion", json=BY_SITUATION[situation])
     assert r.status_code == 200, r.text
-    esperado = {"acima_do_justo": "revisar_preco", "abaixo_do_justo": "revisar_preco",
+    expected = {"acima_do_justo": "revisar_preco", "abaixo_do_justo": "revisar_preco",
                 "dentro_da_margem": "manter_preco", "revisao_manual": "revisao_manual"}
-    assert r.json()["recomendacao"] == esperado[situacao]
+    assert r.json()["recomendacao"] == expected[situation]
 
 
-def test_data_padrao_hoje_e_sem_futuro(cliente, monkeypatch):
+def test_default_date_is_today_and_never_future(client, monkeypatch):
     from datetime import date, timedelta
-    enviado = {}
-    _troca_prever(monkeypatch, POR_SITUACAO["dentro_da_margem"], enviado)
-    assert cliente.post("/prever", json=PAYLOAD).status_code == 200
-    assert enviado["data_emprestimo"] == date.today().isoformat()
-    futuro = (date.today() + timedelta(days=1)).isoformat()
-    assert cliente.post("/prever", json={**PAYLOAD, "data_emprestimo": futuro}).status_code == 422
+    sent = {}
+    _stub_prever(monkeypatch, BY_SITUATION["dentro_da_margem"], sent)
+    assert client.post("/predict", json=PAYLOAD).status_code == 200
+    assert sent["data_emprestimo"] == date.today().isoformat()
+    future = (date.today() + timedelta(days=1)).isoformat()
+    assert client.post("/predict", json={**PAYLOAD, "data_emprestimo": future}).status_code == 422
 
 
-@pytest.mark.skipif(not CASOS_REAIS, reason="docs/casos_de_teste.json ausente")
-@pytest.mark.parametrize("caso", CASOS_REAIS, ids=lambda c: f'{c["situacao_preco"]}-{c["contrato_id"][:8]}')
-def test_casos_reais_passam_na_api(cliente, monkeypatch, caso):
+@pytest.mark.skipif(not REAL_CASES, reason="docs/casos_de_teste.json ausente")
+@pytest.mark.parametrize("case", REAL_CASES, ids=lambda c: f'{c["situacao_preco"]}-{c["contrato_id"][:8]}')
+def test_real_cases_pass_through_api(client, monkeypatch, case):
     """Os casos reais do prever() (Samuel) passam no schema de saída e geram parecer."""
-    _troca_prever(monkeypatch, caso)
-    r = cliente.post("/prever", json=PAYLOAD)
+    _stub_prever(monkeypatch, case)
+    r = client.post("/predict", json=PAYLOAD)
     assert r.status_code == 200, r.text
-    assert cliente.post("/parecer", json=caso).status_code == 200
+    assert client.post("/opinion", json=case).status_code == 200
 
 
-def test_sem_modelo_responde_503(cliente, monkeypatch):
-    def sem_arquivo(contrato):
+def test_missing_model_returns_503(client, monkeypatch):
+    def without_file(contract):
         raise FileNotFoundError
-    monkeypatch.setattr(api, "prever", sem_arquivo)
-    assert cliente.post("/prever", json=PAYLOAD).status_code == 503
+    monkeypatch.setattr(api, "prever", without_file)
+    assert client.post("/predict", json=PAYLOAD).status_code == 503
 
 
 # ---------- Decisões do analista (banco trocado por funções falsas) ----------
 
-def _nova_decisao(situacao="acima_do_justo", **extra):
-    resultado = dict(POR_SITUACAO[situacao])
-    resultado["parecer_ia"] = json.loads(json.dumps(api._parecer(resultado), default=str))
+def _new_decision(situation="acima_do_justo", **extra):
+    resultado = dict(BY_SITUATION[situation])
+    resultado["parecer_ia"] = json.loads(json.dumps(api._opinion(resultado), default=str))
     return {"requisicao_id": "8f14e45f-ceea-467f-a8d9-1b4c2e6f0a11", "analista": "Yasmin",
             "decisao": "revisar_preco", "justificativa": "Preço sem justificativa de risco.",
             "taxa_proposta": 0.18, "resultado": resultado, **extra}
 
 
-def _linha_gravada(registro):
+def _recorded_row(record_):
     from datetime import datetime, timezone
-    colunas = {k: v for k, v in registro.items() if k not in ("requisicao_id", "prever_json", "parecer_json")}
+    columns_ = {k: v for k, v in record_.items() if k not in ("requisicao_id", "prever_json", "parecer_json")}
     return {"decisao_id": 1, "registrada_em": datetime(2026, 11, 6, 16, 0, tzinfo=timezone.utc),
-            "origem": "simulacao", **colunas}
+            "origem": "simulacao", **columns_}
 
 
-def test_decisao_gravada_sem_genero_nem_idade(cliente, monkeypatch):
-    gravado = {}
+def test_decision_recorded_without_gender_or_age(client, monkeypatch):
+    recorded = {}
 
-    def falso(registro):
-        gravado.update(registro)
-        return _linha_gravada(registro)
-    monkeypatch.setattr(api.banco, "registrar_decisao", falso)
-    r = cliente.post("/decisoes", json=_nova_decisao())
+    def fake(record_):
+        recorded.update(record_)
+        return _recorded_row(record_)
+    monkeypatch.setattr(api.database, "record_decision", fake)
+    r = client.post("/decisions", json=_new_decision())
     assert r.status_code == 201, r.text
     assert r.json()["decisao"] == "revisar_preco" and r.json()["origem"] == "simulacao"
-    assert gravado["recomendacao_sistema"] == "revisar_preco" and gravado["origem_parecer"] == "template"
-    assert gravado["juro_cobrado"] == POR_SITUACAO["acima_do_justo"]["juro_cobrado"]
-    texto = json.dumps(gravado, default=str).lower()
-    for chave in ('"genero"', '"idade"', '"gender"', '"age"'):
-        assert chave not in texto
-    assert "parecer_ia" not in gravado["prever_json"]
+    assert recorded["recomendacao_sistema"] == "revisar_preco" and recorded["origem_parecer"] == "template"
+    assert recorded["juro_cobrado"] == BY_SITUATION["acima_do_justo"]["juro_cobrado"]
+    text_ = json.dumps(recorded, default=str).lower()
+    for decision_key in ('"genero"', '"idade"', '"gender"', '"age"'):
+        assert decision_key not in text_
+    assert "parecer_ia" not in recorded["prever_json"]
 
 
-def test_taxa_proposta_so_vale_ao_revisar(cliente, monkeypatch):
-    gravado = {}
-    monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: (gravado.update(reg), _linha_gravada(reg))[1])
-    cliente.post("/decisoes", json=_nova_decisao(decisao="manter_preco"))
-    assert gravado["taxa_proposta"] is None
+def test_proposed_rate_only_on_price_review(client, monkeypatch):
+    recorded = {}
+    monkeypatch.setattr(api.database, "record_decision", lambda record: (recorded.update(record), _recorded_row(record))[1])
+    client.post("/decisions", json=_new_decision(decisao="manter_preco"))
+    assert recorded["taxa_proposta"] is None
 
 
-def test_decisao_em_revisao_manual_vai_com_nulos(cliente, monkeypatch):
+def test_manual_review_decision_stores_nulls(client, monkeypatch):
     """Desde 08/11 a tabela aceita revisão manual: PD, faixa e juros justos vão nulos, nunca zero."""
-    gravado = {}
-    monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: (gravado.update(reg), _linha_gravada(reg))[1])
-    r = cliente.post("/decisoes", json=_nova_decisao("revisao_manual", decisao="manter_preco"))
+    recorded = {}
+    monkeypatch.setattr(api.database, "record_decision", lambda record: (recorded.update(record), _recorded_row(record))[1])
+    r = client.post("/decisions", json=_new_decision("revisao_manual", decisao="manter_preco"))
     assert r.status_code == 201, r.text
-    for campo in ("pd", "faixa", "juro_justo", "juro_justo_min", "juro_justo_max"):
-        assert gravado[campo] is None
-    assert gravado["situacao_preco"] == "revisao_manual" and gravado["recomendacao_sistema"] == "revisao_manual"
+    for field in ("pd", "faixa", "juro_justo", "juro_justo_min", "juro_justo_max"):
+        assert recorded[field] is None
+    assert recorded["situacao_preco"] == "revisao_manual" and recorded["recomendacao_sistema"] == "revisao_manual"
     assert r.json()["pd"] is None
 
 
-def test_justificativa_em_branco_e_recusada(cliente, monkeypatch):
-    monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: pytest.fail("não deveria gravar"))
-    assert cliente.post("/decisoes", json=_nova_decisao(justificativa="   ")).status_code == 422
-    assert cliente.post("/decisoes", json=_nova_decisao(justificativa=None)).status_code == 422
-    assert cliente.post("/decisoes", json=_nova_decisao(analista="")).status_code == 422
+def test_blank_justification_is_rejected(client, monkeypatch):
+    monkeypatch.setattr(api.database, "record_decision", lambda record: pytest.fail("não deveria gravar"))
+    assert client.post("/decisions", json=_new_decision(justificativa="   ")).status_code == 422
+    assert client.post("/decisions", json=_new_decision(justificativa=None)).status_code == 422
+    assert client.post("/decisions", json=_new_decision(analista="")).status_code == 422
 
 
-def test_campos_invalidos_viram_422_e_nao_500(cliente, monkeypatch):
-    monkeypatch.setattr(api.banco, "registrar_decisao", lambda reg: pytest.fail("não deveria gravar"))
-    assert cliente.post("/decisoes", json=_nova_decisao(requisicao_id="nao-e-uuid")).status_code == 422
-    assert cliente.post("/decisoes", json=_nova_decisao(decisao="aprovar")).status_code == 422
-    assert cliente.post("/decisoes", json=_nova_decisao(taxa_proposta=18)).status_code == 422  # 18 = 1800%: vai em fração
+def test_invalid_fields_return_422_not_500(client, monkeypatch):
+    monkeypatch.setattr(api.database, "record_decision", lambda record: pytest.fail("não deveria gravar"))
+    assert client.post("/decisions", json=_new_decision(requisicao_id="nao-e-uuid")).status_code == 422
+    assert client.post("/decisions", json=_new_decision(decisao="aprovar")).status_code == 422
+    assert client.post("/decisions", json=_new_decision(taxa_proposta=18)).status_code == 422  # 18 = 1800%: vai em fração
 
 
-def test_taxa_do_bc_vai_para_o_parecer(cliente, monkeypatch):
-    """/prever busca pelo mês da data; /parecer busca pelo contrato. O código escreve o contexto."""
-    pedidos = []
+def test_bc_rate_reaches_opinion(client, monkeypatch):
+    """/predict busca pelo mês da data; /opinion busca pelo contrato. O código escreve o contexto."""
+    requests_ = []
 
     def bc(contrato_id=None, data_emprestimo=None):
-        pedidos.append((contrato_id, data_emprestimo))
+        requests_.append((contrato_id, data_emprestimo))
         return 126.2
-    monkeypatch.setattr(api.banco, "taxa_bc", bc)
-    _troca_prever(monkeypatch, POR_SITUACAO["acima_do_justo"])
-    r = cliente.post("/prever", json={**PAYLOAD, "data_emprestimo": "2016-03-15"})
+    monkeypatch.setattr(api.database, "bc_rate", bc)
+    _stub_prever(monkeypatch, BY_SITUATION["acima_do_justo"])
+    r = client.post("/predict", json={**PAYLOAD, "data_emprestimo": "2016-03-15"})
     assert r.status_code == 200, r.text
     assert r.json()["bc_credito_pessoal_aa"] == 126.2
     assert "Referência de mercado" in r.json()["parecer_ia"]["contexto_mercado"]
-    assert pedidos[0] == (None, "2016-03-15")
-    r = cliente.post("/parecer", json=POR_SITUACAO["dentro_da_margem"])
+    assert requests_[0] == (None, "2016-03-15")
+    r = client.post("/opinion", json=BY_SITUATION["dentro_da_margem"])
     assert "Referência de mercado" in r.json()["contexto_mercado"]
-    assert pedidos[-1] == (POR_SITUACAO["dentro_da_margem"]["contrato_id"], None)
+    assert requests_[-1] == (BY_SITUATION["dentro_da_margem"]["contrato_id"], None)
 
 
-def test_sem_taxa_do_bc_o_parecer_sai_sem_contexto(cliente, monkeypatch):
-    _troca_prever(monkeypatch, POR_SITUACAO["acima_do_justo"])
-    corpo = cliente.post("/prever", json=PAYLOAD).json()
-    assert corpo["parecer_ia"]["contexto_mercado"] is None
-    assert corpo["parecer_ia"]["origem"] == "template"  # LLM desligado → template
+def test_without_bc_rate_opinion_has_no_context(client, monkeypatch):
+    _stub_prever(monkeypatch, BY_SITUATION["acima_do_justo"])
+    body = client.post("/predict", json=PAYLOAD).json()
+    assert body["parecer_ia"]["contexto_mercado"] is None
+    assert body["parecer_ia"]["origem"] == "template"  # LLM desligado → template
 
 
-def test_banco_fora_responde_503(cliente, monkeypatch):
-    def fora(*a, **k):
-        raise api.banco.BancoIndisponivel("conexão recusada")
-    monkeypatch.setattr(api.banco, "registrar_decisao", fora)
-    monkeypatch.setattr(api.banco, "listar_decisoes", fora)
-    assert cliente.post("/decisoes", json=_nova_decisao()).status_code == 503
-    assert cliente.get("/decisoes").status_code == 503
+def test_database_down_returns_503(client, monkeypatch):
+    def outside(*a, **k):
+        raise api.database.DatabaseUnavailable("conexão recusada")
+    monkeypatch.setattr(api.database, "record_decision", outside)
+    monkeypatch.setattr(api.database, "list_decisions", outside)
+    assert client.post("/decisions", json=_new_decision()).status_code == 503
+    assert client.get("/decisions").status_code == 503
 
 
-def test_regra_do_banco_vira_422(cliente, monkeypatch):
-    def recusa(reg):
-        raise api.banco.DecisaoRecusada("violates check constraint")
-    monkeypatch.setattr(api.banco, "registrar_decisao", recusa)
-    assert cliente.post("/decisoes", json=_nova_decisao()).status_code == 422
+def test_database_rule_returns_422(client, monkeypatch):
+    def rejection(record):
+        raise api.database.DecisionRejected("violates check constraint")
+    monkeypatch.setattr(api.database, "record_decision", rejection)
+    assert client.post("/decisions", json=_new_decision()).status_code == 422
 
 
-def test_listar_por_contrato(cliente, monkeypatch):
-    pedido = {}
+def test_list_by_contract(client, monkeypatch):
+    request_ = {}
 
-    def falso(contrato_id, limite):
-        pedido.update(contrato_id=contrato_id, limite=limite)
+    def fake(contrato_id, limit):
+        request_.update(contrato_id=contrato_id, limit=limit)
         return []
-    monkeypatch.setattr(api.banco, "listar_decisoes", falso)
-    assert cliente.get("/decisoes", params={"contrato_id": "BO-1", "limite": 5}).json() == []
-    assert pedido == {"contrato_id": "BO-1", "limite": 5}
+    monkeypatch.setattr(api.database, "list_decisions", fake)
+    assert client.get("/decisions", params={"contrato_id": "BO-1", "limit": 5}).json() == []
+    assert request_ == {"contrato_id": "BO-1", "limit": 5}

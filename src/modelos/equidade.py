@@ -8,7 +8,7 @@ no grupo, controlando por PD, faixa, país × ano, valor e prazo; IC 95% robusto
 - País nunca é grupo comparado. Reestruturados e revisão manual ficam fora.
 Resultado é INDÍCIO, nunca conclusão (proxies; DECISOES.md).
 
-Grava docs/resultados/equidade.json no formato de src/app/carteira.py.
+Grava docs/resultados/equidade.json no formato de src/api/portfolio.py.
 Uso:  python -m src.modelos.equidade
 """
 from __future__ import annotations

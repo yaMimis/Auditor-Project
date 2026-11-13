@@ -16,24 +16,30 @@ html { scroll-behavior: smooth; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 body { background-color: var(--dark-bg); color: var(--text-light); font-family: 'DM Sans', sans-serif; }
 
-/* --- NAVBAR SUPERIOR FIXA --- */
-.top-navbar {
-    position: fixed; top: 0; left: 0; width: 100%; height: 70px;
-    background-color: rgba(18, 19, 21, 0.95); backdrop-filter: blur(10px);
+/* --- MENU DO TOPO: páginas do painel (botões que trocam de página) --- */
+.st-key-top_nav {
+    position: sticky; top: 0; z-index: 999; padding: .55rem 2.5rem;
+    background-color: rgba(14, 15, 17, 0.97); backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--card-border);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 4rem; z-index: 9999;
 }
 .nav-brand {
-    font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;
-    color: #ffffff !important; letter-spacing: 1px; text-decoration: none;
-    display: flex; align-items: center; gap: 10px;
+    font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700;
+    color: var(--gold-light) !important; letter-spacing: .08em; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
 }
-.nav-links { display: flex; gap: 2.5rem; align-items: center; }
-.nav-link { color: #ffffff !important; text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: color 0.3s ease; }
-.nav-link:hover { color: var(--gold); }
-.nav-analyst { color: var(--text-muted); font-size: .82rem; }
-.nav-analyst b { color: var(--gold-light); font-weight: 600; }
+.st-key-top_nav [data-testid="stButton"] button {
+    min-height: 38px; padding: .2rem .4rem; border: none !important; border-radius: 0 !important;
+    background: transparent !important; box-shadow: none !important;
+    border-bottom: 2px solid transparent !important;
+}
+.st-key-top_nav [data-testid="stButton"] button p { color: #c9ccd2 !important; font-size: .86rem !important; font-weight: 500 !important; white-space: nowrap; }
+.st-key-top_nav [data-testid="stButton"] button:hover p { color: var(--gold-light) !important; }
+.st-key-top_nav [data-testid="stButton"] button[kind="primary"],
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"] { border-bottom: 2px solid var(--gold) !important; }
+.st-key-top_nav [data-testid="stButton"] button[kind="primary"] p,
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"] p { color: var(--gold-light) !important; font-weight: 700 !important; }
+.st-key-top_nav [data-testid="stTextInput"] input { min-height: 36px; font-size: .85rem; }
+.st-key-hero_cta { padding: 0 4rem 2.4rem 4rem; margin-top: -1.2rem; }
 
 /* --- HERO SECTION --- */
 .hero-container {
@@ -50,7 +56,7 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .hero-subtitle { font-size: 1.15rem; color: var(--text-muted); max-width: 680px; margin-bottom: 2rem; line-height: 1.6; }
 
 /* --- FAIXA ESCURA COM 3 BLOCOS EXPLICATIVOS --- */
-.features-strip { background-color: #0b0c0e; border-bottom: 1px solid var(--card-border); padding: 2.5rem 4rem; }
+.features-strip { background-color: #0b0c0e; border-bottom: 1px solid var(--card-border); padding: 2.5rem 4rem; margin-bottom: 2.2rem; }
 .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1300px; margin: 0 auto; }
 .feature-item { display: flex; align-items: flex-start; gap: 1.2rem; background: rgba(28, 29, 33, 0.15); padding: 1.5rem; border-radius: 12px; }
 .feature-icon { font-size: 1.8rem; color: var(--gold); }
@@ -58,7 +64,6 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .feature-desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 
 /* --- SEÇÕES --- */
-.section-wrapper { padding: 4rem 4rem; max-width: 1400px; margin: 0 auto; }
 .section-header { text-align: center; margin-bottom: 2rem; }
 .section-header h2 { font-family: 'Playfair Display', serif; font-size: 2.6rem; color: var(--text-light); }
 .section-header p { color: var(--text-muted); font-size: 1.05rem; }
@@ -107,68 +112,10 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
     filter: brightness(1.06); box-shadow: 0 12px 28px rgba(200, 154, 88, 0.25);
 }
 
-/* EXECUTAR AUDITORIA DE PREÇO: branco com borda dourada */
-.st-key-audit_execute button, .st-key-audit_execute button[kind="primary"],
-.st-key-audit_execute button[data-testid="stBaseButton-primary"] {
-    background: #ffffff !important; color: #171315 !important;
-    border: 2px solid var(--gold) !important; font-weight: 700 !important; letter-spacing: .06em;
-}
-.st-key-audit_execute button p, .st-key-audit_execute button [data-testid="stIconMaterial"] { color: #171315 !important; }
-.st-key-audit_execute button:hover:not(:disabled) {
-    background: #fbf6ee !important; border-color: var(--gold-light) !important; filter: none;
-    box-shadow: 0 12px 28px rgba(200, 154, 88, 0.28);
-}
-
-.audit-workspace-label { color: var(--gold-light); font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin: .15rem 0 .4rem 0; }
-/* --- ETAPAS DO FORMULÁRIO: abas de texto pequenas, à esquerda, sem caixa ---
-   Só muda a cor no hover; a etapa aberta fica dourada com um traço fino embaixo. */
-.st-key-audit_steps { border-bottom: 1px solid rgba(200,154,88,.18); margin-bottom: 1.1rem; }
-.st-key-audit_steps [data-testid="stHorizontalBlock"] {
-    justify-content: flex-start !important; gap: 1.8rem !important; flex-wrap: wrap;
-}
-.st-key-audit_steps [data-testid="stColumn"], .st-key-audit_steps [data-testid="column"] {
-    flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
-}
-.st-key-audit_select_personal button, .st-key-audit_select_loan button, .st-key-audit_select_history button {
-    min-height: 0 !important; height: auto !important; width: auto !important;
-    padding: .55rem .1rem .6rem .1rem !important; margin-bottom: -1px;
-    background: transparent !important; border: none !important; border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important; box-shadow: none !important; transform: none !important;
-    color: var(--text-muted) !important; font-weight: 500 !important; font-size: .84rem !important; letter-spacing: .02em;
-    transition: color .15s ease, border-color .15s ease;
-}
-.st-key-audit_select_personal button p, .st-key-audit_select_loan button p, .st-key-audit_select_history button p {
-    color: inherit !important; font-weight: inherit !important; font-size: inherit !important;
-}
-.st-key-audit_select_personal button:hover, .st-key-audit_select_loan button:hover, .st-key-audit_select_history button:hover {
-    color: var(--gold-light) !important; background: transparent !important; box-shadow: none !important;
-    transform: none !important;
-}
-.st-key-audit_select_personal button[kind="primary"], .st-key-audit_select_loan button[kind="primary"], .st-key-audit_select_history button[kind="primary"],
-.st-key-audit_select_personal button[data-testid="stBaseButton-primary"], .st-key-audit_select_loan button[data-testid="stBaseButton-primary"],
-.st-key-audit_select_history button[data-testid="stBaseButton-primary"] {
-    color: var(--gold-light) !important; background: transparent !important;
-    border: none !important; border-bottom: 2px solid var(--gold) !important; font-weight: 600 !important;
-}
-/* ícones das etapas: brancos e discretos (a cor do texto muda, o ícone não) */
-.st-key-audit_steps [data-testid="stIconMaterial"] {
-    color: #f0f2f4 !important; opacity: .75; font-size: 1.05rem !important;
-}
-/* etapa travada: aparece, mas não abre até a anterior ser revisada */
-.st-key-audit_select_personal button:disabled, .st-key-audit_select_loan button:disabled, .st-key-audit_select_history button:disabled {
-    opacity: .38 !important; cursor: not-allowed !important; background: transparent !important;
-}
-/* botão de executar travado até as 3 caixas */
-.st-key-audit_execute button:disabled { opacity: .45 !important; cursor: not-allowed !important; transform: none !important; }
-.audit-lock-note { color: var(--text-muted); font-size: .78rem; margin: .35rem 0 .2rem 0; display: flex; align-items: center; gap: .4rem; }
-/* ícones de linha (componentes.icone): brancos, alinhados ao texto */
+/* ícones de linha (components.line_icon): brancos, alinhados ao texto */
 .ap-ico { display: inline-block; vertical-align: -0.2em; color: #f0f2f4; flex: none; }
 .feature-icon .ap-ico { color: #f0f2f4; opacity: .9; }
-.nav-brand .ap-ico { margin-right: .35rem; }
 
-.audit-review-progress { height: 7px; width: 100%; background: rgba(238, 233, 229, .12); border-radius: 10px; overflow: hidden; margin: .75rem 0 1.35rem 0; }
-.audit-review-progress-fill { height: 100%; background: linear-gradient(90deg, #c89a58, #e4bd7d); border-radius: 10px; transition: width .25s ease; }
-.audit-review-status { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .95rem 0 .45rem 0; color: #e8e5df; font-size: .76rem; font-weight: 600; }
 [data-testid="stVerticalBlockBorderWrapper"] {
     background: linear-gradient(145deg, rgba(31, 32, 37, .96), rgba(23, 24, 28, .96));
     border: 1px solid rgba(200, 154, 88, .24) !important; border-radius: 16px !important; padding: 1.1rem 1.2rem !important;
@@ -179,41 +126,12 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
     border-color: rgba(200, 154, 88, .28) !important; border-radius: 8px !important;
 }
 .audit-eyebrow { color: var(--gold-light); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin-bottom: .45rem; }
-.audit-panel-title { color: var(--text-light); font-family: 'Playfair Display', serif; font-size: 1.65rem; margin: 0 0 .35rem 0; }
-.audit-progress-title { color: var(--text-light); font-family: 'Playfair Display', serif; font-size: 1.25rem; margin: 0 0 .3rem 0; }
-.skill-track { width: 100%; height: 7px; background: #eee9e5; border-radius: 1px; overflow: hidden; }
-.skill-fill { height: 100%; background: #171719; border-radius: 1px; transition: width .25s ease; }
-.audit-note {
-    background: rgba(200, 154, 88, .08); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0;
-    padding: .8rem .95rem; color: #c6c2bb; font-size: .8rem; line-height: 1.5; margin-top: .8rem;
-}
 
-/* --- ABAS PRINCIPAIS: estilo de cartões grandes (gradiente dourado na aba ativa) --- */
-[data-testid="stTabs"] [data-baseweb="tab-list"] {
-    display: grid !important; grid-template-columns: repeat(3, 1fr); gap: .6rem; border-bottom: none !important;
-    margin: .6rem 0 1.4rem 0;
+/* --- BUSCA DE CONTRATOS: barra em destaque no topo da lista --- */
+.st-key-contract_search_bar {
+    padding: 1rem 1.2rem .4rem 1.2rem; border-radius: 18px;
+    border: 1px solid rgba(200, 154, 88, 0.45); background: rgba(200, 154, 88, 0.05);
 }
-[data-testid="stTabs"] [data-baseweb="tab"] {
-    height: 104px !important; min-height: 104px; width: 100%; justify-content: center; align-items: center;
-    padding: .55rem .35rem !important; border-radius: 16px !important;
-    border: 1.5px solid rgba(200, 154, 88, 0.55) !important;
-    background: linear-gradient(145deg, #25262c 0%, #1a1b20 100%) !important;
-    color: var(--gold-light) !important; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
-    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-}
-[data-testid="stTabs"] [data-baseweb="tab"] p {
-    font-size: .82rem !important; font-weight: 700 !important; letter-spacing: .12em; color: inherit !important;
-}
-[data-testid="stTabs"] [data-baseweb="tab"]:hover {
-    transform: translateY(-3px); border-color: var(--gold-light) !important;
-    box-shadow: 0 14px 30px rgba(200, 154, 88, 0.18);
-}
-[data-testid="stTabs"] [aria-selected="true"] {
-    background: linear-gradient(135deg, #c89a58 0%, #e4bd7d 100%) !important;
-    color: #171315 !important; border: 1.5px solid #f0d29b !important;
-    box-shadow: 0 14px 34px rgba(200, 154, 88, 0.35);
-}
-[data-testid="stTabs"] [data-baseweb="tab-highlight"], [data-testid="stTabs"] [data-baseweb="tab-border"] { display: none !important; }
 
 /* --- BLOCOS DO RESULTADO (ap-*) --- */
 .ap-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; margin: 1.6rem 0 .6rem 0; }
@@ -221,7 +139,14 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-meta { color: var(--text-muted); font-size: .9rem; margin-top: .35rem; }
 .ap-chips { display: flex; flex-wrap: wrap; gap: .45rem; margin: .6rem 0 1.1rem 0; }
 .ap-chip { font-size: .74rem; color: #d9d4cb; background: rgba(255,255,255,.04); border: 1px solid rgba(200,154,88,.22); border-radius: 999px; padding: .28rem .7rem; }
-.ap-chip-gold { color: #171315; background: var(--gold-light); border-color: var(--gold-light); font-weight: 700; }
+.ap-chip-live { color: #8cc7a1; border-color: rgba(140,199,161,.55); background: rgba(140,199,161,.08); font-weight: 600; }
+/* análise do contrato: dados considerados, preço, desfecho */
+.ap-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; }
+@media (max-width: 900px) { .ap-grid-2 { grid-template-columns: 1fr; } }
+.ap-data-table td { padding: .45rem .6rem; font-size: .86rem; }
+.ap-data-table td:last-child { text-align: right; color: #f0f2f4; }
+.ap-outcome { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: .4rem; }
+.ap-outcome-v { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: #f0f2f4; margin-top: .2rem; }
 .ap-badge { display: inline-block; font-size: .72rem; font-weight: 700; border: 1px solid; border-radius: 999px; padding: .2rem .65rem; white-space: nowrap; }
 
 .ap-kpi { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.1rem 1.2rem; min-height: 152px; }
@@ -281,3 +206,16 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 
 .ap-status { display: inline-flex; align-items: center; gap: .45rem; font-size: .76rem; color: var(--text-muted); }
 .ap-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* --- ANÁLISE DO CONTRATO: selos, procedência, lista com "Abrir" --- */
+.ap-chip-solid { color: #121315; background: #c89a58; border-color: #c89a58; font-weight: 600; }
+.ap-chip-batch { color: #121315; background: #f2b48a; border-color: #f2b48a; font-weight: 600; }
+.ap-seal { font-size: .78rem; color: #d8c3a0; border: 1px dashed rgba(200,154,88,.5); border-radius: 10px;
+    padding: .45rem .7rem; margin-bottom: .9rem; background: rgba(200,154,88,.05); }
+.ap-list-head { color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding-bottom: .3rem; border-bottom: 1px solid rgba(200,154,88,.25); }
+.ap-list-cell { font-size: .88rem; color: var(--text-light); }
+.ap-mono { font-family: ui-monospace, Menlo, monospace; font-size: .82rem; }
+.st-key-contract_list [data-testid="stHorizontalBlock"] { border-bottom: 1px solid rgba(255,255,255,.05); padding: .15rem 0; }
+.st-key-contract_list [data-testid="stButton"] button { min-height: 34px; padding: .1rem .6rem; }
+

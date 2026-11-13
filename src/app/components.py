@@ -318,6 +318,10 @@ def html_considered_data(variables: list[dict]) -> str:
             <table class="ap-table ap-data-table"><tbody>{given}</tbody></table></div>
         <div><div class="ap-card-sub"><b>Derivadas</b> · calculadas pelo pipeline do modelo</div>
             <table class="ap-table ap-data-table"><tbody>{derived}</tbody></table>
+            <div class="ap-card-sub" style="margin-top:.8rem">As derivadas usam alguns dados de entrada que não são
+            variáveis do modelo, como o valor total das dívidas (só entra na conta de “dívidas em relação à renda”;
+            não confundir com o número de dívidas em aberto, que é fornecida). Ao todo, o modelo usa
+            {len(variables)} variáveis.</div>
             <div class="ap-card-sub" style="margin-top:.8rem">Não entram no modelo: juro cobrado e parcela (o preço
             já embute o risco), gênero, idade, estado civil e dependentes (só auditoria de equidade), rating e PD do
             Bondora.</div></div></div>""")

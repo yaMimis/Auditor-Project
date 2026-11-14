@@ -6,27 +6,27 @@ Não é preciso Docker no computador de quem roda o Terraform: o Docker roda den
 
 ## O que é criado (5 recursos)
 
-| Recurso | Para quê |
-|---|---|
-| Rede `auditor-rede` | Rede própria. Rede nova não aceita conexão de fora até uma regra liberar |
-| Sub-rede `auditor-subrede` | O pedaço da rede, em São Paulo, onde a VM se conecta |
-| IP fixo `auditor-ip` | Endereço do painel e da API |
-| Firewall `auditor-firewall` | Abre só 22 (SSH), 8000 (API) e 8501 (painel), e só para `ips_liberados`. O banco (5432) não fica exposto |
-| VM `auditor-vm` `e2-medium` (2 vCPUs, 4 GB) com Ubuntu 24.04 | Roda o Docker Compose |
+| Recurso                                                          | Para quê                                                                                                     |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Rede `auditor-rede`                                            | Rede própria. Rede nova não aceita conexão de fora até uma regra liberar                                  |
+| Sub-rede `auditor-subrede`                                     | O pedaço da rede, em São Paulo, onde a VM se conecta                                                        |
+| IP fixo `auditor-ip`                                           | Endereço do painel e da API                                                                                  |
+| Firewall `auditor-firewall`                                    | Abre só 22 (SSH), 8000 (API) e 8501 (painel), e só para `ips_liberados`. O banco (5432) não fica exposto |
+| VM `auditor-vm` `e2-medium` (2 vCPUs, 4 GB) com Ubuntu 24.04 | Roda o Docker Compose                                                                                         |
 
 Na Azure eram 8 recursos: a GCP não tem grupo de recursos (o projeto faz esse papel) nem placa de rede separada (o firewall se liga à VM por etiqueta).
 
 ## O que vai para a nuvem e por qual caminho
 
-| O quê | Como chega na VM |
-|---|---|
-| Código | A VM clona o repositório (público) no primeiro boot |
-| Chave do Gemini e chave do grupo | Variáveis `TF_VAR_...` → `.env` da VM |
-| Esquema do banco (`db/01` a `05`) | Roda sozinho na 1ª criação do volume do Postgres |
-| Normas no pgvector | A VM indexa sozinha no primeiro boot |
-| Modelo `pacote_prever_v1.joblib` | Fora do Git: vai por `scp` (passo 14) |
-| CSVs de Euribor, Selic e taxa do BC | Fora do Git: vão por `scp` junto com o modelo e o `completar.sh` carrega no banco |
-| Base da Bondora | Não vai: o painel e o formulário funcionam sem ela |
+| O quê                                              | Como chega na VM                                                                                                            |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Código                                             | A VM clona o repositório (público) no primeiro boot                                                                       |
+| Chave do Gemini e chave do grupo                    | Variáveis `TF_VAR_...` → `.env` da VM                                                                                 |
+| Esquema do banco (`db/01` a `05`)               | Roda sozinho na 1ª criação do volume do Postgres                                                                         |
+| Normas no pgvector                                  | A VM indexa sozinha no primeiro boot                                                                                        |
+| Modelo `pacote_prever_v1.joblib`                  | Fora do Git: vai por `scp` (passo 14)                                                                                     |
+| CSVs de Euribor, Selic e taxa do BC                 | Fora do Git: vão por `scp` junto com o modelo e o `completar.sh` carrega no banco                                      |
+| Base da Bondora (`LoanData_Bondora.csv`, ~150 MB) | Fora do Git: vai por `scp` (passo 14) e o `completar.sh` carrega no banco; sem ela, a busca de contratos não acha nada |
 
 ## Arquivos
 
@@ -63,6 +63,7 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
    gcloud config set project <ID_DO_PROJETO>
    gcloud services enable compute.googleapis.com
    ```
+
    O `application-default login` é o login que o Terraform usa; o `services enable` liga a API de VMs (leva um ou dois minutos).
 6. Criar a chave SSH da VM (Enter nas perguntas):
    ```powershell
@@ -90,6 +91,7 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
     $env:TF_VAR_google_api_key = "<chave do Gemini>"
     $env:TF_VAR_cliente_id_sal = "<chave do grupo>"
     ```
+
     As variáveis `$env:` valem só para aquela janela do PowerShell. Sem a chave do Gemini, o parecer sai pelo template de reserva.
 
 ### Ensaio sem custo
@@ -101,6 +103,7 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
     terraform validate
     terraform plan
     ```
+
     Esperado: `Success! The configuration is valid.` e `Plan: 5 to add, 0 to change, 0 to destroy.` A saída do `plan` serve de print para a banca.
 
 ### Subir na nuvem
@@ -114,29 +117,34 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
     cd ..
     terraform -chdir=infra output -raw comando_esperar_vm   # copie e rode o comando que aparece
     ```
+
     O comando fica parado até o fim e mostra `status: done` e os três containers: `auditor_postgres`, `auditor_api` e `auditor_streamlit`. Se mostrar `status: error`, veja o log com `sudo tail -100 /var/log/cloud-init-output.log` dentro da VM.
-14. Enviar o modelo e os CSVs de custo do dinheiro (fora do Git) e completar:
+14. Enviar o modelo, os CSVs de custo do dinheiro e a base do Bondora (fora do Git) e completar:
     ```powershell
     terraform -chdir=infra output -raw comando_enviar_arquivos   # copie e rode
     terraform -chdir=infra output -raw comando_completar         # copie e rode
     ```
-    O `scp` espera os arquivos em `modelos_salvos/` e `data/raw/` com os nomes do projeto. Se algum nome for diferente no seu computador, ajuste o comando. O `completar.sh` termina mostrando a resposta da API, com `"modelo_carregavel": true`.
-15. Testar no navegador: `terraform -chdir=infra output painel_url` deve abrir o painel e rodar uma auditoria pelo formulário, e `api_url` deve abrir a documentação da API.
+
+    O `scp` espera os arquivos em `modelos_salvos/` e `data/raw/` com os nomes do projeto. Se algum nome for diferente no seu computador, ajuste o comando. O envio da base do Bondora (~150 MB) leva alguns minutos. O `completar.sh` carrega os contratos (pode levar alguns minutos) e termina mostrando a resposta da API, com `"modelo_carregavel": true` e `"banco_disponivel": true`.
+15. Testar no navegador: `terraform -chdir=infra output painel_url` deve abrir o painel, e `api_url` deve abrir a documentação da API.
     - **Abrir um contrato pela busca.** No painel, buscar cada ID abaixo e abrir a tela "Análise do contrato". Os números do contrato (PD, faixa, juro justo e situação do preço) são calculados na hora.
 
-      | Caso | `loan_id` | O que deve aparecer |
-      | --- | --- | --- |
-      | 2016, inadimplente | `0010881b-6ca8-43c1-a2cc-a6c000e3159f` (Espanha) | Desfecho: inadimplente, resultado de −1.590,00 € e principal perdido de 1.590,00 € |
-      | 2016, quitado | `00334763-1d1c-4634-b3a9-a6db00f30214` (Finlândia) | Desfecho: quitado, resultado de +680,03 € e nada de principal perdido |
-      | 2019, sem desfecho | `00011ef9-b8c8-4ecc-b28d-aaa000ec5469` (Espanha) | "Sem desfecho", com o motivo "concedido depois de 2016" |
+      | Caso               | `loan_id`                                           | O que deve aparecer                                                                   |
+      | ------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------- |
+      | 2016, inadimplente | `0010881b-6ca8-43c1-a2cc-a6c000e3159f` (Espanha)    | Desfecho: inadimplente, resultado de −1.590,00 € e principal perdido de 1.590,00 € |
+      | 2016, quitado      | `00334763-1d1c-4634-b3a9-a6db00f30214` (Finlândia) | Desfecho: quitado, resultado de +680,03 € e nada de principal perdido                |
+      | 2019, sem desfecho | `00011ef9-b8c8-4ecc-b28d-aaa000ec5469` (Espanha)    | "Sem desfecho", com o motivo "concedido depois de 2016"                               |
 
       Os IDs saem da `vw_desfecho_contrato` (`db/06`) e são sempre os mesmos (`ORDER BY loan_id`; os de 2016 são do teste e não reestruturados):
+
+
       ```sql
       SELECT loan_id FROM vw_desfecho_contrato
       WHERE ano = 2016 AND inadimplente = 1 AND conjunto = 'teste' AND NOT reestruturado ORDER BY loan_id LIMIT 1;  -- quitado: inadimplente = 0
       SELECT loan_id FROM vw_desfecho_contrato WHERE ano = 2019 AND NOT tem_desfecho ORDER BY loan_id LIMIT 1;
       ```
-      Busca em maiúsculas: buscar `0010881B-6CA8-43C1-A2CC-A6C000E3159F` (o primeiro ID em maiúsculas; vale também digitar um espaço antes ou depois) deve abrir **o mesmo contrato**. Registrar uma decisão nele: na aba "Auditoria da carteira", a fila deve mostrar o contrato como já decidido (o `contrato_id` gravado é o `loan_id` do banco, em minúsculas; `db/07`).
+
+      Busca em maiúsculas: buscar `0010881B-6CA8-43C1-A2CC-A6C000E3159F` (o primeiro ID em maiúsculas; vale também digitar um espaço antes ou depois) deve abrir **o mesmo contrato**. Registrar uma decisão nele: na página "Contratos da base", a lista deve mostrar o contrato como já decidido, e a decisão aparece na página "Registro" (o `contrato_id` gravado é o `loan_id` do banco, em minúsculas; `db/07`).
 
       Pré-requisito: o banco da VM precisa ter os contratos do Bondora, a `vw_desfecho_contrato` (`db/06`) e o gatilho do `db/07`. Se a busca não achar nenhum dos três IDs, confira com `sudo docker exec auditor_postgres psql -U postgres -d auditor_db -c "SELECT COUNT(*) FROM vw_desfecho_contrato"` dentro da VM (esperado: 179.235).
 

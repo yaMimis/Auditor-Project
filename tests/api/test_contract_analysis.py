@@ -1,0 +1,245 @@
+"""GET /contracts/{id}/analysis: contrato do banco → prever() ao vivo → tela de análise.
+
+Banco, modelo e LLM são falsos aqui; o juro justo usa a função real do prever()."""
+import json
+
+import pandas as pd
+import pytest
+
+pytest.importorskip("fastapi")
+pytest.importorskip("xgboost")
+from fastapi.testclient import TestClient  # noqa: E402
+
+import src.api.main as api  # noqa: E402
+from src.api import contract_analysis  # noqa: E402
+from src.modelos import prever as modelo  # noqa: E402
+
+ROW = {  # uma linha como o database.load_contract() devolve (nomes do banco, sem gênero e idade)
+    "loan_id": "98ffaaa4-0b86-4bcc-a179-a68a00a9f09e", "data_emprestimo": "2016-05-10", "novo_cliente": False,
+    "valor_solicitado": 5315.0, "valor_concedido": 5315.0, "juro_aa": 38.95, "prazo_meses": 60,
+    "tipo_verificacao": 4, "pais": "FI", "escolaridade": 3, "tempo_emprego_atual": "MoreThan5Years",
+    "tipo_moradia": 1, "renda_total": 2100.0, "renda_pensao": 0.0, "renda_auxilio_familiar": 0.0,
+    "renda_assistencia_social": 0.0, "renda_pensao_alimenticia": 0.0, "n_emprestimos_anteriores": 2,
+    "valor_emprestimos_anteriores": 3000.0, "pagamentos_anteriores": 1200.0, "quitacoes_antecipadas_valor": 0.0,
+    "quitacoes_antecipadas_qtd": 0, "passivos_existentes": 8, "passivos_total": 900.0,
+    "refinanciamento_passivos": 0, "divida_renda": 0.0, "caixa_livre": 0.0, "score_es_microl": None,
+    "score_es_equifax": None, "score_fi_asiakastieto": "C", "score_ee_mini": None,
+}
+PACKAGE = {
+    "referencia": pd.DataFrame({"pais": ["FI", "FI", "EE"], "ano": [2015, 2015, 2015],
+                                "renda_total": [1800.0, 2200.0, 900.0]}),
+    "euribor_12m": pd.Series([0.06, -0.01], index=pd.to_datetime(["2016-01-01", "2016-06-01"])),
+}
+PD = 0.6982
+
+
+def _prediction(row, package=None):
+    """Saída no formato do prever(), com o juro justo calculado pela função real."""
+    margin = modelo.MARGEM_POR_SAFRA.get(2016, modelo.MARGEM_POR_SAFRA[max(modelo.MARGEM_POR_SAFRA)])
+    fair = round(modelo.juro_justo(60, PD, modelo.LGD_POR_PAIS["FI"], 0.0006 + margin), 4)
+    return {"contrato_id": row["loan_id"], "versao_modelo": "xgboost_teste", "juro_cobrado": 0.3895,
+            "pd": PD, "pd_ic95": [0.6332, 0.7644], "faixa": "D", "juro_justo": fair,
+            "juro_justo_min": round(fair - 0.02, 4), "juro_justo_max": round(fair + 0.02, 4),
+            "diferenca_pp": round((0.3895 - fair) * 100, 1), "situacao_preco": "acima_do_justo",
+            "juro_pares_mediana": 0.2676, "alerta_dados": False,
+            "motivos": [{"variavel": "prazo_meses", "rotulo": "prazo do empréstimo",
+                         "efeito": "aumenta_risco", "valor": 60.0, "peso": 0.339}]}
+
+
+OUTCOME = {"inadimplente": True, "recebido_total": 2831.95, "resultado_eur": -2483.05,
+           "retorno_realizado": -0.4672, "principal_perdido": 4100.0, "duracao_meses": 21.3}
+
+
+@pytest.fixture(autouse=True)
+def fakes(monkeypatch):
+    monkeypatch.setattr(api.cadeia, "chamar_llm", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("sem LLM")))
+    monkeypatch.setattr(api.cadeia, "buscar_trechos", lambda *a, **k: [])
+    monkeypatch.setattr(api.database, "bc_rate", lambda *a, **k: None)
+    monkeypatch.setattr(api.database, "load_contract", lambda cid: dict(ROW) if cid.strip().lower() == ROW["loan_id"] else None)
+    monkeypatch.setattr(api.database, "contract_outcome", lambda cid: (dict(OUTCOME), None))
+    monkeypatch.setattr(api.modelo, "_pacote", lambda *a, **k: PACKAGE)
+    monkeypatch.setattr(api, "prever", _prediction)
+    monkeypatch.setattr(api.portfolio, "cached_portfolio", lambda *a, **k: None)  # sem lote, salvo se o teste pôr
+
+
+@pytest.fixture
+def client():
+    return TestClient(api.app)
+
+
+def test_analysis_runs_model_and_returns_everything(client):
+    r = client.get(f"/contracts/{ROW['loan_id'].upper()}/analysis")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["resultado"]["pd"] == PD and body["resultado"]["parecer_ia"]["origem"] == "template"
+    assert body["contrato"] == {"pais": "FI", "data_emprestimo": "2016-05-10", "ano": 2016, "valor_concedido": 5315.0,
+                                "valor_solicitado": 5315.0, "prazo_meses": 60, "juro_cobrado": 0.3895}
+    assert body["procedencia"]["versao_modelo"] == "xgboost_teste"
+    assert body["procedencia"]["fora_do_dominio"] is False and body["procedencia"]["tempo_ms"] >= 0
+    assert body["procedencia"]["incerteza"] == "bootstrap"  # o prever() devolveu pd_ic95
+    assert body["resultado_observado"]["inadimplente"] is True
+
+
+def test_considered_data_has_all_model_variables_split_by_origin(client):
+    variables = {v["variavel"]: v for v in client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["dados_considerados"]}
+    assert set(variables) == set(contract_analysis.MODEL_FEATURES) and len(variables) == 21
+    assert variables["renda_total"]["origem"] == "fornecida" and variables["renda_total"]["valor"] == 2100.0
+    assert variables["divida_sobre_renda"]["origem"] == "derivada"
+    assert variables["divida_sobre_renda"]["valor"] == pytest.approx(900 / 2100, abs=1e-6)
+    assert variables["renda_relativa"]["valor"] == pytest.approx(2100 / 2000, abs=1e-6)  # mediana FI 2015
+    assert variables["pais"]["tipo"] == "categorica" and variables["escolaridade"]["valor"] == 3
+
+
+def test_no_protected_attribute_anywhere(client):
+    text = json.dumps(client.get(f"/contracts/{ROW['loan_id']}/analysis").json())
+    for word in ("genero", "idade", "estado_civil", "n_dependentes"):
+        assert f'"{word}"' not in text  # como chave ou variável ("escolaridade" contém "idade")
+    selected = {col for cols in api.database.CONTRACT_COLUMNS.values() for col in cols}
+    assert not selected & contract_analysis.PROTECTED  # o banco nem devolve esses campos
+
+
+def test_pricing_parameters_reproduce_fair_rate(client):
+    pricing = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["precificacao"]
+    assert pricing["lgd"] == modelo.LGD_POR_PAIS["FI"] and pricing["euribor_12m"] == 0.0006  # Euribor de jan/16
+    assert pricing["juro_justo_sem_risco"] < pricing["custo_anual"] + 0.01
+    assert pricing["efeito_do_risco_pp"] > 0  # o risco encarece o juro justo
+
+
+def test_pricing_uses_the_same_parameters_as_prever():
+    """Os parâmetros vêm de prever.parametros_preco(): com eles a função juro_justo() reproduz a taxa do prever()."""
+    pricing = contract_analysis.pricing_parameters(ROW, _prediction(ROW), PACKAGE)
+    fair = modelo.juro_justo(pricing["prazo_meses"], PD, pricing["lgd"], pricing["custo_anual"])
+    assert round(fair, 4) == _prediction(ROW)["juro_justo"]
+    manual = {**_prediction(ROW), "pd": None, "juro_justo": None}
+    assert contract_analysis.pricing_parameters(ROW, manual, PACKAGE) is None
+
+
+def test_contract_without_outcome(client, monkeypatch):
+    monkeypatch.setattr(api.database, "contract_outcome", lambda cid: (None, "concedido depois de 2016"))
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    assert body["resultado_observado"] is None and body["motivo_sem_desfecho"] == "concedido depois de 2016"
+
+
+def test_unknown_contract_is_404(client):
+    assert client.get("/contracts/nao-existe/analysis").status_code == 404
+
+
+def _database_down(monkeypatch):
+    def down(cid):
+        raise api.database.DatabaseUnavailable("sem banco")
+    monkeypatch.setattr(api.database, "load_contract", down)
+
+
+def _model_missing(monkeypatch):
+    def missing(*a, **k):
+        raise FileNotFoundError("pacote")
+    monkeypatch.setattr(api.modelo, "_pacote", missing)
+
+
+BATCH_ROW = {"contrato_id": ROW["loan_id"], "ano": 2016, "pais": "FI", "faixa": "D", "pd": 0.31,
+             "juro_cobrado": 0.3895, "juro_justo": 0.25, "juro_justo_min": 0.23, "juro_justo_max": 0.27,
+             "situacao_preco": "acima_do_justo", "valor_concedido": 5315.0, "prazo_meses": 60,
+             "pd_ic95_min": 0.28, "pd_ic95_max": 0.34, "versao_modelo": "xgboost_lote"}
+
+
+def _with_batch(monkeypatch, rows=(BATCH_ROW,)):
+    monkeypatch.setattr(api.portfolio, "cached_portfolio", lambda *a, **k: pd.DataFrame(list(rows)))
+
+
+def test_database_down_without_batch_is_503(client, monkeypatch):
+    _database_down(monkeypatch)
+    assert client.get(f"/contracts/{ROW['loan_id']}/analysis").status_code == 503
+
+
+def test_missing_model_without_batch_is_503(client, monkeypatch):
+    _model_missing(monkeypatch)
+    r = client.get(f"/contracts/{ROW['loan_id']}/analysis")
+    assert r.status_code == 503 and "modelos_salvos" in r.json()["detail"]
+
+
+def _assert_batch_mode(body):
+    """Plano B honesto: marcado como lote, sem horário de cálculo, sem motivos e sem parâmetros."""
+    prov = body["procedencia"]
+    assert prov["modo"] == "lote" and prov["motivo_lote"] and prov["calculado_em"] is None
+    assert "lote" in prov["origem_dados"] and prov.get("pacote_hash") is None
+    r = body["resultado"]
+    assert r["motivos"] == [] and r["pd"] == 0.31 and r["juro_justo_max"] == 0.27 and r["pd_ic95"] == [0.28, 0.34]
+    assert r["parecer_ia"] is not None
+    assert body["precificacao"] is None and body["dados_considerados"] == [] and body["resultado_observado"] is None
+    assert body["contrato"]["ano"] == 2016 and body["contrato"]["data_emprestimo"] is None
+
+
+def test_database_down_falls_back_to_batch(client, monkeypatch):
+    _database_down(monkeypatch)
+    _with_batch(monkeypatch)
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    _assert_batch_mode(body)
+    assert "banco" in body["procedencia"]["motivo_lote"]
+
+
+def test_missing_model_falls_back_to_batch(client, monkeypatch):
+    _model_missing(monkeypatch)
+    _with_batch(monkeypatch)
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    _assert_batch_mode(body)
+    assert "modelos_salvos" in body["procedencia"]["motivo_lote"]
+
+
+def test_contract_only_in_batch_opens_from_batch(client, monkeypatch):
+    other = {**BATCH_ROW, "contrato_id": "so-no-lote"}
+    _with_batch(monkeypatch, [other])
+    _assert_batch_mode(client.get("/contracts/SO-NO-LOTE/analysis").json())
+
+
+def test_live_analysis_is_marked_live(client, monkeypatch):
+    _with_batch(monkeypatch)  # lote presente não muda o caminho normal
+    prov = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["procedencia"]
+    assert prov["modo"] == "ao_vivo" and prov["calculado_em"] and prov["motivo_lote"] is None
+
+
+def test_without_bootstrap_provenance_says_standard_margin(client, monkeypatch):
+    monkeypatch.setattr(api, "prever", lambda row, package=None: {**_prediction(row), "pd_ic95": None})
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    assert body["procedencia"]["incerteza"] == "margem_padrao"
+
+
+OPINION_FIELDS = ["contrato_id", "versao_modelo", "juro_cobrado", "situacao_preco", "pd", "faixa", "juro_justo",
+                  "juro_justo_min", "juro_justo_max", "motivos", "alerta_dados", "bc_credito_pessoal_aa"]
+
+
+def test_result_keeps_the_names_the_opinion_reads(client, monkeypatch):
+    """Combinado com o Samuel e a Maria (13/11): o resultado é a saída do prever() com os mesmos nomes,
+    mais bc_credito_pessoal_aa; se um nome mudar, o parecer cai em revisão manual sem erro."""
+    from genai.src.checagem import EntradaPrever
+    monkeypatch.setattr(api.database, "bc_rate", lambda *a, **k: 101.94)
+    r = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["resultado"]
+    assert all(field in r for field in OPINION_FIELDS)
+    assert r["bc_credito_pessoal_aa"] == 101.94
+    assert {"variavel", "rotulo", "efeito"} <= set(r["motivos"][0])
+    entrada = EntradaPrever.model_validate(r)
+    assert not entrada.vai_para_revisao_manual and r["parecer_ia"]["origem"] == "template"
+
+
+def test_batch_mode_also_keeps_the_names(client, monkeypatch):
+    from genai.src.checagem import EntradaPrever
+    _database_down(monkeypatch)
+    manual = {**BATCH_ROW, "faixa": None, "pd": None, "juro_justo": None, "juro_justo_min": None,
+              "juro_justo_max": None, "situacao_preco": "revisao_manual", "versao_modelo": None}
+    _with_batch(monkeypatch, [manual])
+    r = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["resultado"]
+    assert r["faixa"] is None and r["versao_modelo"] == "lote da carteira"
+    assert EntradaPrever.model_validate(r).vai_para_revisao_manual
+
+
+def test_outcome_uses_the_loan_id_from_the_database(client, monkeypatch):
+    """Combinado do loan_id (13/11): o ID digitado em maiúsculas e com espaços abre o contrato, e o
+    resto do fluxo usa o loan_id que voltou do banco."""
+    asked = []
+    monkeypatch.setattr(api.database, "contract_outcome", lambda cid: asked.append(cid) or (None, None))
+    body = client.get(f"/contracts/{' ' + ROW['loan_id'].upper() + ' '}/analysis").json()
+    assert body["resultado"]["contrato_id"] == ROW["loan_id"] and asked == [ROW["loan_id"]]
+
+
+def test_normalize_id():
+    assert api.database.normalize_id("  0010881B-6CA8 ") == "0010881b-6ca8"
+    assert "lower(" not in api.database.SQL_CONTRACT and "lower(" not in api.database.SQL_OUTCOME_STATUS

@@ -5,7 +5,6 @@
 #     .\iniciar.ps1 -Build     reconstroi a imagem antes (mudou codigo ou requirements)
 #     .\iniciar.ps1 -Parar     para tudo (os dados do banco continuam no volume)
 #     .\iniciar.ps1 -SemNavegador   nao abre o navegador no final
-# Ou de clique duplo no iniciar.bat (mesmo efeito, sem mexer na ExecutionPolicy).
 # Se o Windows bloquear o script, rode antes, na mesma janela:
 #     Set-ExecutionPolicy Bypass -Scope Process
 #
@@ -108,12 +107,22 @@ foreach ($i in 1..30) {
 if (-not $pronto) { Parar "O banco nao respondeu em 60 s. Veja: docker logs auditor_postgres --tail 30" }
 Ok "banco pronto"
 
-# 3. Tabela de decisoes do analista (pode reaplicar sem problema)
-Passo "3/6 Aplicando a tabela de decisoes"
-docker cp "db\05_decisoes_analista.sql" auditor_postgres:/tmp/05.sql | Out-Null
-docker exec auditor_postgres psql -q -U postgres -d auditor_db -v ON_ERROR_STOP=1 -f /tmp/05.sql *> $null
-if ($LASTEXITCODE -ne 0) { Parar "Erro ao aplicar db\05_decisoes_analista.sql. Rode o comando a mao para ver a mensagem." }
-Ok "tabela decisao_analista"
+# 3. Decisoes do analista (db/05), desfecho por contrato (db/06) e gatilho do contrato_id (db/07).
+#    Os tres podem ser reaplicados sem problema; um banco criado do zero ja recebe os tres sozinho.
+Passo "3/6 Aplicando decisoes, desfecho e gatilho do contrato"
+$scripts_banco = @(
+    @("05_decisoes_analista.sql",          "tabela decisao_analista"),
+    @("06_view_desfecho_contrato.sql",     "view vw_desfecho_contrato"),
+    @("07_normaliza_contrato_decisao.sql", "gatilho que normaliza o contrato_id")
+)
+foreach ($item in $scripts_banco) {
+    $arquivo = $item[0]
+    if (-not (Test-Path "db\$arquivo")) { Aviso "db\$arquivo nao encontrado (atualize o projeto com git pull)"; continue }
+    docker cp "db\$arquivo" auditor_postgres:/tmp/aplicar.sql | Out-Null
+    docker exec auditor_postgres psql -q -U postgres -d auditor_db -v ON_ERROR_STOP=1 -f /tmp/aplicar.sql *> $null
+    if ($LASTEXITCODE -ne 0) { Parar "Erro ao aplicar db\$arquivo. Rode o comando a mao para ver a mensagem." }
+    Ok $item[1]
+}
 
 
 # 4. Imagem: so constroi se nao existir ou se pedirem -Build

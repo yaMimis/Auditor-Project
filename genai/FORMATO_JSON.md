@@ -314,7 +314,7 @@ class Parecer(RespostaLLM):
 | Gênero e idade também ficam fora da lista de motivos, como o país? | Samuel | Resolvida em 30/10: sim; nem entram no modelo. |
 | Acima do justo → `revisar_preco` em vez de `encaminhar_compliance` (ver `REGRAS_PARECER.md` v1.2) | Maria | Resolvida em 03/11: aprovada pela Maria. |
 | Confirmar que os campos de saída atendem às telas | Yasmin | Resolvida em 05/11: o painel usa os campos da seção 5. |
-| Passar `bc_credito_pessoal_aa` da view para o `gerar_parecer()` e mostrar o `contexto_mercado` | Yasmin | Aberta (v1.5). |
+| Passar `bc_credito_pessoal_aa` da view para o `gerar_parecer()` e mostrar o `contexto_mercado` | Yasmin | Resolvida em 09/11: a API busca a taxa do mês (`database.bc_rate`) e o painel mostra o bloco "Referência de mercado (Brasil)". |
 | Trocar o rótulo "score de crédito (Estônia)" por um sem o país | Samuel | Aberta. O código já retira o país do rótulo, como proteção. |
 
 ## 8. Histórico

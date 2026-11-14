@@ -36,7 +36,7 @@ Código e documentos que qualquer frente entende, testa e muda sem quebrar o tra
 
 1. Todo módulo novo tem teste em `tests/<setor>/`.
 2. Dados de teste **sintéticos**; nenhum teste depende do CSV real ou do `.joblib` para passar na CI. Quando precisar deles, o teste se pula sozinho (`pytest.skip` / `pytest.importorskip`).
-3. Para lógica de tela, separe funções puras (formatação, HTML, resumos) num módulo testável sem Streamlit (`src/app/componentes.py`, `src/app/carteira.py`).
+3. Para lógica de tela, separe funções puras (formatação, HTML, resumos) num módulo testável sem Streamlit (`src/app/components.py`; o lote da carteira é lido pela API em `src/api/portfolio.py`).
 4. Para a API, troque o `prever()` por respostas de `docs/exemplos_prever.json` com `monkeypatch`.
 5. Nada é dado como pronto com teste falhando.
 

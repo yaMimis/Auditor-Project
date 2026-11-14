@@ -319,7 +319,7 @@ def html_considered_data(variables: list[dict]) -> str:
         <div><div class="ap-card-sub"><b>Derivadas</b> · calculadas pelo pipeline do modelo</div>
             <table class="ap-table ap-data-table"><tbody>{derived}</tbody></table>
             <div class="ap-card-sub" style="margin-top:.8rem">As derivadas usam alguns dados de entrada que não são
-            variáveis do modelo, como o valor total das dívidas (só entra na conta de “dívidas em relação à renda”;
+            variáveis do modelo, como as parcelas mensais das dívidas (só entram na conta de “dívidas em relação à renda”;
             não confundir com o número de dívidas em aberto, que é fornecida). Ao todo, o modelo usa
             {len(variables)} variáveis.</div>
             <div class="ap-card-sub" style="margin-top:.8rem">Não entram no modelo: juro cobrado e parcela (o preço
@@ -399,7 +399,9 @@ EFFECT_TEXT = {"aumenta": ("aumenta o risco", "#d9825b"), "reduz": ("reduz o ris
 def _field_value(field: str, value) -> str:
     if value is None:
         return "sem informação"
-    if field in ("valor_concedido", "renda_total", "passivos_total"):
+    if field in ("renda_total", "passivos_total"):
+        return f"{eur(float(value))}/mês"
+    if field == "valor_concedido":
         return eur(float(value))
     if field == "prazo_meses":
         return f"{int(value)} meses"

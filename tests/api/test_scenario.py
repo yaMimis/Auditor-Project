@@ -55,7 +55,8 @@ def test_without_changes_returns_the_original_and_the_form(client):
     assert list(fields) == scenario.EDITABLE
     assert fields["prazo_meses"]["valor_atual"] == 60 and fields["prazo_meses"]["limite"] == "treino"
     assert (fields["prazo_meses"]["minimo"], fields["prazo_meses"]["maximo"]) == (6.0, 60.0)
-    assert fields["passivos_total"]["limite"] == "provisorio"
+    assert fields["passivos_total"]["limite"] == "treino" and fields["passivos_total"]["maximo"] == 3190.7
+    assert "Retiree" not in fields["tempo_emprego_atual"]["opcoes"]
     assert fields["tipo_verificacao"]["opcoes"] == [1, 2, 3, 4]
     assert body["procedencia"]["modo"] == "ao_vivo" and body["procedencia"]["calculado_em"]
 

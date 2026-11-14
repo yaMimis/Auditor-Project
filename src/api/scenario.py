@@ -25,15 +25,17 @@ EDITABLE = ["valor_concedido", "prazo_meses", "renda_total", "passivos_total", "
 INTEGERS = {"prazo_meses", "passivos_existentes", "n_emprestimos_anteriores"}
 CATEGORIES = {
     "tempo_emprego_atual": ["TrialPeriod", "UpTo1Year", "UpTo2Years", "UpTo3Years", "UpTo4Years",
-                            "UpTo5Years", "MoreThan5Years", "Retiree", "Other"],
+                            "UpTo5Years", "MoreThan5Years"],  # Retiree e Other não aparecem no treino (viram "outros")
     "tipo_verificacao": [1, 2, 3, 4],
 }
-EXTRA_LABELS = {"passivos_total": "valor total das dívidas (€)"}
-# Limites provisórios até o Samuel passar a faixa vista no treino destes campos. Valor, prazo e
-# renda usam a faixa guardada no próprio pacote do modelo (faixas_treino, 0,5% a 99,5% do treino):
-# fora dela o prever() já manda o contrato para revisão manual.
-PROVISIONAL_LIMITS = {"passivos_total": (0.0, 100_000.0), "passivos_existentes": (0, 40),
-                      "n_emprestimos_anteriores": (0, 30)}
+# passivos_total (LiabilitiesTotal do Bondora) é o total das obrigações MENSAIS, não o saldo devedor:
+# com o rótulo errado, o analista digita o saldo e cai fora da faixa (Samuel, 14/11).
+EXTRA_LABELS = {"passivos_total": "parcelas mensais das dívidas (€/mês)"}
+# Valor, prazo e renda: faixa guardada no próprio pacote do modelo (faixas_treino, 0,5% a 99,5% do
+# treino); fora dela o prever() já manda o contrato para revisão manual. Os outros três não estão
+# no pacote: mesma regra, valores calculados pelo Samuel no treino 2009–2015 (14/11).
+TRAINING_LIMITS = {"passivos_total": (0.0, 3190.7), "passivos_existentes": (0, 17),
+                   "n_emprestimos_anteriores": (0, 11)}
 PD_TOLERANCE = 0.0005  # abaixo disso a PD "não mudou" (arredondamento de 4 casas)
 
 
@@ -50,9 +52,9 @@ def limits(package: dict) -> dict[str, tuple[float, float, str]]:
         if field in CHECAR_FAIXA and field in package.get("faixas_treino", {}):
             lo, hi = package["faixas_treino"][field]
             out[field] = (float(lo), float(hi), "treino")
-        elif field in PROVISIONAL_LIMITS:
-            lo, hi = PROVISIONAL_LIMITS[field]
-            out[field] = (float(lo), float(hi), "provisorio")
+        elif field in TRAINING_LIMITS:
+            lo, hi = TRAINING_LIMITS[field]
+            out[field] = (float(lo), float(hi), "treino")
     return out
 
 

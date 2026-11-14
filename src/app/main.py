@@ -826,8 +826,8 @@ def _num_br(value: float) -> str:
 def lab_input(field: dict, cid: str):
     key = f"lab_in_{field['campo']}_{cid}"
     current = field.get("valor_atual")
-    note = {"treino": "Limite: faixa vista no treino do modelo.",
-            "provisorio": "Limite provisório, até o Samuel passar a faixa vista no treino."}.get(field["limite"])
+    note = {"treino": "Limite: faixa vista no treino do modelo (0,5% a 99,5%).",
+            "provisorio": "Limite provisório (ainda sem a faixa vista no treino)."}.get(field["limite"])
     if field["tipo"] == "categoria":
         options = field.get("opcoes") or []
         index = options.index(current) if current in options else None

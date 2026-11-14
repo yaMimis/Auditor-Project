@@ -169,7 +169,8 @@ class ScenarioChanges(BaseModel):
     valor_concedido: float | None = Field(default=None, gt=0, description="€")
     prazo_meses: int | None = Field(default=None, ge=1, le=120)
     renda_total: float | None = Field(default=None, ge=0, description="€ por mês")
-    passivos_total: float | None = Field(default=None, ge=0, description="valor total das dívidas, €")
+    passivos_total: float | None = Field(default=None, ge=0,
+                                        description="parcelas mensais das dívidas, €/mês (não é o saldo devedor)")
     passivos_existentes: int | None = Field(default=None, ge=0, description="número de dívidas em aberto")
     n_emprestimos_anteriores: int | None = Field(default=None, ge=0)
     tempo_emprego_atual: str | None = None
@@ -187,7 +188,7 @@ class ScenarioField(BaseModel):
     maximo: float | None = None
     opcoes: list[Any] | None = None
     limite: Literal["treino", "provisorio", "nenhum"] = Field(
-        description="treino = faixa guardada no pacote do modelo; provisorio = até o Samuel passar a do treino")
+        description="treino = faixa vista no treino (0,5% a 99,5%); provisorio = sem faixa do treino ainda")
 
 
 class ScenarioEffect(BaseModel):

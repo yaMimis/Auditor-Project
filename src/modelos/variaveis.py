@@ -89,7 +89,7 @@ ROTULOS = {
     "parcela_neutra_sobre_renda": "parcela em relação à renda",
     "valor_sobre_renda": "valor do empréstimo em relação à renda",
     "divida_sobre_renda": "dívidas em relação à renda",
-    "renda_relativa": "renda comparada à média do país",
+    "renda_relativa": "renda comparada à mediana do país",
     "n_emprestimos_anteriores": "empréstimos anteriores na plataforma",
     "valor_emprestimos_anteriores": "valor dos empréstimos anteriores",
     "passivos_existentes": "número de dívidas em aberto",

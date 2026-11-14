@@ -5,7 +5,7 @@ description: Use para construir ou alterar a API FastAPI do Auditor de Preço Ju
 
 # API (FastAPI)
 
-> Leia antes: `regras_negocio/contratos_dados` (seções 4 a 6), `regras_negocio/governanca`, `ambiente-e-infra`. Dono: Yasmin. Código: `src/api/main.py` (rotas), `src/api/schemas.py` (formatos), `src/api/database.py` (PostgreSQL), `src/api/contract_analysis.py` (tela Análise), `src/api/scenario.py` (Laboratório), `src/api/portfolio.py` (lote da carteira); testes em `tests/api/`; conferência com dados reais em `scripts/conferir_analise.py`.
+> Leia antes: `regras_negocio/contratos_dados` (seções 4 a 6), `regras_negocio/governanca`, `ambiente-e-infra`. Dono: Yasmin. Código: `src/api/main.py` (rotas), `src/api/schemas.py` (formatos), `src/api/database.py` (PostgreSQL), `src/api/contract_analysis.py` (tela Análise), `src/api/scenario.py` (Laboratório), `src/api/invariance.py` (teste de invariância), `src/api/portfolio.py` (lote da carteira); testes em `tests/api/`; conferência com dados reais em `scripts/conferir_analise.py`.
 
 ## Objetivo
 
@@ -25,6 +25,7 @@ Ser a **única porta** para o modelo, o parecer, o banco e o lote: tudo que calc
 | `GET /contracts/{id}` | ID | linha do lote (usada pela busca) | 404 · 503 |
 | `GET /contracts/{id}/analysis` | ID do contrato da base | `ContractAnalysis`: `resultado` (saída do `prever()` + parecer), `contrato`, `dados_considerados` (21 variáveis: 17 fornecidas, 4 derivadas), `precificacao`, `resultado_observado` (só 2009–2016 encerrados; `vw_desfecho_contrato`), `motivo_sem_desfecho` (quando não há desfecho), `procedencia` | 404 fora do banco e do lote · 503 (ver plano B) |
 | `POST /contracts/{id}/scenario` | `ScenarioChanges` (só os campos trocados; `{}` = só o original) | `ScenarioResult`: `original`, `cenario`, `parcela_original`, `parcela_cenario`, `efeitos` (cada campo trocado sozinho), `campos` (formulário com valor atual e limites), `procedencia` | 404 · 422 fora dos limites ou campo desconhecido · 503 banco ou modelo fora (sem plano B) |
+| `POST /contracts/{id}/invariance` | — | `InvarianceResult`: `original` e `trocado` (PD, faixa, juro justo, margem, situação, motivos), `identico`, `diferencas`, `atributos_trocados` (só os nomes), `como_foi_trocado`, `modelo_sem_atributos_protegidos`, `procedencia` | 404 · 503 banco ou modelo fora (sem plano B) |
 | `POST /decisions` | `NewDecision` | `RecordedDecision` (201) | 422 · 503 banco fora |
 | `GET /decisions?contrato_id=&limit=` | limit 1–5000 (padrão 200) | lista de `RecordedDecision` | 503 |
 | `GET /decisions/current` | — | lista de `CurrentDecision` | 503 |
@@ -34,7 +35,7 @@ As rotas fixas `/contracts/ids` e `/contracts/export` ficam declaradas **antes**
 ## Regras
 
 1. **A API não calcula por fora do modelo.** A Análise usa `preparar_contrato()`, `parametros_preco()` e `juro_justo()` de `src/modelos/prever.py` (as mesmas do `prever()`); a parcela do Laboratório usa `_parcela()` de `src/modelos/carteira.py`. Se a precificação não reproduzir o juro justo do `prever()`, ela vai como `null`.
-2. **Gênero, idade, estado civil e dependentes nunca entram**: a consulta do contrato tem lista explícita de colunas (`database.CONTRACT_COLUMNS`), o `ScenarioChanges` recusa campos fora da lista (`extra="forbid"`) e o registro da decisão grava só a saída do `prever()` e o parecer.
+2. **Gênero, idade, estado civil e dependentes nunca entram**: a consulta do contrato tem lista explícita de colunas (`database.CONTRACT_COLUMNS`); gênero e idade só são lidos pelo teste de invariância, numa consulta separada (`database.load_protected`), e a resposta dele não traz os valores reais nem os trocados; o `ScenarioChanges` recusa campos fora da lista (`extra="forbid"`) e o registro da decisão grava só a saída do `prever()` e o parecer.
 3. **Procedência honesta** em toda resposta de contrato: `modo` (`ao_vivo` ou `lote`), `calculado_em` (null no lote), arquivo, hash (12 caracteres do SHA-256) e data do pacote, `incerteza` (`bootstrap` quando o `prever()` devolveu `pd_ic95`; `margem_padrao` quando o pacote não tem bootstrap e a margem é ±2 p.p. do juro justo, **não** um intervalo da PD; `nao_calculada` em revisão manual) e o número de reamostragens.
 4. **Plano B na rota de análise (decidido em 13/11):** banco fora, modelo ausente ou contrato fora do banco → números do lote com `modo: "lote"` e `motivo_lote`, sem motivos, parâmetros e dados considerados. Nunca marcar número do lote como calculado agora. O Laboratório **não** tem plano B: cenário sem modelo ao vivo é 503.
 5. **Laboratório:** limites de valor, prazo e renda vêm do pacote (`faixas_treino`, 0,5% a 99,5% do treino); parcelas mensais das dívidas (`passivos_total`, total das obrigações mensais, não o saldo), número de dívidas e empréstimos anteriores usam a mesma regra, com os valores do Samuel (`scenario.TRAINING_LIMITS`, 14/11). Fora dos limites = 422, sem rodar o modelo. O juro cobrado é controle à parte: muda situação e parcela, nunca a PD. O "O que mudou o risco" roda o `prever()` com cada campo trocado sozinho.
@@ -45,7 +46,7 @@ As rotas fixas `/contracts/ids` e `/contracts/export` ficam declaradas **antes**
 
 ## Testes
 
-- `tests/api/test_api.py`, `test_contract_analysis.py`, `test_scenario.py`, `test_portfolio.py`, `test_portfolio_routes.py`: começam com `pytest.importorskip("fastapi")` e `("xgboost")`; banco, `prever()` e LLM trocados por `monkeypatch`. Nenhum precisa do `.joblib`, do banco real ou de internet.
+- `tests/api/test_api.py`, `test_contract_analysis.py`, `test_scenario.py`, `test_invariance.py`, `test_portfolio.py`, `test_portfolio_routes.py`: começam com `pytest.importorskip("fastapi")` e `("xgboost")`; banco, `prever()` e LLM trocados por `monkeypatch`. Nenhum precisa do `.joblib`, do banco real ou de internet.
 - `tests/api/test_integracao_analise.py`: só roda com banco, pacote e lote reais (pulado no CI). Abre contratos reais e compara com o lote.
 
 ## Pronto quando
@@ -56,6 +57,6 @@ As rotas fixas `/contracts/ids` e `/contracts/export` ficam declaradas **antes**
 
 ## Estado em 13/11/2026
 
-- **[EM ANDAMENTO] (Yasmin)** Etapa 1 (análise ao vivo por ID, lote pela API, plano B na rota) e Etapa 2 (Laboratório): implementadas e com testes locais; **não concluídas** até o `conferir_analise` dar 20/20 com o pacote oficial (o `.joblib` usado no teste não tinha o bootstrap).
+- **[CONCLUÍDO] (Yasmin, 14/11)** Etapa 1 (análise ao vivo por ID, lote pela API, plano B na rota) e Etapa 2 (Laboratório): conferência com dados reais 20/20, pacote `48784ba3742d` (v3 com bootstrap de 20 reamostras).
 - **[DECIDIDO] (13/11)** removido `POST /simulate` (a simulação de juro agora é o Laboratório).
-- **[PENDENTE] (Yasmin)** Etapa 3: teste de invariância (rodar o `prever()` com gênero e idade trocados, sem mostrar os valores reais). Precisa de uma consulta separada só para esse teste.
+- **[EM ANDAMENTO] (Yasmin)** Etapa 3: teste de invariância implementado (`POST /contracts/{id}/invariance`, testes em `tests/api/test_invariance.py`); falta rodar com o banco real.

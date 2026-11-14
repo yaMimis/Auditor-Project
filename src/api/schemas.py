@@ -215,6 +215,33 @@ class ScenarioResult(BaseModel):
     procedencia: Provenance
 
 
+
+# ---------- Teste de invariância (POST /contracts/{id}/invariance) ----------
+
+class InvarianceSnapshot(BaseModel):
+    """O que se compara entre as duas execuções. Nenhum atributo protegido aqui."""
+    pd: float | None = None
+    faixa: str | None = None
+    juro_justo: float | None = None
+    juro_justo_min: float | None = None
+    juro_justo_max: float | None = None
+    situacao_preco: str
+    motivos: list[str] = Field(description="Rótulos dos motivos, na ordem do peso")
+
+
+class InvarianceResult(BaseModel):
+    """Gênero e idade trocados mudam o resultado? Sem os valores reais nem os trocados."""
+    contrato_id: str
+    atributos_trocados: list[str]
+    como_foi_trocado: str
+    original: InvarianceSnapshot
+    trocado: InvarianceSnapshot
+    identico: bool
+    diferencas: list[str] = Field(description="Campos que mudaram (vazia = idêntico); motivos compara peso e efeito")
+    modelo_sem_atributos_protegidos: bool = Field(description="As 21 variáveis do modelo não incluem gênero nem idade")
+    procedencia: Provenance
+
+
 # ---------- Decisão do analista (db/05_decisoes_analista.sql) ----------
 
 AnalystDecision = Literal["manter_preco", "revisar_preco", "encaminhar_compliance"]

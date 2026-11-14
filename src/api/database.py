@@ -212,6 +212,20 @@ def load_contract(contrato_id: str) -> dict | None:
     return None if row is None else {k: _plain(v) for k, v in row.items()}
 
 
+# [SÓ AUDITORIA] gênero e idade: lidos só pelo teste de invariância (POST /contracts/{id}/invariance),
+# numa consulta separada da do contrato. Nunca vão para a Análise, o parecer, o LLM ou a decisão, e a
+# rota do teste não devolve os valores reais.
+SQL_PROTECTED = "SELECT genero, idade FROM cliente WHERE loan_id = %s"
+
+
+def load_protected(loan_id: str) -> dict | None:
+    """Gênero e idade do cliente do contrato, só para o teste de invariância."""
+    with _connection() as conn, _cursor(conn) as cur:
+        cur.execute(SQL_PROTECTED, (normalize_id(loan_id),))
+        row = cur.fetchone()
+    return None if row is None else {k: _plain(v) for k, v in row.items()}
+
+
 def observed_outcome(contrato_id: str) -> dict | None:
     """O que aconteceu com o contrato (vw_retorno_realizado), ou None se ele não tem desfecho
     conhecido (concedido depois de 2016, ainda ativo, Eslováquia) ou a view não existe."""

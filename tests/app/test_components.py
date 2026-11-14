@@ -178,3 +178,22 @@ def test_scenario_effects_without_model_fields():
 def test_outcome_says_why_there_is_none():
     out = components.html_outcome(None, None, "concedido depois de 2016")
     assert "Sem desfecho" in out and "concedido depois de 2016" in out
+
+
+# ---------- Teste de invariância
+
+def _invariance(**changed):
+    snap = {"pd": 0.30, "faixa": "D", "juro_justo": 0.25, "juro_justo_min": 0.23, "juro_justo_max": 0.27,
+            "situacao_preco": "acima_do_justo", "motivos": ["prazo do empréstimo", "renda total"]}
+    return {"original": snap, "trocado": {**snap, **changed}, "identico": not changed,
+            "diferencas": list(changed), "como_foi_trocado": "gênero trocado pelo outro valor e idade deslocada"}
+
+
+def test_invariance_identical():
+    out = components.html_invariance(_invariance())
+    assert "Resultado idêntico" in out and "ap-changed" not in out and "não mostra o gênero nem a" in out
+
+
+def test_invariance_different_points_to_the_field():
+    out = components.html_invariance(_invariance(pd=0.35))
+    assert "Resultado diferente em: PD" in out and out.count("ap-changed") == 1

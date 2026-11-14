@@ -5,7 +5,6 @@
 #     .\iniciar.ps1 -Build     reconstroi a imagem antes (mudou codigo ou requirements)
 #     .\iniciar.ps1 -Parar     para tudo (os dados do banco continuam no volume)
 #     .\iniciar.ps1 -SemNavegador   nao abre o navegador no final
-# Ou de clique duplo no iniciar.bat (mesmo efeito, sem mexer na ExecutionPolicy).
 # Se o Windows bloquear o script, rode antes, na mesma janela:
 #     Set-ExecutionPolicy Bypass -Scope Process
 #

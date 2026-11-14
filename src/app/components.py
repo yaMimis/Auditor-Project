@@ -543,6 +543,38 @@ EMPTY_FAIRNESS = [
 ]
 
 
+def html_invariance(result: dict) -> str:
+    """Teste de invariância: original × gênero e idade trocados (sem os valores reais)."""
+    original, changed = result["original"], result["trocado"]
+    rows = [
+        ("Risco de inadimplência (PD)", pct(original.get("pd")), pct(changed.get("pd"))),
+        ("Faixa de risco", original.get("faixa") or "—", changed.get("faixa") or "—"),
+        ("Juro justo", pct(original.get("juro_justo")), pct(changed.get("juro_justo"))),
+        ("Margem do juro justo", _margin(original), _margin(changed)),
+        ("O que mais pesou", ", ".join(original.get("motivos", [])[:3]) or "—",
+         ", ".join(changed.get("motivos", [])[:3]) or "—"),
+    ]
+    body = "".join(
+        f'<tr><td>{esc(name)}</td><td class="ap-mono">{esc(a)}</td>'
+        f'<td class="ap-mono{" ap-changed" if a != b else ""}">{esc(b)}</td></tr>' for name, a, b in rows)
+    body += (f'<tr><td>Situação do preço</td><td>{situation_badge(original.get("situacao_preco"))}</td>'
+             f'<td>{situation_badge(changed.get("situacao_preco"))}</td></tr>')
+    if result.get("identico"):
+        verdict = ('<div class="ap-verdict ap-verdict-ok">Resultado idêntico: trocar gênero e idade não mudou nada '
+                   'no que o modelo calcula.</div>')
+    else:
+        labels = {"pd": "PD", "faixa": "faixa", "juro_justo": "juro justo", "juro_justo_min": "margem",
+                  "juro_justo_max": "margem", "situacao_preco": "situação", "motivos": "motivos"}
+        changed_names = sorted({labels.get(d, d) for d in result.get("diferencas", [])})
+        verdict = (f'<div class="ap-verdict ap-verdict-bad">Resultado diferente em: {esc(", ".join(changed_names))}. '
+                   'O modelo está usando gênero ou idade: avise o responsável pelo modelo.</div>')
+    return compact(f"""{verdict}
+        <table class="ap-table ap-lab-table"><thead><tr><th></th><th>Original</th>
+        <th>Gênero e idade trocados</th></tr></thead><tbody>{body}</tbody></table>
+        <div class="ap-foot">Como foi trocado: {esc(result.get("como_foi_trocado"))}. A tela não mostra o gênero nem a
+        idade reais do cliente.</div>""")
+
+
 def html_fairness_table(rows: list[dict]) -> str:
     body = []
     for e in rows:

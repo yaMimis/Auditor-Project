@@ -430,8 +430,8 @@ def html_provenance(rows: list[tuple[str, str]]) -> str:
     return compact(f'<table class="ap-table ap-data-table"><tbody>{body}</tbody></table>')
 
 
-def html_outcome(outcome: dict | None, from_portfolio: dict | None = None) -> str:
-    """O que aconteceu de verdade. Do banco (vw_retorno_realizado) ou, sem banco, do arquivo do lote."""
+def html_outcome(outcome: dict | None, from_portfolio: dict | None = None, reason: str | None = None) -> str:
+    """O que aconteceu de verdade. Do banco (vw_desfecho_contrato) ou, sem banco, do arquivo do lote."""
     explain = ("Perda líquida realizada = valor concedido − tudo o que foi recebido (principal, juros e multas), "
                "sem desconto no tempo.")
     if outcome:
@@ -443,11 +443,14 @@ def html_outcome(outcome: dict | None, from_portfolio: dict | None = None) -> st
                  ("Resultado (recebido − concedido)", f'<span style="color:{result_color}">{eur(result, 2)}</span>'),
                  ("Retorno realizado", pct(retorno, 1) if retorno is not None else "—"),
                  ("Principal que não voltou", eur(outcome.get("principal_perdido"), 2))]
-        source = "Fonte: banco (vw_retorno_realizado), contrato encerrado."
+        source = "Fonte: banco (vw_desfecho_contrato), contrato encerrado."
     elif from_portfolio and from_portfolio.get("rentabilidade_realizada") is not None:
         cells = [("Rentabilidade realizada", pct(from_portfolio["rentabilidade_realizada"], 1)),
                  ("Perda líquida realizada", eur(from_portfolio.get("perda_nao_coberta_eur") or 0, 2))]
         source = "Fonte: arquivo do lote da carteira (sem banco nesta consulta)."
+    elif reason:
+        return (f'<div class="ap-empty"><b>Sem desfecho</b>: {esc(reason)}. O sistema não mostra perda de um '
+                'contrato sem resultado final.</div>')
     else:
         return ('<div class="ap-empty">Sem resultado final observado: o contrato é posterior a 2016 ou ainda não '
                 'terminou. O sistema não mostra perda de um contrato que não acabou.</div>')

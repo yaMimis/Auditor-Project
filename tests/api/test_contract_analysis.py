@@ -55,8 +55,8 @@ def fakes(monkeypatch):
     monkeypatch.setattr(api.cadeia, "chamar_llm", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("sem LLM")))
     monkeypatch.setattr(api.cadeia, "buscar_trechos", lambda *a, **k: [])
     monkeypatch.setattr(api.database, "bc_rate", lambda *a, **k: None)
-    monkeypatch.setattr(api.database, "load_contract", lambda cid: dict(ROW) if cid.lower() == ROW["loan_id"] else None)
-    monkeypatch.setattr(api.database, "observed_outcome", lambda cid: dict(OUTCOME))
+    monkeypatch.setattr(api.database, "load_contract", lambda cid: dict(ROW) if cid.strip().lower() == ROW["loan_id"] else None)
+    monkeypatch.setattr(api.database, "contract_outcome", lambda cid: (dict(OUTCOME), None))
     monkeypatch.setattr(api.modelo, "_pacote", lambda *a, **k: PACKAGE)
     monkeypatch.setattr(api, "prever", _prediction)
     monkeypatch.setattr(api.portfolio, "cached_portfolio", lambda *a, **k: None)  # sem lote, salvo se o teste pôr
@@ -115,8 +115,9 @@ def test_pricing_uses_the_same_parameters_as_prever():
 
 
 def test_contract_without_outcome(client, monkeypatch):
-    monkeypatch.setattr(api.database, "observed_outcome", lambda cid: None)
-    assert client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["resultado_observado"] is None
+    monkeypatch.setattr(api.database, "contract_outcome", lambda cid: (None, "concedido depois de 2016"))
+    body = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()
+    assert body["resultado_observado"] is None and body["motivo_sem_desfecho"] == "concedido depois de 2016"
 
 
 def test_unknown_contract_is_404(client):
@@ -228,3 +229,17 @@ def test_batch_mode_also_keeps_the_names(client, monkeypatch):
     r = client.get(f"/contracts/{ROW['loan_id']}/analysis").json()["resultado"]
     assert r["faixa"] is None and r["versao_modelo"] == "lote da carteira"
     assert EntradaPrever.model_validate(r).vai_para_revisao_manual
+
+
+def test_outcome_uses_the_loan_id_from_the_database(client, monkeypatch):
+    """Combinado do loan_id (13/11): o ID digitado em maiúsculas e com espaços abre o contrato, e o
+    resto do fluxo usa o loan_id que voltou do banco."""
+    asked = []
+    monkeypatch.setattr(api.database, "contract_outcome", lambda cid: asked.append(cid) or (None, None))
+    body = client.get(f"/contracts/{' ' + ROW['loan_id'].upper() + ' '}/analysis").json()
+    assert body["resultado"]["contrato_id"] == ROW["loan_id"] and asked == [ROW["loan_id"]]
+
+
+def test_normalize_id():
+    assert api.database.normalize_id("  0010881B-6CA8 ") == "0010881b-6ca8"
+    assert "lower(" not in api.database.SQL_CONTRACT and "lower(" not in api.database.SQL_OUTCOME_STATUS

@@ -270,16 +270,17 @@ def analyze_contract(contrato_id: str):
     loan_date = contract_analysis.contract_summary(row)["data_emprestimo"]
     resultado["bc_credito_pessoal_aa"] = database.bc_rate(resultado["contrato_id"], loan_date)
     resultado["parecer_ia"] = _opinion(resultado, loan_date)
-    try:
-        outcome = database.observed_outcome(contrato_id)
+    try:  # o loan_id que voltou do banco, não o digitado (combinado de 13/11)
+        outcome, no_outcome_reason = database.contract_outcome(resultado["contrato_id"])
     except database.DatabaseUnavailable:
-        outcome = None
+        outcome, no_outcome_reason = None, None
     return {
         "resultado": resultado,
         "contrato": contract_analysis.contract_summary(row),
         "dados_considerados": contract_analysis.considered_data(row, package),
         "precificacao": contract_analysis.pricing_parameters(row, resultado, package),
         "resultado_observado": outcome,
+        "motivo_sem_desfecho": no_outcome_reason,
         "procedencia": {
             "versao_modelo": resultado.get("versao_modelo") or modelo.VERSAO,
             "calculado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),

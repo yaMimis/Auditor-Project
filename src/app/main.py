@@ -730,7 +730,8 @@ def render_analysis(r: dict, ctx: dict) -> None:
 
     md(f"""<div class="ap-card"><div class="ap-card-title">Resultado observado</div>
         <div class="ap-card-sub">Só para contratos encerrados: o que aconteceu de verdade depois da concessão.</div>
-        {html_outcome(analysis.get("resultado_observado"), ctx.get("lote") if not live else None)}</div>""")
+        {html_outcome(analysis.get("resultado_observado"), ctx.get("lote") if not live else None,
+                      analysis.get("motivo_sem_desfecho"))}</div>""")
 
     st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
     decision_block(r)

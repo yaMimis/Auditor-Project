@@ -173,3 +173,8 @@ def test_scenario_effects_read_like_a_sentence():
 
 def test_scenario_effects_without_model_fields():
     assert "não é variável do modelo" in components.html_scenario_effects([])
+
+
+def test_outcome_says_why_there_is_none():
+    out = components.html_outcome(None, None, "concedido depois de 2016")
+    assert "Sem desfecho" in out and "concedido depois de 2016" in out

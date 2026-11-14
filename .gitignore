@@ -14,6 +14,8 @@ docker-compose.override.yml
 *.pkl
 .ipynb_checkpoints/
 .pytest_cache/
+Cronograma_novas_telas_Auditor.docx
+GUIA_CLAUDE_CODE_DADOS.md
 
 # Terraform
 infra/.terraform/

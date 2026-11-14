@@ -1,6 +1,6 @@
 # Qualidade dos dados · Auditor de Preço Justo
 
-Gerado em 2026-11-04 a partir do banco. As regras estão em `src/dados/validacao.py` e as decisões sobre os dados, em `DATA.md`.
+Gerado em 2026-11-13 a partir do banco. As regras estão em `src/dados/validacao.py` e as decisões sobre os dados, em `DATA.md`.
 
 ## Resumo
 

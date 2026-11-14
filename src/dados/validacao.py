@@ -9,7 +9,8 @@ Uso (na raiz do projeto, com o banco no ar e o .env preenchido):
 O que faz:
   * lê do banco, com pd.read_sql, as tabelas emprestimo, cliente, historico_credito,
     euribor_mensal, selic_mensal, bc_credito_pessoal_mensal, decisao_analista (decisões do
-    analista) e as views vw_base_modelagem, vw_retorno_realizado e vw_decisao_atual;
+    analista) e as views vw_base_modelagem, vw_retorno_realizado, vw_desfecho_contrato e
+    vw_decisao_atual;
   * valida cada tabela com um esquema do pandera, com lazy=True: todas as violações
     saem de uma vez, em vez de parar na primeira;
   * separa as regras em dois níveis:
@@ -67,6 +68,9 @@ RECOMENDACOES = DECISOES_ANALISTA + ["revisao_manual"]
 SITUACOES_PRECO = ["acima_do_justo", "abaixo_do_justo", "dentro_da_margem", "revisao_manual"]
 ORIGENS_DECISAO = ["carteira", "simulacao"]
 CHAVES_PROIBIDAS_NO_JSON = ("genero", "idade", "gender", "age")   # gênero e idade nunca entram no registro
+# motivos da vw_desfecho_contrato (db/06), na ordem em que o SQL testa (os filtros do db/03)
+MOTIVOS_SEM_DESFECHO = ["concedido depois de 2016", "Eslováquia (fora da base)",
+                        "não encerrado até o corte de 20/07/2021"]
 TABELAS_MACRO = ("euribor_mensal", "selic_mensal", "bc_credito_pessoal_mensal")
 DATAS_BONDORA = ("data_referencia", "data_pedido", "data_emprestimo", "data_primeira_parcela",
                  "data_vencimento_original", "data_vencimento_atual", "data_fim_contrato",
@@ -74,7 +78,8 @@ DATAS_BONDORA = ("data_referencia", "data_pedido", "data_emprestimo", "data_prim
 CHAVES = {"emprestimo": "loan_id", "cliente": "loan_id", "historico_credito": "loan_id",
           "euribor_mensal": "mes", "selic_mensal": "mes",
           "bc_credito_pessoal_mensal": "mes", "vw_base_modelagem": "loan_id",
-          "vw_retorno_realizado": "loan_id", "decisao_analista": "decisao_id",
+          "vw_retorno_realizado": "loan_id", "vw_desfecho_contrato": "loan_id",
+          "decisao_analista": "decisao_id",
           "vw_decisao_atual": "contrato_id"}
 DATAS_EXTRAS = {"decisao_analista": ["registrada_em"], "vw_decisao_atual": ["registrada_em"]}
 
@@ -266,6 +271,22 @@ def _regras_erro() -> dict[str, dict[str, "pa.Column"]]:
             "principal_perdido": _col(False, False, ge0),
             "recuperado_eur": _col(False, False, ge0),
         },
+        # uma linha por contrato de emprestimo; as colunas do desfecho ficam vazias sem desfecho
+        "vw_desfecho_contrato": {
+            "loan_id": _col(False, True, pa.Check.str_matches(GUID)),
+            "ano": _col(False, False, pa.Check.in_range(2009, 2021)),
+            "pais": _col(False, False, pa.Check.isin(["EE", "ES", "FI", "SK"])),
+            "tem_desfecho": _col(False),
+            "motivo_sem_desfecho": _col(True, False, pa.Check.isin(MOTIVOS_SEM_DESFECHO)),
+            "inadimplente": _col(True, False, pa.Check.isin([0, 1])),
+            "valor_concedido": _col(True, False, _maior_que(0)),
+            "recebido_total": _col(True, False, ge0),
+            "resultado_eur": _col(True),
+            "retorno_realizado": _col(True, False, pa.Check.in_range(-1, 10)),
+            "principal_perdido": _col(True, False, ge0),
+            "conjunto": _col(True, False, pa.Check.isin(["treino", "teste", "fora_cliente_repetido"])),
+            "reestruturado": _col(True),
+        },
     }
 
 
@@ -306,6 +327,12 @@ def _checks_linha_erro() -> dict[str, list]:
             _linha("recuperado_eur <= recebido_total (recuperacao ja esta nos pagamentos)",
                    ("recuperado_eur", "recebido_total"),
                    lambda df: df["recuperado_eur"] <= df["recebido_total"] + 0.01),
+        ],
+        "vw_desfecho_contrato": [
+            _linha("motivo_sem_desfecho vazio so quando ha desfecho", ("tem_desfecho", "motivo_sem_desfecho"),
+                   lambda df: df["tem_desfecho"].astype(bool) == df["motivo_sem_desfecho"].isna()),
+            _linha("inadimplente so preenchido quando ha desfecho", ("tem_desfecho", "inadimplente"),
+                   lambda df: df["tem_desfecho"].astype(bool) == df["inadimplente"].notna()),
         ],
         "vw_base_modelagem": [
             _linha("treino so com concessoes ate 2015", ("conjunto", "ano"),
@@ -512,8 +539,10 @@ def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
         fora = cart.loc[~cart["contrato_id"].isin(ids_carteira), "contrato_id"]
         erro("decisao_analista: contrato 'carteira' que nao existe em emprestimo", len(fora),
              ", ".join(map(str, fora.head(3))))
+        # compara o ID normalizado: uma decisão da carteira digitada em maiúsculas ou com espaços
+        # ficaria como 'simulacao' e sumiria da fila (o db/07 impede isso no banco)
         erro("decisao_analista: contrato 'simulacao' que existe em emprestimo",
-             int(simu["contrato_id"].isin(ids_carteira).sum()))
+             int(simu["contrato_id"].astype(str).str.strip().str.lower().isin(ids_carteira).sum()))
     if d is not None and va is not None and "contrato_id" in va.columns and {"contrato_id", "origem"} <= set(d.columns):
         esperado = set(d.loc[d["origem"] == "carteira", "contrato_id"])
         erro("vw_decisao_atual com contratos diferentes da decisao_analista (carteira)",
@@ -523,6 +552,16 @@ def _cruzamentos(t: dict[str, pd.DataFrame], parcial: bool) -> list[dict]:
     if vb is not None and vr is not None and "loan_id" in vb.columns and "loan_id" in vr.columns:
         erro("vw_retorno_realizado com contratos diferentes da vw_base_modelagem",
              len(set(vb["loan_id"]) ^ set(vr["loan_id"])))
+    # desfecho: todo contrato de emprestimo, com desfecho exatamente nos da vw_retorno_realizado
+    vd = t.get("vw_desfecho_contrato")
+    if vd is not None and {"loan_id", "tem_desfecho"} <= set(vd.columns):
+        if e is not None:
+            erro("vw_desfecho_contrato com contratos diferentes de emprestimo",
+                 len(set(vd["loan_id"]) ^ set(e["loan_id"])))
+        if vr is not None and "loan_id" in vr.columns:
+            com = set(vd.loc[vd["tem_desfecho"].astype(bool), "loan_id"])
+            erro("vw_desfecho_contrato: contratos com desfecho diferentes da vw_retorno_realizado",
+                 len(com ^ set(vr["loan_id"])))
     # base de modelagem
     v = t.get("vw_base_modelagem")
     if v is not None and {"conjunto", "cliente_id"} <= set(v.columns):

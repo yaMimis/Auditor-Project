@@ -1,6 +1,6 @@
 # DATA.md · Regras dos dados · Auditor de Preço Justo
 
-> Versão 0.7 (rascunho) · 08/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
+> Versão 0.8 (rascunho) · 13/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
 > Legenda: **[DEFINIDO]** = decisão registrada no `docs/DECISOES.md` (Samuel) ou já feita no código; **[JULGADO DEFINIDO]** = não há decisão escrita, mas o texto e o código do grupo já a seguem (vale um aviso se alguém discordar); **[A CONFIRMAR]** = ainda aberto. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (atualizado em 05/11/2026). As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).
 
 ## 1. Fonte e versão
@@ -100,8 +100,9 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **Zeros no lugar de vazio:** `divida_renda`, `caixa_livre` e `renda_empregador_principal` têm 100% de zeros a partir de 2018 (70% a 72% em 2017). A carga não os pega, porque só troca `-1` por NULL. Ver a seção 6.
 - Gênero 2 ("indefinido") é quase só da Espanha (12.164 de 12.180; cerca de 46% dos contratos espanhóis). Na auditoria, tratar como dado ausente e comparar só 0 e 1, de preferência dentro de cada país.
 - **Codificação do gênero em 2017–2019:** entre os contratos com gênero 0 ou 1, a proporção de mulheres na Estônia vai de 45% em 2016 para 26% em 2017 e 9% em 2018, e volta a 34% em 2019 e 51% em 2020 (Finlândia: 45%, 21%, 23%, 41% e 51%). Além disso, 5.633 clientes aparecem com os dois valores em contratos diferentes, e a idade deles é coerente entre os contratos (0 incoerências em 94.148 pares), ou seja, é a mesma pessoa. É um indício de erro de codificação nesse período; o dicionário do Bondora não o confirma. Gênero fica fora do treino e do teste, então o modelo não é afetado; a análise de gênero será apresentada ao final como achado, com essa ressalva.
-- **[A CONFIRMAR]** `score_es_microl` tem o valor "M" em cerca de 136 mil linhas; confirmar o significado no dicionário.
-- **[A CONFIRMAR]** `novo_cliente` e `n_emprestimos_anteriores` parecem medir coisas diferentes: 15.668 contratos têm `novo_cliente` verdadeiro e empréstimos anteriores, e 303 têm o caso oposto. Confirmar no dicionário antes de validar uma contra a outra.
+- **[DEFINIDO]** `score_es_microl` = "M": marcador **sem nota**, que aparece só a partir de 2017 (136.415 contratos, de 2017 a 2021). O dicionário do Bondora define apenas as notas M1 a M10. Apesar do nome, o "M" vem de todos os países (87.928 da Estônia, 34.734 da Finlândia e 13.753 da Espanha). **Efeito no modelo:** no treino (2009–2015) não existe "M" e, fora da Espanha, o campo era vazio ("sem_info"); na carteira de 2017–2021 o "M" não é categoria conhecida e vira "outros" (`criar_variaveis`), inclusive nos contratos da Estônia e da Finlândia.
+- **[DEFINIDO]** `novo_cliente` e `n_emprestimos_anteriores` medem coisas diferentes. Pelo dicionário, "novo" é quem **não tem pelo menos 3 meses de histórico** no Bondora, e não quem nunca tomou empréstimo. Dos 15.668 contratos "novos" com empréstimo anterior, 99,8% foram concedidos até 92 dias depois do primeiro empréstimo do mesmo cliente na base (99,2% com menos de 92 dias). O caso oposto (não novo e sem empréstimo anterior) tem 303 contratos, mais 4 com o histórico vazio. Não validar uma coluna contra a outra.
+- **[DEFINIDO]** `score_fi_asiakastieto` muda de escala em 2017: até 2016 os valores são RL0 a RL5; a partir de 2017 aparece uma **escala nova, de 1 a 8**, em 35.410 contratos (35.405 da Finlândia e 5 da Estônia), convivendo com 650 contratos finlandeses ainda em RL1 a RL4. É **mudança de regime**, não erro de carga. **Efeito no modelo:** as notas de 1 a 8 não existem no treino e viram "outros" (`criar_variaveis`), então o score finlandês perde a informação justamente na carteira. Fica assim enquanto o Samuel não repontuar a carteira (ver a seção 12).
 
 ## 8. Moeda e unidades
 
@@ -183,6 +184,8 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - [x] Marcos: conversão efetiva → nominal da taxa do BC conferida contra a série mensal oficial 25464 (seção 9; sugestão da Maria).
 - [x] Marcos: `vw_base_modelagem` conferida contra o `DECISOES.md` (20.011 no treino, 7.311 no teste e 2.594 fora).
 - [x] Marcos: `divida_renda`, `caixa_livre` e `renda_empregador_principal` em `COLUNAS_INDISPONIVEIS_RECENTES` (`carga_bondora.py`).
+- [x] **[DEFINIDO]** `novo_cliente`: "novo" é quem não tem pelo menos 3 meses de histórico no Bondora (dicionário); não se valida contra `n_emprestimos_anteriores` (seção 7).
+- [x] **[DEFINIDO]** `score_es_microl` = "M": marcador sem nota a partir de 2017, de todos os países; o dicionário só define M1 a M10 (seção 7).
 
 **Abertas:**
 
@@ -192,7 +195,7 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - [ ] Samuel (08 e 09/11): `carteira_auditoria.csv` e `equidade.json`; o backtest do retorno realizado usa a `vw_retorno_realizado` como está, com as recuperações já dentro dos pagamentos (seção 14).
 - [ ] Marcos e Samuel (14/11): ROI em euros da carteira.
 - [ ] Marcos (14/11): datasheet dos dados.
-- [ ] Marcos: conferir no dicionário o significado de `novo_cliente` frente a `n_emprestimos_anteriores` e o valor "M" do `score_es_microl` (seção 7).
+- [ ] Samuel: repontuar a carteira de 2017–2021 tratando a escala nova do `score_fi_asiakastieto` (1 a 8) e o "M" do `score_es_microl`, que hoje viram "outros" no modelo (seção 7). Até lá, o `excesso_eur` do ROI de 2017–2021 e a figura 9 do EDA ficam em espera.
 
 ## 13. Registro de decisões do analista
 
@@ -201,10 +204,11 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **Regras que o próprio banco garante:**
   - Só inclusão: `UPDATE`, `DELETE` e `TRUNCATE` são bloqueados. Para corrigir, registra-se outra decisão, e a mais recente vale (view `vw_decisao_atual`, que a fila da carteira usa para marcar "já decidido").
   - A data é sempre a do servidor, e a origem é definida pelo banco: `carteira` se o `contrato_id` existe em `emprestimo`, `simulacao` para os casos de exemplo (como `EXEMPLO-1`), que ficam fora da `vw_decisao_atual`.
+  - **ID do contrato normalizado** (`db/07_normaliza_contrato_decisao.sql`): se o `contrato_id` recebido, em minúsculas e sem espaços nas pontas, é um `loan_id`, o banco grava o `loan_id` e marca `carteira`. Assim, uma decisão digitada como `0010881B-…` não vira `simulacao` nem some da fila, o que não teria conserto numa tabela só de inclusão. Simulações mantêm o nome digitado. Combinado com o Samuel e a Yasmin: a API, depois da busca, usa o `loan_id` que voltou do banco como `contrato_id` em todo o fluxo (prever, parecer, taxa do BC e decisão); o gatilho é a segunda barreira.
   - Os domínios são fechados e iguais aos de `src/api/schemas.py` (decisão, recomendação, situação do preço, faixa e origem do parecer).
   - Revisão manual (dados fora da faixa do treino): a situação do preço é `revisao_manual` e `pd`, `faixa` e os juros justos ficam vazios, como no `prever()`, e o analista ainda decide. Fora da revisão manual esses números são obrigatórios (mesma regra do `genai/src/checagem.py`).
 - **Privacidade:** não existe coluna de gênero nem de idade, e o banco recusa um JSON que tenha as chaves `genero`, `idade`, `gender` ou `age` no primeiro nível. Quem grava manda só a resposta do `prever()` e o parecer, nunca a solicitação. O analista é identificado por nome ou login, sem CPF. A justificativa é texto livre, então não deve levar dado pessoal.
-- **Como aplicar:** na primeira criação do banco, os arquivos de `db/` rodam sozinhos. Em um banco já existente, aplique `db/05_decisoes_analista.sql` uma vez (os comandos estão no cabeçalho do arquivo). O teste `db/testes/05_teste_decisoes.sql` roda numa transação que é desfeita no fim.
+- **Como aplicar:** na primeira criação do banco, os arquivos de `db/` rodam sozinhos. Em um banco já existente, aplique `db/05_decisoes_analista.sql` e `db/07_normaliza_contrato_decisao.sql` uma vez (os comandos estão no cabeçalho de cada arquivo). O `db/07` é um gatilho separado justamente porque o `iniciar.ps1` reaplica o `db/05` a cada subida. Os testes `db/testes/05_teste_decisoes.sql` e `db/testes/07_teste_normaliza_contrato.sql` rodam numa transação que é desfeita no fim.
 - **Conferência:** a `src/dados/validacao.py` confere domínios, justificativa, JSON sem gênero e idade, origem coerente com a carteira e a view. O `tests/dados/test_decisoes_sql.py` amarra o SQL ao código e à API.
 - **Fora desta versão:** perfis de acesso (quem lê o quê), prazo de retenção e exportação do registro.
 
@@ -215,3 +219,42 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 - **Primeira leitura** (2009–2016, encerrados, sem a Eslováquia): 73,0 mi € concedidos e resultado de −0,01 mi €. Por país: Estônia +6,05 mi € (+15%), Espanha −3,89 mi € (−31%) e Finlândia −2,17 mi € (−11%). Por safra, o retorno cai de +28% (2013) para −13% (2016). Reestruturados: +1,34 mi €; os demais: −1,35 mi €.
 - **Limites:** não desconta o tempo; só vale para contratos encerrados (as safras de 2015 e 2016 podem ter recuperações ainda por chegar); não existe para 2017–2021.
 - **Uso:** `perda_nao_coberta_eur` e `rentabilidade_realizada` do `carteira_auditoria.csv` vêm desta view (lidos pela API em `src/api/portfolio.py`). Figura 7 do EDA (`notebooks/dados/01_eda.ipynb`).
+
+### ROI do backtest de 2016 (provisório, modelo `xgboost_v2`)
+
+- **Fonte:** `docs/resultados/carteira_auditoria.csv` do Samuel (gerado em 08/11 com o `xgboost_v2`), conferido contra a `vw_retorno_realizado`: mesmos 9.905 contratos de 2016 encerrados, rentabilidade igual até o arredondamento (0,00005) e mesma perda não coberta. Script: `python src/dados/roi_backtest.py` (com `--dsn`, também o recorte "só teste"); teste: `tests/dados/test_roi_backtest.py`.
+- **Conta:** sem reestruturados (como na auditoria de preço); ROI = resultado em euros ÷ valor concedido, somados por grupo (ponderado pelo valor).
+- **2016, só teste (clientes novos; 5.512 contratos):**
+
+  | Situação | Contratos | Concedido | ROI | Perda não coberta |
+  | --- | --- | --- | --- | --- |
+  | Abaixo do justo | 1.954 | 5,46 mi € | −14,4% | 1,54 mi € |
+  | Dentro da margem | 889 | 2,08 mi € | −20,3% | 0,72 mi € |
+  | Acima do justo | 2.521 | 5,07 mi € | −25,5% | 2,11 mi € |
+  | Revisão manual | 148 | 1,24 mi € | −26,6% | 0,51 mi € |
+  | **Total** | **5.512** | **13,85 mi €** | **−20,5%** | **4,88 mi €** |
+
+- **Leitura:** no agregado, o "abaixo do justo" **perdeu menos** que o "acima do justo", o contrário do que a auditoria espera. Dentro da faixa de risco, a hipótese vale nas faixas A, B e C (o "abaixo" rende menos que o "acima") e falha nas faixas D e E, onde o "acima do justo" teve o pior retorno (−54,2% na E). Com todo o 2016 encerrado (7.141 contratos, incluindo clientes que já estavam no treino), vale só nas faixas B e C.
+- **Limites:** depende do modelo que gerou o CSV; regerar com o `.joblib` oficial (`xgboost_v3`) antes de citar nos slides. Não desconta o tempo. A parte de 2017–2021 (`excesso_eur`) espera a repontuação do Samuel (seção 12).
+
+### Desfecho por contrato (`vw_desfecho_contrato`)
+
+- **O que é:** a view `vw_desfecho_contrato` (`db/06_view_desfecho_contrato.sql`), com **uma linha para cada contrato de `emprestimo`** (179.235). Serve à tela "Análise do contrato": mostra o que aconteceu com o contrato ou, quando não há desfecho, por quê.
+- **Colunas:** `loan_id`, `ano`, `pais`, `tem_desfecho`, `motivo_sem_desfecho` e, da `vw_retorno_realizado` (por `LEFT JOIN`, vazias sem desfecho): `inadimplente`, `valor_concedido`, `recebido_total`, `resultado_eur`, `retorno_realizado`, `principal_perdido`, `conjunto` e `reestruturado`. Sem gênero, idade, estado civil e dependentes.
+- **Quem tem desfecho:** os contratos da `vw_retorno_realizado` (29.916). Os demais recebem um motivo, testado na mesma ordem dos filtros da `vw_base_modelagem` (seção 4):
+
+  | Motivo (`motivo_sem_desfecho`) | Regra | Contratos |
+  | --- | --- | --- |
+  | `concedido depois de 2016` | `data_emprestimo` depois de 31/12/2016 | 147.978 |
+  | `Eslováquia (fora da base)` | `pais = 'SK'` | 296 |
+  | `não encerrado até o corte de 20/07/2021` | nem `Repaid` nem `data_default` | 1.045 |
+  | *(vazio: tem desfecho)* | está na `vw_retorno_realizado` | 29.916 |
+
+- **Consulta da API** (o `loan_id` fica em minúsculas: normalizar o ID digitado com `.strip().lower()` no Python, nunca `lower(loan_id)` na coluna, que desliga o índice). Depois da busca, o `loan_id` que voltou do banco vira o `contrato_id` em todo o fluxo (prever, parecer, taxa do BC e decisão); as simulações mantêm o nome digitado (combinado com o Samuel e a Yasmin; ver a seção 13):
+
+  ```sql
+  SELECT * FROM vw_desfecho_contrato WHERE loan_id = %s;
+  ```
+
+- **Conferência:** a soma de `resultado_eur` é a mesma da `vw_retorno_realizado` (−5.599,99 €, cerca de −0,01 mi €). A `src/dados/validacao.py` confere `loan_id` único, os mesmos contratos de `emprestimo`, desfecho exatamente nos contratos da `vw_retorno_realizado`, motivo preenchido só sem desfecho e `inadimplente` preenchido só com desfecho. O `tests/dados/test_desfecho_sql.py` amarra os textos dos motivos e os filtros ao `db/03` e ao código.
+- **Como aplicar:** em banco já existente, aplique `db/06_view_desfecho_contrato.sql` à mão (comandos no cabeçalho do arquivo).

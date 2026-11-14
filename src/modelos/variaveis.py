@@ -116,6 +116,13 @@ ROTULOS = {
 
 
 FREQ_MINIMA = 0.01  # categorias com menos de 1% dos contratos viram "outros"
+# Mudanças de regime a partir de 2017 (DATA.md, seção 7), sem equivalência no treino:
+# Asiakastieto na escala nova (1 a 8) e MicroL "M" (marcador sem nota) viram "sem_info".
+# Diagnóstico de 14/11 na carteira 2017–2021: AUC 0,664 com "sem_info" × 0,651 com "outros";
+# na Finlândia a PD média cai de 0,89 para 0,71 (default observado nos encerrados: 0,72).
+# Não muda o treino nem o teste de 2016 (os valores só existem a partir de 2017).
+SEM_EQUIVALENCIA = {"score_fi_asiakastieto": {str(i) for i in range(1, 9)},
+                    "score_es_microl": {"M"}}
 
 
 def colunas_do_modelo() -> list[str]:
@@ -177,6 +184,8 @@ def criar_variaveis(df: pd.DataFrame, referencia: pd.DataFrame | None = None) ->
 
     for col in CATEGORICAS:
         out[col] = out[col].astype("string").fillna("sem_info")
+        if col in SEM_EQUIVALENCIA:
+            out[col] = out[col].mask(out[col].isin(SEM_EQUIVALENCIA[col]), "sem_info")
         ref_col = ref[col] if col in ref.columns else pd.Series(pd.NA, index=ref.index)
         freq = ref_col.astype("string").fillna("sem_info").value_counts(normalize=True)
         raras = set(freq[freq < FREQ_MINIMA].index)

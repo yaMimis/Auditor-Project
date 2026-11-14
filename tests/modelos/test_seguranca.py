@@ -72,3 +72,19 @@ def test_variaveis_v2_calculadas():
 def test_variaveis_descartadas_fora_do_modelo():
     from src.modelos.variaveis import TESTADAS_E_DESCARTADAS
     assert not set(TESTADAS_E_DESCARTADAS) & set(colunas_do_modelo())
+
+def test_scores_sem_equivalencia_viram_sem_info():
+    """Asiakastieto 1 a 8 e MicroL "M" (a partir de 2017) não existem no treino: sem_info, não "outros"."""
+    treino = pd.DataFrame({
+        "valor_concedido": [1000.0] * 4, "prazo_meses": [12] * 4, "renda_total": [1000.0] * 4,
+        "passivos_total": [0.0] * 4, "pais": ["FI", "FI", "ES", "EE"], "ano": [2015] * 4,
+        "score_fi_asiakastieto": ["RL2", "RL1", None, None], "score_es_microl": [None, None, "M3", None],
+        "novo_cliente": [True] * 4, "tempo_emprego_atual": ["UpTo1Year"] * 4,
+        "escolaridade": [4] * 4, "tipo_moradia": [1] * 4, "tipo_verificacao": [4] * 4,
+    })
+    carteira = treino.assign(ano=2018, score_fi_asiakastieto=["3", "RL1", None, None],
+                             score_es_microl=["M", None, "M", "M"])
+    out = criar_variaveis(carteira, referencia=treino)
+    assert out.loc[0, "score_fi_asiakastieto"] == "sem_info"
+    assert out.loc[1, "score_fi_asiakastieto"] == "RL1"          # escala antiga continua
+    assert (out["score_es_microl"].iloc[[0, 2, 3]] == "sem_info").all()

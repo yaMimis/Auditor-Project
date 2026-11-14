@@ -258,3 +258,17 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
 - **Conferência:** a soma de `resultado_eur` é a mesma da `vw_retorno_realizado` (−5.599,99 €, cerca de −0,01 mi €). A `src/dados/validacao.py` confere `loan_id` único, os mesmos contratos de `emprestimo`, desfecho exatamente nos contratos da `vw_retorno_realizado`, motivo preenchido só sem desfecho e `inadimplente` preenchido só com desfecho. O `tests/dados/test_desfecho_sql.py` amarra os textos dos motivos e os filtros ao `db/03` e ao código.
 - **Como aplicar:** em banco já existente, aplique `db/06_view_desfecho_contrato.sql` à mão (comandos no cabeçalho do arquivo).
+
+### Contrato no formato do `prever()` (`vw_contrato_modelo`)
+
+- **O que é:** a view `vw_contrato_modelo` (`db/08_view_contrato_modelo.sql`), com **uma linha para cada contrato de `emprestimo`** (179.235) e exatamente as colunas que o `prever()` lê. Serve à rota `GET /contracts/{id}/analysis`: a API lê uma linha pronta e chama `prever(dict(linha))`, sem montar o join no Python. O `prever()` aceita a linha do banco como vem (Decimal e date do psycopg2; PR #81).
+- **Colunas (21):** `loan_id`, `data_emprestimo`, `juro_aa`, `passivos_total` e as 17 variáveis que vêm direto do banco (`valor_concedido`, `prazo_meses`, `novo_cliente`, `tipo_verificacao`, `pais`, `renda_total`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `passivos_existentes`, `quitacoes_antecipadas_qtd` e os quatro scores). As outras 4 variáveis do modelo (`parcela_neutra_sobre_renda`, `valor_sobre_renda`, `divida_sobre_renda` e `renda_relativa`) são calculadas pelo `criar_variaveis()` a partir destas.
+- **Fora de propósito:** as colunas que só alimentam variáveis descartadas (`valor_solicitado`, `caixa_livre`, `divida_renda` etc.), toda a lista negra exceto o `juro_aa` (o preço auditado, que não é variável do modelo; confirmado pelo Samuel no PR #81), gênero, idade, estado civil, dependentes e `cliente_id`.
+- **Por que testar a lista:** o `criar_variaveis()` preenche com vazio, sem erro, toda coluna de fonte que faltar. Se a view esquecesse uma (como `score_ee_mini`), o `prever()` rodaria com outra PD sem ninguém perceber. O `tests/dados/test_contrato_modelo_sql.py` lê o SQL e confere a lista contra `src/modelos/variaveis.py` e `src/modelos/prever.py`: nada proibido, tudo que o `prever()` lê, nenhuma variável vindo do preenchimento com vazio e nenhuma coluna sem uso.
+- **Consulta da API** (mesma regra da `vw_desfecho_contrato`: normalizar o ID com `.strip().lower()` no Python, nunca `lower(loan_id)` na coluna):
+
+  ```sql
+  SELECT * FROM vw_contrato_modelo WHERE loan_id = %s;
+  ```
+
+- **Como aplicar:** na primeira criação do banco, roda sozinha. Em banco já existente, aplique `db/08_view_contrato_modelo.sql` à mão (comandos no cabeçalho do arquivo).

@@ -28,9 +28,9 @@ Menu do topo com botões (não `st.tabs`, porque o painel troca de página sozin
 
 - **Home:** hero, faixa explicativa e Panorama da carteira (filtros, cartões, situação por faixa, equidade, backtest).
 - **Contratos da base:** busca única (filtra a cada caractere; escolher ou digitar um ID abre), chips de situação, "Exportar CSV" e lista com **Abrir** por linha.
-- **Análise do contrato** (`GET /contracts/{id}/analysis`): cabeçalho e selos → Procedência → alerta de revisão manual → cartões → régua → Precificação → motivos (SHAP) | parecer com o selo "Simulação normativa pela lei brasileira" → Dados considerados (17 fornecidas × 4 derivadas, com a nota de que as parcelas mensais das dívidas só entram na conta de "dívidas em relação à renda") → Resultado observado (ou "Sem desfecho" com o motivo da `vw_desfecho_contrato`) → decisão. Botão **"Abrir no Laboratório"** (desligado no modo lote).
+- **Análise do contrato** (`GET /contracts/{id}/analysis`): cabeçalho e selos → Procedência → alerta de revisão manual → cartões → régua → Precificação → motivos (SHAP) | parecer com o selo "Simulação normativa pela lei brasileira" → Dados considerados (17 fornecidas × 4 derivadas, com a nota de que as parcelas mensais das dívidas só entram na conta de "dívidas em relação à renda") → Resultado observado (ou "Sem desfecho" com o motivo da `vw_desfecho_contrato`) → decisão. No fim, antes da decisão, o cartão "E se o contrato fosse diferente?" com o botão **"Abrir no Laboratório"** (desligado no modo lote).
 - **Laboratório** (`POST /contracts/{id}/scenario`): ao abrir, pede o original e os campos (`{}`); formulário com valor, prazo, renda mensal, parcelas mensais das dívidas (`passivos_total`, **não** o saldo devedor), número de dívidas, empréstimos anteriores, tempo no emprego (sem `Retiree` e `Other`, que não aparecem no treino) e verificação da renda (limites da API: faixa vista no treino, 0,5% a 99,5%) e o **juro cobrado à parte** (não é variável do modelo). "Recalcular com o modelo" manda só o que mudou. Mostra **Original × recalculado** (PD, faixa, juro justo, margem, juro cobrado, parcela, situação; o que mudou em dourado) e **O que mudou o risco** (cada campo trocado sozinho). Com erro, nenhum cenário anterior fica na tela. **"Usar como proposta"** (só se o juro mudou) leva o juro para "Nova taxa proposta" na Análise, **sem registrar nada**. "Voltar aos valores do contrato" limpa o formulário.
-- **Auditoria:** equidade agregada (teste de invariância na Etapa 3). **Registro:** contadores, tabela, exportação CSV e JSON, rascunhos pendentes à parte. **Sobre:** equipe e onde cada parte do estudo aparece.
+- **Auditoria:** equidade agregada e **teste de invariância** (`POST /contracts/{id}/invariance`): campo do ID (começa com o contrato aberto na Análise), "Rodar o teste", veredito ("Resultado idêntico" em verde ou "Resultado diferente em: …" em laranja) e a tabela Original × Gênero e idade trocados. Diz que não prova que o preço é justo e nunca mostra o gênero nem a idade reais. **Registro:** contadores, tabela, exportação CSV e JSON, rascunhos pendentes à parte. **Sobre:** equipe e onde cada parte do estudo aparece.
 
 ## Design
 
@@ -47,11 +47,11 @@ Menu do topo com botões (não `st.tabs`, porque o painel troca de página sozin
 ## Pronto quando
 
 - `pytest tests/app -v` passa.
-- No navegador: abrir um contrato pela busca e outro pela lista; conferir procedência, precificação, motivos, dados considerados e resultado observado; desligar o banco e ver o plano B ("Por que o lote"); abrir um contrato em revisão manual; no Laboratório, mudar só o juro (PD e juro justo iguais, situação e parcela mudam) e depois o prazo (o modelo recalcula a PD); "Usar como proposta" preenche a taxa na Análise; registrar uma decisão e vê-la no Registro; com o banco fora, a decisão aparece como não registrada.
+- No navegador: abrir um contrato pela busca e outro pela lista; conferir procedência, precificação, motivos, dados considerados e resultado observado; desligar o banco e ver o plano B ("Por que o lote"); abrir um contrato em revisão manual; no Laboratório, mudar só o juro (PD e juro justo iguais, situação e parcela mudam) e depois o prazo (o modelo recalcula a PD); "Usar como proposta" preenche a taxa na Análise; registrar uma decisão e vê-la no Registro; com o banco fora, a decisão aparece como não registrada; na Auditoria, o teste de invariância dá "Resultado idêntico".
 
 ## Estado em 13/11/2026
 
-- **[EM ANDAMENTO] (Yasmin)** Etapas 1 e 2 implementadas, com simulação do painel e testes locais; **não concluídas** até a conferência com o pacote oficial (`scripts/conferir_analise.py` 20/20).
+- **[CONCLUÍDO] (Yasmin, 14/11)** Etapas 1 e 2: conferência com dados reais 20/20 (`scripts/conferir_analise.py`, pacote `48784ba3742d`).
 - **[DECIDIDO]** sem formulário de contrato novo e sem "caso de exemplo": o analista trabalha com contratos da base. Sem tela de login; o nome do analista é digitado.
-- **[PENDENTE] (Yasmin)** Etapa 3: teste de invariância na Auditoria.
+- **[EM ANDAMENTO] (Yasmin)** Etapa 3 (teste de invariância) implementada; falta conferir com o banco real.
 - **[A CONFIRMAR] (Marcos)** rótulos dos códigos de escolaridade, moradia e verificação (`CODE_LABELS` em `components.py`, do dicionário do Bondora).

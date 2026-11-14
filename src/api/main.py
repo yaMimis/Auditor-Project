@@ -4,6 +4,8 @@ GET  /portfolio/overview · GET /contracts · /contracts/ids · /contracts/expor
      o lote da carteira (prever() rodado em toda a base), para a Home e a lista de contratos.
 GET  /contracts/{id}/analysis: contrato da base buscado no banco → prever() ao vivo → parecer,
      com as variáveis usadas, os parâmetros do preço e o desfecho real (quando existe).
+POST /contracts/{id}/invariance: Auditoria; o mesmo contrato com gênero e idade trocados → o resultado
+     do prever() muda? (sem devolver os valores reais).
 POST /contracts/{id}/scenario: Laboratório; o mesmo contrato com campos trocados → prever() de novo,
      com o original ao lado e o efeito de cada campo trocado sozinho.
 POST /predict:  dados de um contrato → prever() real (Samuel) → parecer (gerar_parecer, Maria).
@@ -25,10 +27,10 @@ from typing import Any, Literal
 from fastapi import FastAPI, HTTPException, Query, Response
 
 from genai.src import cadeia
-from src.api import contract_analysis, database, portfolio, scenario
-from src.api.schemas import (ContractAnalysis, ContractList, CurrentDecision, LoanRequest, NewDecision, Parecer,
-                             PortfolioOverview, PredictionResponse, RecordedDecision, ScenarioChanges,
-                             ScenarioResult)
+from src.api import contract_analysis, database, invariance, portfolio, scenario
+from src.api.schemas import (ContractAnalysis, ContractList, CurrentDecision, InvarianceResult, LoanRequest,
+                             NewDecision, Parecer, PortfolioOverview, PredictionResponse, RecordedDecision,
+                             ScenarioChanges, ScenarioResult)
 from src.modelos import prever as modelo
 from src.modelos.prever import PACOTE_PADRAO, prever
 
@@ -330,6 +332,45 @@ def contract_scenario(contrato_id: str, changes: ScenarioChanges):
             "fora_do_dominio": bool(out["cenario"].get("alerta_dados")),
             "modo": "ao_vivo",
             "incerteza": _uncertainty(out["cenario"]),
+            **contract_analysis.package_identity(PACOTE_PADRAO, package),
+        },
+    }
+
+
+# ---------- Teste de invariância (Auditoria) ----------
+
+@app.post("/contracts/{contrato_id}/invariance", response_model=InvarianceResult)
+def contract_invariance(contrato_id: str):
+    """Roda o prever() com o gênero e a idade reais e de novo com os dois trocados, e compara.
+
+    Gênero e idade são lidos numa consulta separada, só aqui, e não voltam na resposta. Sem plano
+    B: o teste precisa do banco e do modelo ao vivo (503)."""
+    started = time.perf_counter()
+    try:
+        row = database.load_contract(contrato_id)
+        protected = database.load_protected(row["loan_id"]) if row else None
+    except database.DatabaseUnavailable as exc:
+        raise HTTPException(status_code=503, detail=f"O teste de invariância precisa do banco: {exc}")
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Contrato {contrato_id} não encontrado no banco.")
+    try:
+        package = modelo._pacote()
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail=MODEL_MISSING.format(PACOTE_PADRAO.name))
+    out = invariance.run(row, protected or {}, package, prever)
+    log.info("teste de invariância de %s: %s", row["loan_id"], "idêntico" if out["identico"] else out["diferencas"])
+    return {
+        "contrato_id": row["loan_id"],
+        **out,
+        "procedencia": {
+            "versao_modelo": modelo.VERSAO,
+            "calculado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "tempo_ms": int((time.perf_counter() - started) * 1000),
+            "origem_dados": "banco (contrato + gênero e idade numa consulta separada) + prever() ao vivo, duas vezes",
+            "fora_do_dominio": out["original"]["situacao_preco"] == "revisao_manual",
+            "modo": "ao_vivo",
+            "incerteza": ("nao_calculada" if out["original"]["pd"] is None
+                          else "bootstrap" if package.get("bootstrap") else "margem_padrao"),
             **contract_analysis.package_identity(PACOTE_PADRAO, package),
         },
     }

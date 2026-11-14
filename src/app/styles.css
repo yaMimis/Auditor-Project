@@ -231,7 +231,12 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-lab-table td.ap-changed { color: #e4bd7d; font-weight: 700; }
 .ap-lab-effects { margin: .4rem 0 0; padding-left: 1.1rem; color: #e8e5df; font-size: .88rem; line-height: 1.7; }
 
-/* Botão "Abrir no Laboratório" alinhado à direita, na mesma linha de "Voltar para a lista" */
+/* Botão "Abrir no Laboratório" alinhado à direita, no cartão do fim da Análise (antes da decisão) */
 .st-key-lab_button_area { align-items: flex-end !important; }
 .st-key-lab_button_area [data-testid="stElementContainer"] { width: 100% !important; }
 .st-key-lab_button_area [data-testid="stButton"] { width: 100%; display: flex; justify-content: flex-end; }
+
+/* Teste de invariância (Auditoria) */
+.ap-verdict { border-radius: 10px; padding: .7rem .9rem; margin: .2rem 0 .8rem; font-size: .9rem; font-weight: 600; }
+.ap-verdict-ok { background: rgba(140, 199, 161, 0.12); border: 1px solid rgba(140, 199, 161, 0.45); color: #8cc7a1; }
+.ap-verdict-bad { background: rgba(232, 164, 98, 0.12); border: 1px solid rgba(232, 164, 98, 0.5); color: #e8a462; }

@@ -24,7 +24,6 @@ VERSAO = "xgboost_v3"  # retreino de 05/11 (21 variáveis) + bootstrap de 08/11
 FAIXAS = [(0.30, "A"), (0.45, "B"), (0.60, "C"), (0.75, "D"), (1.01, "E")]
 LGD_PADRAO = 0.60      
 LGD_POR_PAIS = {"EE": 0.34, "ES": 0.76, "FI": 0.55}   # LGD realizada, defaults 2014–2015 (notebook 07)    
-MARGEM_PADRAO = 0.05       # custos + margem ao ano, provisório
 # custos + margem ao ano por safra (notebook 08: média do justo = média do cobrado).
 # 2016–2021: recalibrada pela MEDIANA em 08/11 (src/modelos/carteira.py) e lida de
 # docs/resultados/margem_por_safra.json: em cada safra, metade dos contratos fica acima
@@ -126,9 +125,11 @@ def _fora_da_faixa(df: pd.DataFrame, pac: dict) -> bool:
     return False
 
 
-def prever(contrato: dict, pacote: dict | None = None) -> dict:
-    """contrato = uma linha da base (nomes do banco), com juro_aa em %."""
-    pac = pacote or _pacote()
+def preparar_contrato(contrato: dict, pac: dict) -> tuple[pd.DataFrame, int]:
+    """Uma linha pronta para criar_variaveis() e o ano do contrato (safra).
+
+    Usada pelo prever() e pela API (tela "Dados considerados"), para as duas verem
+    exatamente a mesma preparação."""
     # linha do banco (psycopg2): NUMERIC vem como Decimal e DATE como datetime.date
     contrato = {k: float(v) if isinstance(v, Decimal) else v for k, v in contrato.items()}
     df = pd.DataFrame([contrato])
@@ -144,6 +145,28 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
     anos_ref = pac["referencia"].loc[pac["referencia"]["pais"] == df["pais"].iloc[0], "ano"]
     if len(anos_ref):
         df["ano"] = min(ano_contrato, int(anos_ref.max()))
+    return df, ano_contrato
+
+
+def parametros_preco(df: pd.DataFrame, pac: dict, ano_contrato: int) -> dict:
+    """Parâmetros da conta do juro justo: Euribor 12m do mês da concessão (piso zero),
+    perda por país (LGD), custos e margem da safra e prazo. Usada pelo prever() e pela API
+    (tela "Precificação")."""
+    mes = pd.to_datetime(df["data_emprestimo"].iloc[0]).to_period("M").to_timestamp()
+    e12 = pac["euribor_12m"].sort_index()
+    valor = e12.asof(mes)                    # último mês disponível ≤ data do contrato
+    if pd.isna(valor):
+        valor = e12.iloc[0]
+    euribor = max(float(valor) / 100, 0.0)
+    margem = MARGEM_POR_SAFRA.get(ano_contrato, MARGEM_POR_SAFRA[max(MARGEM_POR_SAFRA)])  # ano novo → última safra
+    return {"euribor": euribor, "lgd": LGD_POR_PAIS.get(df["pais"].iloc[0], LGD_PADRAO), "margem": margem,
+            "custo_anual": euribor + margem, "prazo": int(df["prazo_meses"].iloc[0])}
+
+
+def prever(contrato: dict, pacote: dict | None = None) -> dict:
+    """contrato = uma linha da base (nomes do banco), com juro_aa em %."""
+    pac = pacote or _pacote()
+    df, ano_contrato = preparar_contrato(contrato, pac)
     juro_cobrado = round(float(df["juro_aa"].iloc[0]) / 100, 4)
     base = {"contrato_id": str(df.get("loan_id", pd.Series(["?"])).iloc[0]),
             "versao_modelo": VERSAO, "juro_cobrado": juro_cobrado}
@@ -158,22 +181,15 @@ def prever(contrato: dict, pacote: dict | None = None) -> dict:
     X = _para_modelo(df)
     pd_ = float(pac["modelo"].predict_proba(X)[0, 1])
 
-    mes = pd.to_datetime(df["data_emprestimo"].iloc[0]).to_period("M").to_timestamp()
-    e12 = pac["euribor_12m"].sort_index()
-    valor = e12.asof(mes)                    # último mês disponível ≤ data do contrato
-    if pd.isna(valor):
-        valor = e12.iloc[0]
-    euribor = max(float(valor) / 100, 0.0)
-    lgd = LGD_POR_PAIS.get(df["pais"].iloc[0], LGD_PADRAO)
-    margem = MARGEM_POR_SAFRA.get(ano_contrato, MARGEM_POR_SAFRA[max(MARGEM_POR_SAFRA)])  # ano novo → última safra
-    prazo = df["prazo_meses"].iloc[0]
-    justo = round(juro_justo(prazo, pd_, lgd, euribor + margem), 4)
+    par = parametros_preco(df, pac, ano_contrato)
+    prazo, lgd, custo = par["prazo"], par["lgd"], par["custo_anual"]
+    justo = round(juro_justo(prazo, pd_, lgd, custo), 4)
     if pac.get("bootstrap"):
         # justo cresce com a PD: o IC do justo é o justo nas pontas do IC da PD
         lo, hi = faixa_pd(pac["bootstrap"], X, [pd_])
         pd_ic95 = [round(float(lo[0]), 4), round(float(hi[0]), 4)]
-        jmin = round(min(juro_justo(prazo, pd_ic95[0], lgd, euribor + margem), justo), 4)
-        jmax = round(max(juro_justo(prazo, pd_ic95[1], lgd, euribor + margem), justo), 4)
+        jmin = round(min(juro_justo(prazo, pd_ic95[0], lgd, custo), justo), 4)
+        jmax = round(max(juro_justo(prazo, pd_ic95[1], lgd, custo), justo), 4)
     else:
         pd_ic95 = None
         jmin = round(max(justo - MARGEM_INCERTEZA_PP / 100, 0), 4)

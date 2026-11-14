@@ -38,31 +38,33 @@ Contrato → modelo de risco (PD, probabilidade de default) → juro justo por f
 | Vetores | pgvector, no mesmo PostgreSQL |
 | Modelo | scikit-learn, XGBoost, SHAP, scipy |
 | Parecer | LangChain (chain LCEL: busca → prompt → Gemini → conferência), Gemini (`langchain-google-genai`), pgvector, sentence-transformers multilíngue, prompts versionados |
-| Serviço e app | FastAPI, Streamlit |
-| Infra e qualidade | Docker Compose, pytest, black, flake8, GitHub Actions |
+| Back-end e front-end | FastAPI (API, porta 8000) e Streamlit (painel, porta 8501), conversando por HTTP/JSON |
+| Infra e qualidade | Docker Compose, Terraform (Google Cloud), pytest, black, flake8, GitHub Actions |
 
 ## Estrutura
 
 ```
-data/raw/     arquivos de dados (fora do Git)
-db/           esquemas SQL; rodam sozinhos na primeira criação do banco
-docs/         decisões de modelagem (DECISOES.md), glossário, BPMN, resultados
-genai/        formato JSON, regras, normas, prompts e código do parecer
-notebooks/    EDA e etapas do modelo (coortes, variáveis, XGBoost, LGD, margem)
-src/api/      API FastAPI
-src/app/      painel Streamlit (main.py = telas, estilo.css = visual, componentes.py = blocos HTML)
-src/dados/    cargas do Bondora e das séries de juros
-src/modelos/  modelo de risco e juro justo (prever())
-modelos_salvos/  pacote do modelo (.joblib, fora do Git)
-skills/       guia do projeto por setor, para pessoas e para IA
-tests/        testes
+src/
+├── api/        BACK-END  · FastAPI: rotas (main.py), formatos (schemas.py), banco (database.py), análise (contract_analysis.py), lote (portfolio.py)
+├── app/        FRONT-END · Streamlit: telas (main.py), visual (styles.css), blocos (components.py)
+├── modelos/    modelo de risco e juro justo: prever() e o lote da carteira (Samuel)
+└── dados/      cargas do Bondora e das séries de juros (Marcos)
+genai/          parecer: formato JSON, regras, normas, prompts e código (Maria)
+db/             esquemas SQL; rodam sozinhos na primeira criação do banco
+infra/          Terraform: VM na Google Cloud rodando o mesmo Docker Compose
+docs/           decisões de modelagem, glossário, BPMN, roteiro da demo, resultados do lote
+notebooks/      EDA e etapas do modelo (coortes, variáveis, XGBoost, LGD, margem)
+tests/          testes, na mesma divisão do src/ (api, app, dados, modelos, genai)
+skills/         guia do projeto por setor, para pessoas e para IA (ver skills/README.md)
+data/raw/       arquivos de dados (fora do Git)
+modelos_salvos/ pacote do modelo (.joblib, fora do Git)
 ```
 
 ## Como rodar
 
 Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
-**Atalho (Windows):** clique duplo no `iniciar.bat` (ou `.\iniciar.ps1`). Num PC novo basta Docker Desktop, `.env`, o `.joblib` do modelo e os 4 CSVs de custo do dinheiro em `data/raw/` (para a referência do BC): veja [`docs/RODAR_EM_QUALQUER_PC.md`](docs/RODAR_EM_QUALQUER_PC.md). A base do Bondora só é necessária para refazer os dados e o modelo (passos 2 a 5 abaixo).
+**Atalho (Windows):** `.\iniciar.ps1` no PowerShell (antes, se o Windows bloquear: `Set-ExecutionPolicy Bypass -Scope Process`), ou `docker compose up -d`. Num PC novo basta Docker Desktop, `.env`, o `.joblib` do modelo e os 4 CSVs de custo do dinheiro em `data/raw/` (`ECB_Euribor_Serie-Mensal-12-Meses.csv`, `ECB_Euribor_Serie-Mensal-3-Meses.csv`, `BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv`, `bcdata.sgs.20742.csv`). A base do Bondora só é necessária para refazer os dados e o modelo (passos 2 a 5 abaixo).
 
 | Comando | O que faz |
 | --- | --- |
@@ -124,7 +126,7 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
    O primeiro build demora mais: a imagem instala o PyTorch (CPU) para a busca nas normas. Depois, `docker compose up -d` sobe sem reconstruir; use `--build` só quando mudar código ou requirements.
    - Painel: http://localhost:8501 (sem o modelo, use os exemplos da aba de revisão)
    - API: http://localhost:8000/docs (`GET /` informa se o modelo foi carregado)
-   - Para os dados da carteira, o painel lê `docs/resultados/carteira_auditoria.csv` e `equidade.json`.
+   - Para os dados da carteira, a API lê `docs/resultados/carteira_auditoria.csv` e `equidade.json` (`src/api/portfolio.py`) e o painel pede pelas rotas `/portfolio/overview` e `/contracts`.
    - As decisões do analista ficam na tabela `decisao_analista`. Banco criado antes de 09/11? Aplique (ou reaplique) uma vez; pode rodar de novo sem problema:
      ```
      docker cp db\05_decisoes_analista.sql auditor_postgres:/tmp/05.sql
@@ -145,7 +147,6 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 - [`genai/avaliacao/`](genai/avaliacao/CRITERIOS.md): critérios, os 20 casos de avaliação e os resultados do parecer (prompts v2 a v4), com a revisão humana da v4.
 - [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md): roteiro da demo, plano B e perguntas prováveis.
 - [`infra/`](infra/README.md): Terraform que cria na Google Cloud uma VM rodando o mesmo Docker Compose (para a demo na nuvem).
-- [`docs/RODAR_EM_QUALQUER_PC.md`](docs/RODAR_EM_QUALQUER_PC.md): como rodar em qualquer PC da equipe e a diferença entre Docker e Terraform.
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 
 ## Governança e ética
@@ -170,6 +171,6 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 Cada frente registra aqui como usou assistentes de IA (agentic coding) e como revisou o resultado.
 
 - **Dados:** os scripts de carga, os esquemas SQL e a documentação foram escritos com apoio do Claude e revisados e testados pelo responsável da frente.
-- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas. O formulário com etapas travadas, a separação do visual em `estilo.css` e os scripts `iniciar` seguiram o mesmo processo.
+- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas. O formulário com etapas travadas, a separação do visual em `styles.css` e os scripts `iniciar` seguiram o mesmo processo.
 - **Modelo:** a completar pela frente.
 - **GenAI:** o código do parecer, os prompts e os documentos da frente foram escritos com apoio do Claude, guiado pelos guias da frente em `skills/regras_negocio/` ([`normas_rag`](skills/regras_negocio/normas_rag/SKILL.md), [`parecer_genai`](skills/regras_negocio/parecer_genai/SKILL.md) e [`avaliacao_parecer`](skills/regras_negocio/avaliacao_parecer/SKILL.md)) e pelos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). As propostas maiores (template, cadeia em LangChain, prompts v3 e v4) também passaram pela revisão de uma segunda IA. A responsável leu cada mudança antes de aplicá-la e conferiu o resultado com os testes automáticos (`tests/genai/`), a avaliação dos 20 casos e a revisão humana dos pareceres (`genai/avaliacao/`).

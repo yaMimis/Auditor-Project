@@ -37,6 +37,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auditor_db   # vence a do .env (localhost)
     volumes:
       - ./modelos_salvos:/app/modelos_salvos   # pacote_prever_v1.joblib (fora do Git)
+      - ./docs/resultados:/app/docs/resultados   # lote da carteira: a API serve a Home e a lista de contratos
       - cache_modelos_hf:/root/.cache/huggingface   # modelo de busca nas normas: baixa uma vez só
     depends_on:
       postgres:
@@ -59,8 +60,6 @@ services:
       - "8501:8501"
     environment:
       - API_URL=http://api:8000
-    volumes:
-      - ./docs/resultados:/app/docs/resultados   # carteira_auditoria.csv e equidade.json do lote
     depends_on:
       api:
         condition: service_healthy

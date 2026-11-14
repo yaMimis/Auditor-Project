@@ -114,7 +114,7 @@ class Parecer(RespostaLLM):         # o que gerar_parecer() devolve à tela
 
 ## 4. API (`src/api/schemas.py`) — painel → API → painel
 
-**Entrada `SolicitacaoEmprestimo`** (nomes do formulário, convertidos na API):
+**Entrada `LoanRequest`** (nomes do formulário, convertidos na API; rota `POST /predict`):
 
 | Campo                 | Tipo                                          | Vira no `prever()`                                            |
 | --------------------- | --------------------------------------------- | --------------------------------------------------------------- |
@@ -130,9 +130,14 @@ class Parecer(RespostaLLM):         # o que gerar_parecer() devolve à tela
 
 O dicionário enviado ao `prever()` **precisa conter** também, com `None`: `passivos_existentes`, `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `novo_cliente`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `tipo_verificacao` (faltar a chave quebra o `prever()`).
 
-**Saída `RespostaPrever`** = `EntradaPrever` (herdado) + `motivos: list[MotivoPrever]` (com `valor`, `peso`) + `pd_ic95`, `diferenca_pp`, `juro_pares_mediana` + `parecer_ia: Parecer | null`.
+**Saída `PredictionResponse`** = `EntradaPrever` (herdado) + `motivos: list[PredictionReason]` (com `valor`, `peso`) + `pd_ic95`, `diferenca_pp`, `juro_pares_mediana` + `parecer_ia: Parecer | null`.
 
-## 5. Arquivos do lote da carteira (Samuel → painel), em `docs/resultados/`
+**Contrato da base** (formatos em `src/api/schemas.py`; regras na skill `regras_negocio/api`):
+
+- `GET /contracts/{id}/analysis` → `ContractAnalysis` = `resultado` (`PredictionResponse`) + `contrato` + `dados_considerados` (21 variáveis com `origem` `fornecida`/`derivada`) + `precificacao` + `resultado_observado` + `procedencia` (`modo` `ao_vivo`/`lote`, `motivo_lote`, `calculado_em`, `incerteza`, arquivo, hash e data do pacote, nº de reamostragens).
+- `POST /contracts/{id}/scenario` (Laboratório) → entrada `ScenarioChanges` (só os campos trocados, `juro_aa` em %); saída `ScenarioResult` = `original` + `cenario` (os dois `PredictionResponse`, sem parecer) + parcelas + `efeitos` + `campos` + `procedencia`.
+
+## 5. Arquivos do lote da carteira (Samuel → API → painel), em `docs/resultados/`
 
 **`carteira_auditoria.csv`** — uma linha por contrato pontuado (juros em fração):
 

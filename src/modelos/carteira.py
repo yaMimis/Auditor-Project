@@ -1,5 +1,5 @@
 """Lote da carteira: pontua 2016 (teste, encerrados) e 2017–2021 e grava
-docs/resultados/carteira_auditoria.csv no formato de src/app/carteira.py.
+docs/resultados/carteira_auditoria.csv no formato de src/api/portfolio.py.
 
 Mesma regra do prever(), mas vetorizada (o prever() linha a linha, com SHAP,
 levaria horas na carteira inteira). test_carteira_lote.py confere que os dois

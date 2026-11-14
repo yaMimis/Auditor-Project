@@ -46,7 +46,7 @@ def test_dominios_do_sql_sao_os_da_api():
     try:
         from typing import Literal, get_args, get_origin
 
-        from src.api.schemas import Parecer, RespostaPrever
+        from src.api.schemas import Parecer, PredictionResponse
     except ImportError:          # pydantic não instalado neste ambiente
         return
 
@@ -66,8 +66,8 @@ def test_dominios_do_sql_sao_os_da_api():
         return literais(anotacao)
 
     d = _dominios()
-    assert d["situacao_preco"] == valores(RespostaPrever, "situacao_preco")
-    assert d["faixa"] == valores(RespostaPrever, "faixa")
+    assert d["situacao_preco"] == valores(PredictionResponse, "situacao_preco")
+    assert d["faixa"] == valores(PredictionResponse, "faixa")
     assert d["recomendacao_sistema"] == valores(Parecer, "recomendacao")
     assert d["origem_parecer"] == valores(Parecer, "origem")
 

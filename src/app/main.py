@@ -23,7 +23,8 @@ if str(ROOT) not in sys.path:  # "streamlit run src/app/main.py" não põe a rai
 from src.app.components import (COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact,  # noqa: E402
                                  esc, eur,
                                  html_band_bars, html_considered_data, html_fairness_table,
-                                 html_opinion, html_outcome, html_pricing, html_provenance, html_rate_bar,
+                                 html_invariance, html_opinion, html_outcome, html_pricing, html_provenance,
+                                 html_rate_bar,
                                  html_reasons, html_scenario_effects, html_scenario_table, line_icon, pct,
                                  readable_value, review_kpis, situation_badge)
 
@@ -70,6 +71,7 @@ st.session_state.setdefault("history", [])   # contratos abertos nesta sessão
 st.session_state.setdefault("pending_decisions", [])  # rascunhos NÃO registrados (banco fora); não são histórico
 st.session_state.setdefault("analista", "")
 st.session_state.setdefault("page", "home")
+st.session_state.setdefault("invariance", {})  # último teste de invariância: contrato, resultado, erro
 st.session_state.setdefault("lab", {})  # Laboratório: contrato, original (campos e limites), último cenário, erro
 
 # Páginas do menu do topo. Botões (e não st.tabs) porque o painel troca de página sozinho:
@@ -733,8 +735,24 @@ def render_analysis(r: dict, ctx: dict) -> None:
         {html_outcome(analysis.get("resultado_observado"), ctx.get("lote") if not live else None,
                       analysis.get("motivo_sem_desfecho"))}</div>""")
 
+    lab_invite(r, ctx)
     st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
     decision_block(r)
+
+
+def lab_invite(r: dict, ctx: dict) -> None:
+    """Fim da Análise, antes da decisão: convite para testar outros valores no Laboratório."""
+    live = ctx.get("fonte") == "ao_vivo"
+    with st.container(border=True):
+        col_text, col_button = st.columns([3, 1], vertical_alignment="center")
+        with col_text:
+            md("""<div class="ap-card-title">E se o contrato fosse diferente?</div>
+                <div class="ap-card-sub">Teste outro prazo, valor, renda ou juro cobrado: o modelo recalcula e mostra o
+                que mudou o risco. Nada é gravado; uma taxa testada pode virar a proposta da decisão abaixo.</div>""")
+        with col_button, st.container(key="lab_button_area"):  # alinhado à direita pelo styles.css
+            st.button("Abrir no Laboratório", key="open_lab", icon=":material/science:", on_click=open_lab,
+                      args=(r.get("contrato_id"),), disabled=not live,
+                      help=None if live else "O Laboratório recalcula com o modelo ao vivo: precisa do banco.")
 
 
 def render_analysis_page() -> None:
@@ -748,15 +766,8 @@ def render_analysis_page() -> None:
             st.button("Ir para Contratos da base", key="go_contracts", icon=":material/arrow_back:",
                       on_click=go_to, args=("contratos",))
             return
-        col_back, col_lab = st.columns([1, 1])
-        with col_back:
-            st.button("Voltar para a lista", key="back_to_contracts", icon=":material/arrow_back:",
-                      on_click=go_to, args=("contratos",))
-        with col_lab, st.container(key="lab_button_area"):  # alinhado à direita pelo styles.css
-            live = context.get("fonte") == "ao_vivo"
-            st.button("Abrir no Laboratório", key="open_lab", icon=":material/science:", on_click=open_lab,
-                      args=(result.get("contrato_id"),), disabled=not live,
-                      help=None if live else "O Laboratório recalcula com o modelo ao vivo: precisa do banco.")
+        st.button("Voltar para a lista", key="back_to_contracts", icon=":material/arrow_back:",
+                  on_click=go_to, args=("contratos",))
         render_analysis(result, context)
 
 
@@ -938,6 +949,43 @@ def render_audit_page() -> None:
             {html_fairness_table(fairness or EMPTY_FAIRNESS)}
             <div class="ap-foot">Filtros por grupo ficam para depois da demo (a metodologia já existe em equidade.py).
             Gênero e idade servem só para esta auditoria: não aparecem na análise de um contrato.</div></div>""")
+        render_invariance()
+
+
+def run_invariance() -> None:
+    cid = (st.session_state.get("invariance_id") or "").strip()
+    if not cid:
+        st.session_state.invariance = {"erro": "Digite o ID de um contrato."}
+        return
+    result, error_msg = post_api(f"/contracts/{cid}/invariance", {})
+    st.session_state.invariance = {"contrato_id": cid, "resultado": result, "erro": error_msg}
+
+
+def render_invariance() -> None:
+    """Teste de invariância: o modelo dá o mesmo resultado com gênero e idade trocados?"""
+    if "invariance_id" not in st.session_state:  # começa com o contrato aberto na Análise, se houver
+        st.session_state.invariance_id = (st.session_state.audit_last_result or {}).get("contrato_id", "")
+    with st.container(border=True):
+        md("""<div class="ap-card-title">Teste de invariância</div>
+            <div class="ap-card-sub">Roda o modelo duas vezes no mesmo contrato: com o gênero e a idade reais do
+            cliente e com os dois trocados. Como nenhum dos dois é variável do modelo, o resultado tem de ser igual.
+            <b>Isso não prova que o preço é justo</b>: mostra só que o modelo não usa esses dados. A diferença que
+            sobra entre grupos, a risco igual, está na equidade agregada acima.</div>""")
+        col_id, col_run = st.columns([3, 1], vertical_alignment="bottom")
+        with col_id:
+            st.text_input("ID do contrato", key="invariance_id", placeholder="cole o ID de um contrato da base")
+        with col_run:
+            st.button("Rodar o teste", key="run_invariance", type="primary", icon=":material/balance:",
+                      on_click=run_invariance, use_container_width=True)
+        state = st.session_state.invariance
+        if state.get("erro"):
+            st.error(f"O teste não rodou: {state['erro']}")
+        elif state.get("resultado"):
+            result = state["resultado"]
+            md(f'<div class="ap-card-sub" style="margin:.4rem 0">Contrato {esc(result["contrato_id"])} · modelo '
+               f'{esc(result["procedencia"].get("versao_modelo"))} · as 21 variáveis do modelo '
+               f'{"não incluem gênero nem idade" if result.get("modelo_sem_atributos_protegidos") else "INCLUEM gênero ou idade"}</div>')
+            md(html_invariance(result))
 
 
 # ==========================================

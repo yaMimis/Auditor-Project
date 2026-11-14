@@ -108,7 +108,7 @@ class PricingParameters(BaseModel):
 
 
 class ObservedOutcome(BaseModel):
-    """Desfecho real (vw_retorno_realizado): só contratos 2009–2016 já encerrados."""
+    """Desfecho real (vw_desfecho_contrato, db/06): só contratos 2009–2016 já encerrados."""
     inadimplente: bool
     recebido_total: float
     resultado_eur: float = Field(description="Recebido − concedido, sem desconto no tempo")
@@ -152,6 +152,8 @@ class ContractAnalysis(BaseModel):
     dados_considerados: list[ConsideredVariable]
     precificacao: PricingParameters | None = None
     resultado_observado: ObservedOutcome | None = None
+    motivo_sem_desfecho: str | None = Field(
+        default=None, description="Por que não há desfecho (vw_desfecho_contrato), p. ex. 'concedido depois de 2016'")
     procedencia: Provenance
 
 

@@ -113,6 +113,16 @@ write_files:
         echo "[aviso] CSVs da Euribor não encontrados em ~/envio: o parecer sai sem a referência do BC"
       fi
 
+      # 2b. Contratos do Bondora (busca por ID e tela "Análise do contrato"). A carga apaga e
+      #     recarrega as três tabelas (TRUNCATE): rodar o completar.sh de novo dá o mesmo resultado.
+      if [ -f data/raw/LoanData_Bondora.csv ]; then
+        sudo docker compose run --rm --no-deps -v "$PROJETO/data/raw:/app/data/raw:ro" api \
+          python src/dados/carga_bondora.py --csv data/raw/LoanData_Bondora.csv
+        echo "[ok] contratos do Bondora carregados"
+      else
+        echo "[aviso] LoanData_Bondora.csv não encontrado em ~/envio: a busca de contratos não vai achar nada"
+      fi
+
       # 3. Reinicia a API para ela ver o modelo e espera ficar saudável
       sudo docker compose restart api
       for i in $(seq 1 48); do

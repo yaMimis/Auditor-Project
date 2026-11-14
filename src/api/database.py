@@ -65,10 +65,13 @@ CONTRACT_COLUMNS = {
 SQL_CONTRACT = (
     "SELECT " + ", ".join(f"{alias}.{col}" for alias, cols in CONTRACT_COLUMNS.items() for col in cols)
     + " FROM emprestimo e JOIN cliente c ON c.loan_id = e.loan_id"
-    + " LEFT JOIN historico_credito h ON h.loan_id = e.loan_id WHERE e.loan_id = lower(%s)"  # loan_id já é gravado em minúsculas (usa a chave primária)
+    + " LEFT JOIN historico_credito h ON h.loan_id = e.loan_id WHERE e.loan_id = %s"  # ID já normalizado no Python (usa a chave primária)
 )
 SQL_OUTCOME = ("SELECT inadimplente, recebido_total, resultado_eur, retorno_realizado, principal_perdido, "
-               "duracao_meses FROM vw_retorno_realizado WHERE loan_id = lower(%s)")
+               "duracao_meses FROM vw_retorno_realizado WHERE loan_id = %s")
+# db/06 (Marcos, 13/11): uma linha por contrato, com o motivo quando não há desfecho
+SQL_OUTCOME_STATUS = ("SELECT tem_desfecho, motivo_sem_desfecho, inadimplente, recebido_total, resultado_eur, "
+                      "retorno_realizado, principal_perdido FROM vw_desfecho_contrato WHERE loan_id = %s")
 SQL_BC_BY_CONTRACT = "SELECT bc_credito_pessoal_aa FROM vw_custo_do_dinheiro WHERE loan_id = %s"
 SQL_BC_BY_MONTH = "SELECT taxa_aa FROM bc_credito_pessoal_mensal WHERE mes = date_trunc('month', %s::date)::date"
 SQL_CURRENT = ("SELECT contrato_id, decisao_id, registrada_em, analista, decisao "
@@ -191,12 +194,18 @@ def _plain(value):
     return float(value) if isinstance(value, Decimal) else value
 
 
+def normalize_id(contrato_id: str) -> str:
+    """Combinado do loan_id (13/11): o banco guarda em minúsculas; normaliza aqui, nunca com
+    lower(loan_id) na coluna (desligaria o índice). Depois da busca, o fluxo usa o loan_id do banco."""
+    return (contrato_id or "").strip().lower()
+
+
 def load_contract(contrato_id: str) -> dict | None:
     """Uma linha com tudo o que o prever() precisa, ou None se o contrato não existe no banco."""
     import psycopg2
     try:
         with _connection() as conn, _cursor(conn) as cur:
-            cur.execute(SQL_CONTRACT, (contrato_id.strip(),))
+            cur.execute(SQL_CONTRACT, (normalize_id(contrato_id),))
             row = cur.fetchone()
     except psycopg2.errors.UndefinedTable as exc:
         raise DatabaseUnavailable("tabelas do Bondora não existem: aplique db/01 e rode a carga") from exc
@@ -209,9 +218,29 @@ def observed_outcome(contrato_id: str) -> dict | None:
     import psycopg2
     try:
         with _connection() as conn, _cursor(conn) as cur:
-            cur.execute(SQL_OUTCOME, (contrato_id.strip(),))
+            cur.execute(SQL_OUTCOME, (normalize_id(contrato_id),))
             row = cur.fetchone()
     except psycopg2.errors.UndefinedTable:
         return None
     return None if row is None else {k: _plain(v) for k, v in row.items()}
+
+
+def contract_outcome(loan_id: str) -> tuple[dict | None, str | None]:
+    """(desfecho, motivo de não ter desfecho) pela vw_desfecho_contrato (db/06).
+
+    Sem a view (banco montado antes de 13/11): cai na vw_retorno_realizado, sem o motivo."""
+    import psycopg2
+    try:
+        with _connection() as conn, _cursor(conn) as cur:
+            cur.execute(SQL_OUTCOME_STATUS, (normalize_id(loan_id),))
+            row = cur.fetchone()
+    except psycopg2.errors.UndefinedTable:
+        return observed_outcome(loan_id), None
+    if row is None:
+        return None, None
+    row = {k: _plain(v) for k, v in row.items()}
+    if not row.pop("tem_desfecho"):
+        return None, row.get("motivo_sem_desfecho")
+    row.pop("motivo_sem_desfecho", None)
+    return row, None
 

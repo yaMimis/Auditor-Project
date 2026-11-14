@@ -23,7 +23,7 @@ Ser a **única porta** para o modelo, o parecer, o banco e o lote: tudo que calc
 | `GET /contracts/ids?limit=` | até 20000 (padrão 5000) | lista de IDs | 503 |
 | `GET /contracts/export?situation=` | situação opcional | CSV (UTF-8 com BOM) | 503 |
 | `GET /contracts/{id}` | ID | linha do lote (usada pela busca) | 404 · 503 |
-| `GET /contracts/{id}/analysis` | ID do contrato da base | `ContractAnalysis`: `resultado` (saída do `prever()` + parecer), `contrato`, `dados_considerados` (21 variáveis: 17 fornecidas, 4 derivadas), `precificacao`, `resultado_observado` (só 2009–2016 encerrados), `procedencia` | 404 fora do banco e do lote · 503 (ver plano B) |
+| `GET /contracts/{id}/analysis` | ID do contrato da base | `ContractAnalysis`: `resultado` (saída do `prever()` + parecer), `contrato`, `dados_considerados` (21 variáveis: 17 fornecidas, 4 derivadas), `precificacao`, `resultado_observado` (só 2009–2016 encerrados; `vw_desfecho_contrato`), `motivo_sem_desfecho` (quando não há desfecho), `procedencia` | 404 fora do banco e do lote · 503 (ver plano B) |
 | `POST /contracts/{id}/scenario` | `ScenarioChanges` (só os campos trocados; `{}` = só o original) | `ScenarioResult`: `original`, `cenario`, `parcela_original`, `parcela_cenario`, `efeitos` (cada campo trocado sozinho), `campos` (formulário com valor atual e limites), `procedencia` | 404 · 422 fora dos limites ou campo desconhecido · 503 banco ou modelo fora (sem plano B) |
 | `POST /decisions` | `NewDecision` | `RecordedDecision` (201) | 422 · 503 banco fora |
 | `GET /decisions?contrato_id=&limit=` | limit 1–5000 (padrão 200) | lista de `RecordedDecision` | 503 |
@@ -41,6 +41,7 @@ As rotas fixas `/contracts/ids` e `/contracts/export` ficam declaradas **antes**
 6. **Decisões:** recuse analista e justificativa em branco; `taxa_proposta` só em `revisar_preco` (fração ao ano); `requisicao_id` (UUID) impede gravar o mesmo clique duas vezes; em revisão manual PD, faixa e juros justos vão nulos, nunca zero.
 7. Nenhuma falha vira 500: sem `.joblib` → 503 explicado; sem Gemini ou chave → template; sem banco → 503 nas decisões e `bc_rate()` devolve `None`.
 8. Todo SQL e conexão em `database.py` (`connect_timeout=3`); o lote só em `portfolio.py` (cache pela data do arquivo).
+9. **Combinado do `loan_id` (13/11, com Marcos e Samuel):** o banco guarda em minúsculas; o ID digitado é normalizado no Python (`database.normalize_id`: `strip().lower()`), nunca com `lower(loan_id)` na coluna (desligaria o índice). Depois da busca, o fluxo inteiro (prever, parecer, taxa do BC, desfecho e decisão) usa o `loan_id` que voltou do banco. O gatilho do `db/07` é a segunda barreira, nas decisões.
 
 ## Testes
 

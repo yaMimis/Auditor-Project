@@ -58,7 +58,7 @@
       },
       {
         "variavel": "renda_relativa",
-        "rotulo": "renda comparada à média do país",
+        "rotulo": "renda comparada à mediana do país",
         "efeito": "aumenta_risco",
         "valor": 0.55,
         "peso": 0.22

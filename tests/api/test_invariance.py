@@ -93,3 +93,12 @@ def test_errors(client, monkeypatch):
     monkeypatch.setattr(api.database, "load_contract", down)
     r = client.post(_url())
     assert r.status_code == 503 and "precisa do banco" in r.json()["detail"]
+
+
+def test_batch_summary_has_no_protected_values():
+    from scripts.invariancia_lote import summarize
+    results = [{"contrato_id": "a", "identico": True}, {"contrato_id": "b", "identico": False}]
+    out = summarize(results, 3, 7, {"versao_modelo": "xgboost_v3", "pacote_hash": "48784ba3742d"})
+    assert out["n_testados"] == 2 and out["identicos"] == 1 and out["diferentes"] == ["b"] and out["n_sorteados"] == 3
+    keys, _ = _keys_and_leaves(out, set(), [])
+    assert not keys & {"genero", "idade"}

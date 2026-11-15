@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PORTFOLIO_DIR = Path(os.getenv("CARTEIRA_DIR", ROOT / "docs" / "resultados"))
 PORTFOLIO_FILE = "carteira_auditoria.csv"
 FAIRNESS_FILE = "equidade.json"
+INVARIANCE_FILE = "invariancia_lote.json"  # gerado por scripts/invariancia_lote.py (sem gênero nem idade)
 
 REQUIRED_COLUMNS = ["contrato_id", "ano", "pais", "pd", "faixa", "juro_cobrado", "juro_justo",
                     "juro_justo_min", "juro_justo_max", "situacao_preco"]
@@ -47,6 +48,14 @@ def load_portfolio(folder: Path | None = None) -> pd.DataFrame | None:
     if "fora_da_auditoria" in df.columns:  # reestruturados: fora da comparação de preço
         df = df[~df["fora_da_auditoria"].fillna(False).astype(bool)]
     return df
+
+
+def load_invariance_summary(folder: Path | None = None) -> dict | None:
+    """Resumo do teste de invariância em lote (quantos contratos deram resultado idêntico)."""
+    path_ = Path(folder or PORTFOLIO_DIR) / INVARIANCE_FILE
+    if not path_.exists():
+        return None
+    return json.loads(path_.read_text(encoding="utf-8"))
 
 
 def load_fairness(folder: Path | None = None) -> list[dict] | None:
@@ -181,7 +190,7 @@ def records(df: pd.DataFrame) -> list[dict]:
 
 
 def overview(df: pd.DataFrame, fairness: list[dict] | None, years: tuple[int, int] | None = None,
-             pais: str | None = None, faixa: str | None = None) -> dict:
+             pais: str | None = None, faixa: str | None = None, invariance: dict | None = None) -> dict:
     """Tudo o que a Home mostra, para os filtros escolhidos."""
     filtered = filter_portfolio(df, years=years, pais=pais, faixa=faixa)
     table = backtest(filtered)
@@ -197,4 +206,5 @@ def overview(df: pd.DataFrame, fairness: list[dict] | None, years: tuple[int, in
         "por_faixa": by_band(filtered),
         "backtest": backtest_rows,
         "equidade": fairness,
+        "invariancia_lote": invariance,
     }

@@ -64,11 +64,11 @@ modelos_salvos/ pacote do modelo (.joblib, fora do Git)
 
 Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
-**Atalho (Windows):** `.\iniciar.ps1` no PowerShell (antes, se o Windows bloquear: `Set-ExecutionPolicy Bypass -Scope Process`), ou `docker compose up -d`. Num PC novo basta Docker Desktop, `.env`, o `.joblib` do modelo e os 4 CSVs de custo do dinheiro em `data/raw/` (`ECB_Euribor_Serie-Mensal-12-Meses.csv`, `ECB_Euribor_Serie-Mensal-3-Meses.csv`, `BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv`, `bcdata.sgs.20742.csv`). A base do Bondora só é necessária para refazer os dados e o modelo (passos 2 a 5 abaixo).
+**Atalho (Windows):** `.\iniciar.ps1` no PowerShell (antes, se o Windows bloquear: `Set-ExecutionPolicy Bypass -Scope Process`), ou `docker compose up -d`. Num PC novo basta Docker Desktop, `.env`, o `.joblib` do modelo e os 4 CSVs de custo do dinheiro em `data/raw/` (`ECB_Euribor_Serie-Mensal-12-Meses.csv`, `ECB_Euribor_Serie-Mensal-3-Meses.csv`, `BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv`, `bcdata.sgs.20742.csv`). Para a busca de contratos e a Análise, coloque também o `LoanData_Bondora.csv` em `data/raw/`: o `iniciar.ps1` carrega os contratos no banco na primeira vez (alguns minutos). Para refazer os dados e o modelo, veja os passos 2 a 5 abaixo.
 
 | Comando | O que faz |
 | --- | --- |
-| `.\iniciar.ps1` | confere portas, `.env` e modelo, sobe o banco, aplica a tabela de decisões, indexa as normas e carrega a referência do BC (se faltarem), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
+| `.\iniciar.ps1` | confere portas, `.env` e modelo, sobe o banco, aplica os scripts `db/05` a `db/07` (decisões, desfecho e gatilho do contrato), indexa as normas, carrega os contratos do Bondora e a referência do BC (se faltarem), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
 | `.\iniciar.ps1 -Build` | o mesmo, reconstruindo a imagem (mudou código ou requirements) |
 | `.\iniciar.ps1 -Parar` | para tudo; os dados do banco ficam guardados |
 

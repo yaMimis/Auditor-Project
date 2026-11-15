@@ -1,8 +1,14 @@
 # main.tf
 # A "lista de compras": tudo o que o Terraform cria na Google Cloud.
-# São 5 recursos. O "terraform plan" deve mostrar "Plan: 5 to add".
+# São 6 recursos. O "terraform plan" deve mostrar "Plan: 6 to add".
 # Não existe "grupo de recursos" como na Azure: o projeto da GCP faz esse papel,
-# e o "terraform destroy" apaga os 5 recursos (o projeto continua existindo).
+# e o "terraform destroy" apaga os 6 recursos (o projeto continua existindo).
+
+# ips_liberados aceita IPv4 e IPv6 misturados; a GCP exige uma regra de firewall para cada tipo.
+locals {
+  ips_v4 = [for c in var.ips_liberados : c if !strcontains(c, ":")]
+  ips_v6 = [for c in var.ips_liberados : c if strcontains(c, ":")]
+}
 
 # 1. Rede própria (VPC). Uma rede nova não aceita nenhuma conexão de fora até
 #    que uma regra de firewall libere: por isso a porta do banco (5432) fica fechada.
@@ -12,11 +18,14 @@ resource "google_compute_network" "rede" {
 }
 
 # 2. Sub-rede: o "pedaço" da rede, na região escolhida, onde a VM se conecta.
+#    Dual-stack: além do IPv4, a GCP dá à VM um IPv6 público (quem só sai por IPv6 também acessa).
 resource "google_compute_subnetwork" "subrede" {
-  name          = "${var.prefixo}-subrede"
-  ip_cidr_range = "10.10.1.0/24"
-  region        = var.regiao
-  network       = google_compute_network.rede.id
+  name             = "${var.prefixo}-subrede"
+  ip_cidr_range    = "10.10.1.0/24"
+  region           = var.regiao
+  network          = google_compute_network.rede.id
+  stack_type       = "IPV4_IPV6"
+  ipv6_access_type = "EXTERNAL"
 }
 
 # 3. IP público fixo: o endereço que você digita no navegador.
@@ -27,12 +36,28 @@ resource "google_compute_address" "ip" {
 
 # 4. Firewall: só abre SSH (22), API (8000) e painel (8501), e só para os IPs liberados.
 #    Vale para as VMs com a etiqueta "auditor" (na Azure era a ligação NSG + placa de rede).
+#    Uma regra para os IPv4 e outra para os IPv6 (a GCP não mistura os dois na mesma regra).
 resource "google_compute_firewall" "entrada" {
   name    = "${var.prefixo}-firewall"
   network = google_compute_network.rede.name
 
   direction     = "INGRESS"
-  source_ranges = var.ips_liberados
+  source_ranges = local.ips_v4
+  target_tags   = [var.prefixo]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "8000", "8501"]
+  }
+}
+
+resource "google_compute_firewall" "entrada_ipv6" {
+  count   = length(local.ips_v6) > 0 ? 1 : 0
+  name    = "${var.prefixo}-firewall-ipv6"
+  network = google_compute_network.rede.name
+
+  direction     = "INGRESS"
+  source_ranges = local.ips_v6
   target_tags   = [var.prefixo]
 
   allow {
@@ -59,8 +84,12 @@ resource "google_compute_instance" "vm" {
 
   network_interface {
     subnetwork = google_compute_subnetwork.subrede.id
+    stack_type = "IPV4_IPV6"
     access_config {
       nat_ip = google_compute_address.ip.address
+    }
+    ipv6_access_config {
+      network_tier = "PREMIUM" # IPv6 público (a GCP só oferece no nível Premium)
     }
   }
 

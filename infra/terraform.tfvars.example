@@ -14,3 +14,6 @@ ips_liberados = ["200.100.50.25/32"]      # seu IP + "/32", um por pessoa que va
 # Segredos: NÃO coloque aqui. Passe pelo terminal antes do plan/apply:
 #   $env:TF_VAR_google_api_key = "<chave do Gemini>"
 #   $env:TF_VAR_cliente_id_sal = "<chave do grupo>"
+
+# Dia da apresentação: painel aberto para qualquer pessoa (portas 80 e 8501). SSH e API seguem restritos.
+# painel_publico = true

@@ -70,8 +70,13 @@ write_files:
       docker compose run --rm --no-deps api python genai/src/indexar.py \
         || echo "AVISO: normas não indexadas; o parecer sai sem fontes"
 
-      # 7. API e painel em segundo plano.
-      docker compose up -d api streamlit
+      # 7. API e painel em segundo plano. Na 1ª subida a API pode passar do prazo do healthcheck
+      #    (carrega PyTorch e o modelo de busca) e o compose desiste do painel: tenta de novo.
+      for tentativa in 1 2 3; do
+        docker compose up -d api streamlit && break
+        echo "AVISO: API ainda não ficou saudável (tentativa $tentativa); tentando de novo em 60 s"
+        sleep 60
+      done
       touch /opt/auditor/pronto
       echo "Montagem concluída."
 
@@ -129,9 +134,16 @@ write_files:
         [ "$(sudo docker inspect -f '{{.State.Health.Status}}' auditor_api)" = "healthy" ] && break
         sleep 5
       done
+      # 4. Garante o painel no ar (ele só sobe com a API saudável) e mostra o estado dos dois
+      sudo docker compose up -d streamlit
       echo
       curl -s http://localhost:8000/
       echo
+      if curl -fs -o /dev/null http://localhost:8501/; then
+        echo "[ok] painel respondendo na porta 8501"
+      else
+        echo "[aviso] painel ainda não responde: sudo docker compose logs --tail 50 streamlit"
+      fi
 
 runcmd:
   - [bash, /opt/auditor/montar.sh]

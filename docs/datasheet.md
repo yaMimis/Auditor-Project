@@ -149,6 +149,7 @@ Feito na carga (`src/dados/carga_bondora.py` e `src/dados/carga_macro.py`), com 
 - **Teste mais arriscado que o treino:** 67,1% de default contra 52,4%, porque só tem clientes novos.
 - **Proxies:** tirar gênero e idade do modelo não elimina variáveis que carregam a mesma informação; a auditoria de resíduos testa isso.
 - **Leitura jurídica hipotética:** a análise trata os contratos "como se fossem brasileiros".
+- **O backtest de 2016 não confirma a auditoria no agregado:** o "acima do justo" teve o pior retorno, e a hipótese só vale nas faixas B e C (`DATA.md`, seção 14). "Acima do justo" é indício para o analista, nunca conclusão.
 
 ## 6. Distribuição
 
@@ -163,4 +164,4 @@ Feito na carga (`src/dados/carga_bondora.py` e `src/dados/carga_macro.py`), com 
 - **Versão dos dados:** o arquivo é identificado pela impressão digital SHA-256 registrada no `DATA.md`, seção 1. **[A CONFIRMAR]** A cópia local do Marcos (mesmas 112 colunas e 179.235 linhas, contagens por ano iguais às esperadas) tem SHA-256 `465abbefd71dc58afa5f293fdbff5a0300aa6cd43c6bd5736edad4c5c31fa460`, diferente do registrado. Conferir com o grupo qual cópia gerou o hash do `DATA.md` antes de fechar a versão.
 - **Atualização:** o Bondora publica novas versões do relatório; o projeto **congela** a versão com corte em 20/07/2021. Uma versão nova exige recarregar o banco, reaplicar `db/`, rodar `python src/dados/validacao.py` (0 erros) e regerar `python src/dados/relatorio_qualidade.py`, além de atualizar este datasheet e o `DATA.md`.
 - **Erros encontrados:** viram regra no `validacao.py` (erro ou alerta) e linha no relatório de qualidade; decisões sobre eles ficam no `DATA.md`, seção 12.
-- **Pendência conhecida:** repontuar a carteira de 2017–2021 tratando a escala nova do `score_fi_asiakastieto` e o "M" do `score_es_microl` (Samuel; `DATA.md`, seção 12).
+- **Repontuação da carteira (feita):** em 14/11, o Samuel repontuou a carteira de 2017–2021 com o modelo `xgboost_v3`. A escala nova do `score_fi_asiakastieto` (1 a 8) e o "M" do `score_es_microl` agora viram `sem_info` (`DATA.md`, seções 7 e 12).

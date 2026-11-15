@@ -21,7 +21,8 @@
 --   * Gênero e idade NÃO entram: não há coluna para eles, e o banco recusa um JSON
 --     (prever_json ou parecer_json) que tenha as chaves genero, idade, gender ou age
 --     no primeiro nível. Quem grava o JSON deve mandar só a RESPOSTA do prever() e o
---     parecer, nunca a solicitação (que carrega gênero e idade).
+--     parecer, nunca a solicitação (desde 15/11 o /predict não recebe gênero nem
+--     idade; a regra continua para que nenhum dado de entrada chegue ao registro).
 --   * Taxas em FRAÇÃO ao ano, como a API (0,249 = 24,9% ao ano, taxa nominal).
 --   * Valores dos domínios iguais aos de src/api/schemas.py (há teste que confere).
 --   * A justificativa é obrigatória. Evite dado pessoal no texto livre dela.

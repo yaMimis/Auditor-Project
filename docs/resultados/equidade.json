@@ -11,9 +11,9 @@
   {
     "atributo": "Idade",
     "comparacao": "18–25 × 35–44 anos",
-    "diferenca_pp": 5.45,
-    "ic95_min": 5.06,
-    "ic95_max": 5.84,
+    "diferenca_pp": 5.31,
+    "ic95_min": 4.92,
+    "ic95_max": 5.69,
     "n_grupo_a": 13682,
     "n_grupo_b": 31987
   }

@@ -244,7 +244,7 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
   | D | −23,5% | −20,1% | −24,6% | não |
   | E | −24,0% | −39,8% | −53,0% | não |
 
-- **Leitura:** no agregado, o "abaixo do justo" teve o melhor retorno e o "acima do justo", o pior. É o contrário do que a auditoria espera. Dentro da faixa de risco, a hipótese vale só nas faixas B e C. O modelo subestima o default de 2016, então parte do juro alto cobrado reflete um risco que ele não captura. Por isso "acima do justo" é indício para o analista revisar, e a decisão é humana. Próximo passo: calibrar o modelo por safra.
+- **Leitura:** no agregado, o "abaixo do justo" teve o melhor retorno e o "acima do justo", o pior. É o contrário do que a auditoria espera. Dentro da faixa de risco, a hipótese vale só nas faixas B e C. O modelo subestima o default de 2016 (no teste, 7.311 clientes novos: 55% previsto contra 67% real; `docs/resultados/xgboost_v3.json`), então parte do juro alto cobrado reflete um risco que ele não captura. Por isso "acima do justo" é indício para o analista revisar, e a decisão é humana. Próximo passo: calibrar o modelo por safra.
 - **2016, só teste (clientes novos; 5.512 contratos), tabela secundária:**
 
   | Situação | Contratos | Concedido | Resultado | ROI | Perda não coberta |
@@ -255,7 +255,7 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
   | Revisão manual | 148 | 1,24 mi € | −0,33 mi € | −26,6% | 0,51 mi € |
   | **Total** | **5.512** | **13,85 mi €** | **−2,83 mi €** | **−20,5%** | **4,88 mi €** |
 
-  Só com clientes novos, a hipótese vale nas faixas A, B e C e falha nas faixas D e E, onde o "acima do justo" teve o pior retorno (−54,2% na E).
+  Só com clientes novos, a hipótese vale nas faixas A, B e C e falha nas faixas D e E, onde o "acima do justo" teve o pior retorno (−54,2% na E). **O número oficial é o do recorte principal (7.141 contratos): a hipótese vale só nas faixas B e C.** Este recorte é secundário e não deve ser citado sozinho.
 - **Limites:** depende do modelo que gerou o CSV (coluna `versao_modelo`); regerar quando ele mudar. Não desconta o tempo. As safras de 2015 e 2016 podem ter recuperações ainda por chegar.
 
 ### Excesso estimado acima da margem (2017–2021)
@@ -295,11 +295,11 @@ Por tempo (`data_emprestimo`) e por cliente (`DECISOES.md`, seção 4):
 
 ### Contrato no formato do `prever()` (`vw_contrato_modelo`)
 
-- **O que é:** a view `vw_contrato_modelo` (`db/08_view_contrato_modelo.sql`), com **uma linha para cada contrato de `emprestimo`** (179.235) e exatamente as colunas que o `prever()` lê. Serve à rota `GET /contracts/{id}/analysis`: a API lê uma linha pronta e chama `prever(dict(linha))`, sem montar o join no Python. O `prever()` aceita a linha do banco como vem (Decimal e date do psycopg2; PR #81).
+- **O que é:** a view `vw_contrato_modelo` (`db/08_view_contrato_modelo.sql`), com **uma linha para cada contrato de `emprestimo`** (179.235) e exatamente as colunas que o `prever()` lê. Foi feita para a rota `GET /contracts/{id}/analysis`, mas **a API hoje não a usa**: o `SQL_CONTRACT` de `src/api/database.py` monta o próprio join de `emprestimo`, `cliente` e `historico_credito` e lê 31 colunas, as 21 da view e mais 10 que ela não tem (`valor_solicitado`, `caixa_livre`, `divida_renda`, `pagamentos_anteriores`, `quitacoes_antecipadas_valor`, `refinanciamento_passivos` e as quatro rendas complementares). Nenhuma delas é gênero ou idade. Trocar o join pela view exige primeiro ver para que a API usa essas 10 (sugestão à Yasmin, 15/11). O `prever()` aceita a linha do banco como vem (Decimal e date do psycopg2; PR #81).
 - **Colunas (21):** `loan_id`, `data_emprestimo`, `juro_aa`, `passivos_total` e as 17 variáveis que vêm direto do banco (`valor_concedido`, `prazo_meses`, `novo_cliente`, `tipo_verificacao`, `pais`, `renda_total`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `passivos_existentes`, `quitacoes_antecipadas_qtd` e os quatro scores). As outras 4 variáveis do modelo (`parcela_neutra_sobre_renda`, `valor_sobre_renda`, `divida_sobre_renda` e `renda_relativa`) são calculadas pelo `criar_variaveis()` a partir destas.
 - **Fora de propósito:** as colunas que só alimentam variáveis descartadas (`valor_solicitado`, `caixa_livre`, `divida_renda` etc.), toda a lista negra exceto o `juro_aa` (o preço auditado, que não é variável do modelo; confirmado pelo Samuel no PR #81), gênero, idade, estado civil, dependentes e `cliente_id`.
 - **Por que testar a lista:** o `criar_variaveis()` preenche com vazio, sem erro, toda coluna de fonte que faltar. Se a view esquecesse uma (como `score_ee_mini`), o `prever()` rodaria com outra PD sem ninguém perceber. O `tests/dados/test_contrato_modelo_sql.py` lê o SQL e confere a lista contra `src/modelos/variaveis.py` e `src/modelos/prever.py`: nada proibido, tudo que o `prever()` lê, nenhuma variável vindo do preenchimento com vazio e nenhuma coluna sem uso.
-- **Consulta da API** (mesma regra da `vw_desfecho_contrato`: normalizar o ID com `.strip().lower()` no Python, nunca `lower(loan_id)` na coluna):
+- **Consulta pela view** (mesma regra da `vw_desfecho_contrato`: normalizar o ID com `.strip().lower()` no Python, nunca `lower(loan_id)` na coluna):
 
   ```sql
   SELECT * FROM vw_contrato_modelo WHERE loan_id = %s;

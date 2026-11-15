@@ -50,23 +50,17 @@ SQL_ONE = f"SELECT {LISTING_COLUMNS} FROM decisao_analista WHERE decisao_id = %s
 SQL_LIST = f"SELECT {LISTING_COLUMNS} FROM decisao_analista ORDER BY registrada_em DESC, decisao_id DESC LIMIT %s"
 SQL_LIST_BY_CONTRACT = (f"SELECT {LISTING_COLUMNS} FROM decisao_analista WHERE contrato_id = %s "
                        "ORDER BY registrada_em DESC, decisao_id DESC LIMIT %s")
-# Colunas que o prever() lê (variáveis do modelo e as fontes das derivadas, src/modelos/variaveis.py).
-# Lista fechada de propósito: nada da lista negra além do juro (o preço auditado) e da data.
-CONTRACT_COLUMNS = {
-    "e": ["loan_id", "data_emprestimo", "novo_cliente", "valor_solicitado", "valor_concedido", "juro_aa",
-          "prazo_meses", "tipo_verificacao"],
-    "c": ["pais", "escolaridade", "tempo_emprego_atual", "tipo_moradia", "renda_total", "renda_pensao",
-          "renda_auxilio_familiar", "renda_assistencia_social", "renda_pensao_alimenticia"],
-    "h": ["n_emprestimos_anteriores", "valor_emprestimos_anteriores", "pagamentos_anteriores",
-          "quitacoes_antecipadas_valor", "quitacoes_antecipadas_qtd", "passivos_existentes", "passivos_total",
-          "refinanciamento_passivos", "divida_renda", "caixa_livre", "score_es_microl", "score_es_equifax",
-          "score_fi_asiakastieto", "score_ee_mini"],
-}
-SQL_CONTRACT = (
-    "SELECT " + ", ".join(f"{alias}.{col}" for alias, cols in CONTRACT_COLUMNS.items() for col in cols)
-    + " FROM emprestimo e JOIN cliente c ON c.loan_id = e.loan_id"
-    + " LEFT JOIN historico_credito h ON h.loan_id = e.loan_id WHERE e.loan_id = %s"
-)  # o ID chega normalizado por normalize_id(): a busca usa a chave primária
+# Contrato no formato do prever(): a view vw_contrato_modelo (db/08, Marcos) traz só as colunas que o
+# modelo usa (as 21 variáveis e as fontes das derivadas). Lista fechada de propósito: nada de gênero,
+# idade, estado civil ou dependentes; um teste confere esta lista contra a view e o modelo.
+CONTRACT_COLUMNS = [
+    "loan_id", "data_emprestimo", "juro_aa", "valor_concedido", "prazo_meses", "novo_cliente",
+    "tipo_verificacao", "pais", "renda_total", "tempo_emprego_atual", "escolaridade", "tipo_moradia",
+    "passivos_total", "n_emprestimos_anteriores", "valor_emprestimos_anteriores", "passivos_existentes",
+    "quitacoes_antecipadas_qtd", "score_ee_mini", "score_fi_asiakastieto", "score_es_equifax", "score_es_microl",
+]
+SQL_CONTRACT = f"SELECT {', '.join(CONTRACT_COLUMNS)} FROM vw_contrato_modelo WHERE loan_id = %s"
+# o ID chega normalizado por normalize_id(): a busca usa a chave primária
 SQL_OUTCOME = ("SELECT inadimplente, recebido_total, resultado_eur, retorno_realizado, principal_perdido, "
                "duracao_meses FROM vw_retorno_realizado WHERE loan_id = %s")
 # db/06 (Marcos, 13/11): uma linha por contrato, com o motivo quando não há desfecho
@@ -208,7 +202,8 @@ def load_contract(contrato_id: str) -> dict | None:
             cur.execute(SQL_CONTRACT, (normalize_id(contrato_id),))
             row = cur.fetchone()
     except psycopg2.errors.UndefinedTable as exc:
-        raise DatabaseUnavailable("tabelas do Bondora não existem: aplique db/01 e rode a carga") from exc
+        raise DatabaseUnavailable("falta a view vw_contrato_modelo ou as tabelas do Bondora: rode o iniciar.ps1 "
+                                  "(aplica o db/08) e a carga") from exc
     return None if row is None else {k: _plain(v) for k, v in row.items()}
 
 

@@ -94,8 +94,21 @@ def test_no_protected_attribute_anywhere(client):
     text = json.dumps(client.get(f"/contracts/{ROW['loan_id']}/analysis").json())
     for word in ("genero", "idade", "estado_civil", "n_dependentes"):
         assert f'"{word}"' not in text  # como chave ou variável ("escolaridade" contém "idade")
-    selected = {col for cols in api.database.CONTRACT_COLUMNS.values() for col in cols}
-    assert not selected & contract_analysis.PROTECTED  # o banco nem devolve esses campos
+    assert not set(api.database.CONTRACT_COLUMNS) & contract_analysis.PROTECTED  # o banco nem devolve esses campos
+
+
+def test_contract_query_reads_the_model_view():
+    """A consulta lê a vw_contrato_modelo (db/08) e traz tudo o que o modelo usa."""
+    import re
+    from pathlib import Path
+    from src.modelos.variaveis import colunas_do_modelo
+    columns = set(api.database.CONTRACT_COLUMNS)
+    derived = {"parcela_neutra_sobre_renda", "valor_sobre_renda", "divida_sobre_renda", "renda_relativa"}
+    assert set(colunas_do_modelo()) - derived <= columns  # as 17 fornecidas
+    assert {"loan_id", "data_emprestimo", "juro_aa", "passivos_total"} <= columns  # fontes e preço
+    view = Path(__file__).resolve().parents[2] / "db" / "08_view_contrato_modelo.sql"
+    in_view = set(re.findall(r"\b[ech]\.(\w+)", view.read_text(encoding="utf-8")))
+    assert columns <= in_view and "vw_contrato_modelo" in api.database.SQL_CONTRACT
 
 
 def test_pricing_parameters_reproduce_fair_rate(client):

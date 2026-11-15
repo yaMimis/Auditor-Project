@@ -68,7 +68,7 @@ Pré-requisitos: Git, Python 3.14 e Docker Desktop.
 
 | Comando | O que faz |
 | --- | --- |
-| `.\iniciar.ps1` | confere portas, `.env` e modelo, sobe o banco, aplica os scripts `db/05` a `db/07` (decisões, desfecho e gatilho do contrato), indexa as normas, carrega os contratos do Bondora e a referência do BC (se faltarem), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
+| `.\iniciar.ps1` | confere portas, `.env` e modelo, sobe o banco, aplica os scripts `db/05` a `db/08` (decisões, desfecho, gatilho e a view do contrato), indexa as normas, carrega os contratos do Bondora e a referência do BC (se faltarem), sobe API e painel e abre o navegador. Constrói a imagem só se ela não existir. |
 | `.\iniciar.ps1 -Build` | o mesmo, reconstruindo a imagem (mudou código ou requirements) |
 | `.\iniciar.ps1 -Parar` | para tudo; os dados do banco ficam guardados |
 

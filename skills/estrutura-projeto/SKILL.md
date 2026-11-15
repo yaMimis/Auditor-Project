@@ -39,7 +39,7 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
 │   ├── qualidade_dados.md       relatório gerado por script (erros × alertas)
 │   ├── exemplos_prever.json     exemplos ilustrativos da saída do prever(), um por situação
 │   ├── casos_de_teste.json      casos REAIS da saída do prever(), 2 por situação (casos_de_teste())
-│   ├── bpmn/                    processo em BPMN: auditor_preco_justo_v2 (.bpmn + .jpeg)
+│   ├── bpmn/                    processo em BPMN: auditor_preco_justo_v4 (.bpmn + .png); v2 e v3 são versões antigas
 │   ├── figuras/                 gráficos da EDA (PNG numerados 01_, 02_ ...)
 │   └── resultados/              métricas versionadas (JSON) + arquivos do lote da carteira
 ├── genai/

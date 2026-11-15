@@ -70,12 +70,13 @@ resource "google_compute_instance" "vm" {
     enable-oslogin = "FALSE"
 
     # Script executado uma única vez, no primeiro boot (o Ubuntu da GCP lê o cloud-init daqui).
-    user-data = templatefile("${path.module}/cloud-init.yaml", {
+    # O replace tira o CRLF que o Git do Windows põe no arquivo (os scripts rodam no bash da VM).
+    user-data = replace(templatefile("${path.module}/cloud-init.yaml", {
       usuario        = var.usuario
       repositorio    = var.repositorio_git
       ramo           = var.ramo_git
       google_api_key = var.google_api_key
       cliente_id_sal = var.cliente_id_sal
-    })
+    }), "\r\n", "\n")
   }
 }

@@ -39,7 +39,7 @@
       <bpmn:outgoing>Flow_Start_Ler</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:serviceTask id="Task_Ler" name="Ler o contrato do banco">
-      <bpmn:documentation>GET /contracts/{id}/analysis. O ID digitado é normalizado (minúsculas, sem espaços) e a API lê emprestimo, cliente e historico_credito pelo loan_id (SQL_CONTRACT em src/api/database.py): as 21 colunas da vw_contrato_modelo e mais 10. Gênero e idade não são lidos.</bpmn:documentation>
+      <bpmn:documentation>GET /contracts/{id}/analysis. O ID digitado é normalizado (minúsculas, sem espaços) e a API lê o contrato da vw_contrato_modelo (db/08) pelo loan_id (SQL_CONTRACT em src/api/database.py): as 21 colunas que o prever() usa, e nenhuma a mais. Gênero e idade não são lidos.</bpmn:documentation>
       <bpmn:incoming>Flow_Start_Ler</bpmn:incoming>
       <bpmn:outgoing>Flow_Ler_AoVivo</bpmn:outgoing>
     </bpmn:serviceTask>

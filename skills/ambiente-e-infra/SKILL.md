@@ -83,5 +83,5 @@ Os SQL de `db/` só rodam sozinhos na **primeira criação** do volume. Em banco
 ## Pronto quando
 
 - `pytest tests/ -v` passa localmente e na CI.
-- `docker compose up --build api streamlit` sobe sem erro; `GET /` mostra `modelo_carregavel: true`; o painel roda uma auditoria pelo formulário.
+- `docker compose up --build api streamlit` sobe sem erro; `GET /` mostra `modelo_carregavel: true`; o painel abre um contrato pela busca (Contratos da base → Abrir).
 - O README descreve exatamente esses comandos.

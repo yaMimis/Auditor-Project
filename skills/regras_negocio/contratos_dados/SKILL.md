@@ -114,7 +114,7 @@ class Parecer(RespostaLLM):         # o que gerar_parecer() devolve à tela
 
 ## 4. API (`src/api/schemas.py`) — painel → API → painel
 
-**Entrada `LoanRequest`** (nomes do formulário, convertidos na API; rota `POST /predict`):
+**Entrada `LoanRequest`** (nomes do formulário, convertidos na API; rota `POST /predict`; sem gênero nem idade, que são ignorados se vierem):
 
 | Campo                 | Tipo                                          | Vira no `prever()`                                            |
 | --------------------- | --------------------------------------------- | --------------------------------------------------------------- |
@@ -126,7 +126,6 @@ class Parecer(RespostaLLM):         # o que gerar_parecer() devolve à tela
 | `interest_cobrado`  | float 0–500, **em %**                  | `juro_aa`                                                     |
 | `liabilities_total` | float ≥ 0 ou null, €                        | `passivos_total`                                              |
 | `data_emprestimo`   | data; padrão **hoje**; nunca no futuro | `data_emprestimo` (ISO)                                       |
-| `gender`, `age`   | int ou null                                   | **não** vão ao `prever()` (só registro de auditoria) |
 
 O dicionário enviado ao `prever()` **precisa conter** também, com `None`: `passivos_existentes`, `n_emprestimos_anteriores`, `valor_emprestimos_anteriores`, `novo_cliente`, `tempo_emprego_atual`, `escolaridade`, `tipo_moradia`, `tipo_verificacao` (faltar a chave quebra o `prever()`).
 

@@ -22,7 +22,7 @@ Para cada contrato de crédito, o sistema **estima o risco de inadimplência**, 
 ## Fluxo ponta a ponta
 
 ```
-Contrato (formulário do painel ou carteira)
+Contrato da base (busca por ID no painel) ou carteira inteira (lote)
   → API converte para os nomes do banco
   → modelo de risco: PD + faixa A–E + motivos SHAP          (regras_negocio/modelo_risco)
   → juro justo por fluxo de caixa + margem de incerteza      (regras_negocio/juro_justo)

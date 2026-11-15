@@ -232,3 +232,10 @@ def test_list_by_contract(client, monkeypatch):
     monkeypatch.setattr(api.database, "list_decisions", fake)
     assert client.get("/decisions", params={"contrato_id": "BO-1", "limit": 5}).json() == []
     assert request_ == {"contrato_id": "BO-1", "limit": 5}
+
+
+def test_predict_has_no_gender_or_age_fields():
+    """Minimização: o formato de entrada não tem gênero nem idade; se vierem no JSON, são ignorados."""
+    from src.api.schemas import LoanRequest
+    assert not {"gender", "age", "genero", "idade"} & set(LoanRequest.model_fields)
+    assert "gender" not in LoanRequest.model_validate(PAYLOAD).model_dump()

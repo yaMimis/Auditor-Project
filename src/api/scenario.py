@@ -5,7 +5,7 @@ banco e chama o prever() (o original, o cenário e um campo de cada vez, para o 
 risco"). A parcela usa a função do lote do Samuel (src/modelos/carteira.py).
 
 Gênero, idade, estado civil e dependentes não são editáveis: a linha do banco não os traz
-(database.CONTRACT_COLUMNS) e o pedido recusa campos fora da lista (ScenarioChanges).
+(database.CONTRACT_COLUMNS, lida da vw_contrato_modelo) e o pedido recusa campos fora da lista (ScenarioChanges).
 """
 from __future__ import annotations
 

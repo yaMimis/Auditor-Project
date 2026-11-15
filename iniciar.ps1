@@ -126,13 +126,14 @@ foreach ($i in 1..30) {
 if (-not $pronto) { Parar "O banco nao respondeu em 60 s. Veja: docker logs auditor_postgres --tail 30" }
 Ok "banco pronto"
 
-# 3. Decisoes do analista (db/05), desfecho por contrato (db/06) e gatilho do contrato_id (db/07).
-#    Os tres podem ser reaplicados sem problema; um banco criado do zero ja recebe os tres sozinho.
-Passo "3/6 Aplicando decisoes, desfecho e gatilho do contrato"
+# 3. Decisoes do analista (db/05), desfecho por contrato (db/06), gatilho do contrato_id (db/07) e
+#    contrato no formato do modelo (db/08). Podem ser reaplicados; um banco novo ja recebe todos sozinho.
+Passo "3/6 Aplicando decisoes, desfecho, gatilho e view do contrato"
 $scripts_banco = @(
     @("05_decisoes_analista.sql",          "tabela decisao_analista"),
     @("06_view_desfecho_contrato.sql",     "view vw_desfecho_contrato"),
-    @("07_normaliza_contrato_decisao.sql", "gatilho que normaliza o contrato_id")
+    @("07_normaliza_contrato_decisao.sql", "gatilho que normaliza o contrato_id"),
+    @("08_view_contrato_modelo.sql",       "view vw_contrato_modelo (contrato no formato do modelo)")
 )
 foreach ($item in $scripts_banco) {
     $arquivo = $item[0]

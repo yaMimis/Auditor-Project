@@ -24,7 +24,8 @@ from src.app.components import (  # noqa: E402
     COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact, esc, eur, html_band_bars,
     html_considered_data, html_fairness_table, html_invariance, html_invariance_summary, html_opinion,
     html_outcome, html_pricing, html_provenance, html_rate_bar, html_reasons, html_scenario_effects,
-    html_scenario_table, line_icon, pct, readable_value, review_kpis, situation_badge)
+    html_scenario_table, html_team_avatar, image_data_uri, line_icon, pct, readable_value, review_kpis,
+    situation_badge)
 
 BR_TIMEZONE = timezone(timedelta(hours=-3))
 
@@ -46,6 +47,8 @@ QUERY_TIMEOUT_S = 5  # leituras rápidas (decisões)
 # 2. ESTILO (src/app/styles.css)
 # ==========================================
 STYLE_FILE = Path(__file__).with_name("styles.css")
+# Fotos opcionais (ver src/app/imagens/LEIA-ME.md): capa.jpg na Home e uma por integrante no Sobre.
+IMAGES_DIR = Path(__file__).with_name("imagens")
 
 
 def load_style() -> None:
@@ -196,7 +199,7 @@ def api_status_line() -> None:
     status = api_status()
     if status is None:
         md(f'<span class="ap-status"><i class="ap-dot" style="background:#d9825b"></i>'
-           f'API fora do ar ({esc(API_BASE)}): a Análise abre com os valores do lote.</span>')
+           f'API fora do ar ({esc(API_BASE)}): as telas voltam quando ela voltar. Confira o Docker.</span>')
         return
     if not status.get("modelo_carregavel", True):
         md('<span class="ap-status"><i class="ap-dot" style="background:#e8a462"></i>'
@@ -238,9 +241,9 @@ def portfolio_kpis(summary: dict | None) -> None:
         ("Contratos auditados", "[N]" if empty_ else f"{summary['auditados']:,}".replace(",", "."),
          "no período e filtros escolhidos" if empty_ else
          f"+ {summary['revisao_manual']:,} em revisão manual".replace(",", "."), None),
-        ("Acima do justo", "[X%]" if empty_ else pct(summary["acima"]), "risco de perder bons clientes",
+        ("Acima do justo", "[X%]" if empty_ else pct(summary["acima"]), "juro acima do que o risco justifica",
          SITUATIONS["acima_do_justo"]),
-        ("Abaixo do justo", "[Y%]" if empty_ else pct(summary["abaixo"]), "juro não cobre a perda esperada",
+        ("Abaixo do justo", "[Y%]" if empty_ else pct(summary["abaixo"]), "juro pode não cobrir o risco",
          SITUATIONS["abaixo_do_justo"]),
         ("Excesso estimado acima da margem", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
          "estimativa: parcelas acima do teto da margem", None),
@@ -255,6 +258,10 @@ def portfolio_kpis(summary: dict | None) -> None:
 
 
 def render_home() -> None:
+    cover = image_data_uri(IMAGES_DIR, "capa")
+    if cover:  # foto de capa local no lugar da imagem padrão do styles.css (a mesma película escura por cima)
+        md(f"""<style>.hero-container {{ background-image: linear-gradient(to right, rgba(18,19,21,.95) 25%,
+            rgba(18,19,21,.7) 100%), url('{cover}') !important; }}</style>""")
     md("""
         <div class="hero-container">
             <div class="hero-title">O preço acompanha<br><span>o risco?</span></div>
@@ -266,7 +273,7 @@ def render_home() -> None:
         </div>
     """)
     with st.container(key="hero_cta"):
-        st.button("Ir para a auditoria", key="hero_to_contracts", type="primary", icon=":material/arrow_forward:",
+        st.button("Ver os contratos", key="hero_to_contracts", type="primary", icon=":material/arrow_forward:",
                   on_click=go_to, args=("contratos",))
     md(f"""
         <div class="features-strip">
@@ -282,7 +289,7 @@ def render_home() -> None:
                     <div class="feature-icon">{line_icon('chip', 26)}</div>
                     <div>
                         <div class="feature-title">Modelo de risco explicável</div>
-                        <div class="feature-desc">XGBoost calibrado estima a probabilidade de default; os principais fatores de cada contrato aparecem com nomes legíveis.</div>
+                        <div class="feature-desc">Um modelo XGBoost calibrado estima a chance de inadimplência; o que mais pesou em cada contrato aparece com nomes legíveis.</div>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -341,7 +348,7 @@ def render_home() -> None:
                 {body}<div class="ap-foot">{note}</div></div>""")
         with col_fair:
             fairness_rows = (data or {}).get("equidade") or EMPTY_FAIRNESS
-            md(f"""<div class="ap-card"><div class="ap-card-title">Equidade no preço: diferença residual entre grupos de mesmo risco</div>
+            md(f"""<div class="ap-card"><div class="ap-card-title">Equidade: diferença de juro entre grupos com o mesmo risco</div>
                 <div class="ap-card-sub">Diferença de juros (cobrado − justo) que sobra depois de controlar por risco, país, ano, valor e prazo.
                 País é controle, não grupo comparado.</div>
                 {html_fairness_table(fairness_rows)}
@@ -355,7 +362,7 @@ def render_home() -> None:
                 index=[f'Faixa {row["faixa"]}' for row in data["backtest"]],
                 columns=[SITUATIONS[c]["rotulo"] for c in columns_])
             with st.container(border=True):
-                md("""<div class="ap-card-title">Backtest: rentabilidade realizada dentro de cada faixa</div>
+                md("""<div class="ap-card-title">Backtest (2016): retorno real por faixa e situação do preço</div>
                     <div class="ap-card-sub">Contratos encerrados. Se a auditoria funciona, em cada faixa “abaixo do justo”
                     rende menos e “acima do justo” rende mais.</div>""")
                 st.dataframe(table, use_container_width=True)
@@ -1067,15 +1074,18 @@ def render_records_page() -> None:
 # ==========================================
 # 12. SOBRE O PROJETO
 # ==========================================
+# (iniciais, nome, papel, o que fez, arquivo da foto em src/app/imagens/equipe/ sem a extensão)
 TEAM = [
     ("YG", "Yasmin Garcia", "App & Infraestrutura",
-     "Docker, API FastAPI, painel Streamlit (Análise, Laboratório e Auditoria), integração contínua e vídeo da demo."),
+     "Docker, API FastAPI, painel Streamlit (Análise, Laboratório e Auditoria), integração contínua e vídeo da demo.",
+     "yasmin"),
     ("MA", "Marcos", "Dados & Processo",
-     "Carga do Bondora e das séries de juros no PostgreSQL, qualidade dos dados, EDA e BPMN."),
+     "Carga do Bondora e das séries de juros no PostgreSQL, qualidade dos dados, EDA e BPMN.", "marcos"),
     ("SL", "Samuel", "Modelo & Juro Justo",
-     "Modelo de risco calibrado, motivos (SHAP), juro justo com margem de incerteza, equidade e backtest."),
+     "Modelo de risco calibrado, motivos (SHAP), juro justo com margem de incerteza, equidade e backtest.",
+     "samuel"),
     ("MV", "M. Vitória", "GenAI & RAG",
-     "Normas e busca (RAG), prompts, parecer com checagem por código e template de reserva."),
+     "Normas e busca (RAG), prompts, parecer com checagem por código e template de reserva.", "maria"),
 ]
 
 STUDY_MAP = [
@@ -1083,7 +1093,7 @@ STUDY_MAP = [
     ("XGBoost calibrado + bootstrap", "Samuel", "Risco e intervalo calculados na hora; Laboratório"),
     ("SHAP", "Samuel", "“O que mais pesou”, com o valor do contrato"),
     ("Juro justo por fluxo de caixa", "Samuel", "Precificação; Laboratório"),
-    ("Backtest por faixa", "Samuel e Marcos", "Home (rentabilidade realizada dentro de cada faixa)"),
+    ("Backtest por faixa", "Samuel e Marcos", "Home (retorno real de 2016 por faixa e situação)"),
     ("Equidade agregada", "Samuel", "Auditoria; Home"),
     ("Teste de invariância (gênero e idade trocados)", "Yasmin", "Auditoria: um contrato na hora e 500 em lote"),
     ("Cenários (o modelo de novo com outros valores)", "Yasmin", "Laboratório; taxa testada vira proposta"),
@@ -1103,11 +1113,11 @@ def render_about_page() -> None:
     """)
     md('<div class="team-grid">' + "".join(f"""
         <div class="team-card">
-            <div class="team-avatar">{code}</div>
+            {html_team_avatar(code, image_data_uri(IMAGES_DIR / "equipe", photo))}
             <div class="team-name">{esc(name_)}</div>
             <div class="team-role">{esc(role)}</div>
             <div class="team-bio">{esc(bio)}</div>
-        </div>""" for code, name_, role, bio in TEAM) + "</div>")
+        </div>""" for code, name_, role, bio, photo in TEAM) + "</div>")
     _, area, _ = st.columns([0.35, 5, 0.35])
     with area:
         body = "".join(f"<tr><td>{esc(a)}</td><td>{esc(b)}</td><td>{esc(c)}</td></tr>" for a, b, c in STUDY_MAP)

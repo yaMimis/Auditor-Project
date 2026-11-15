@@ -1,20 +1,17 @@
-"""API do Auditor de Preço Justo.
+"""API do Auditor de Preço Justo (FastAPI). Documentação interativa em /docs, agrupada como abaixo.
 
-GET  /portfolio/overview · GET /contracts · /contracts/ids · /contracts/export · /contracts/{id}:
-     o lote da carteira (prever() rodado em toda a base), para a Home e a lista de contratos.
-GET  /contracts/{id}/analysis: contrato da base buscado no banco → prever() ao vivo → parecer,
-     com as variáveis usadas, os parâmetros do preço e o desfecho real (quando existe).
-POST /contracts/{id}/invariance: Auditoria; o mesmo contrato com gênero e idade trocados → o resultado
-     do prever() muda? (sem devolver os valores reais).
-POST /contracts/{id}/scenario: Laboratório; o mesmo contrato com campos trocados → prever() de novo,
-     com o original ao lado e o efeito de cada campo trocado sozinho.
-POST /predict:  integração; um contrato que não está no banco → prever() → parecer. O painel não usa.
-POST /opinion:  integração; parecer para uma saída do prever() já calculada. O painel não usa.
-POST/GET /decisions: trilha das decisões do analista no banco (tabela do Marcos).
+Situação          GET  /                                     o que está no ar (modelo, banco, GenAI, busca nas normas)
+Carteira (lote)   GET  /portfolio/overview                   panorama da Home
+                  GET  /contracts · /contracts/ids · /contracts/export · /contracts/{id}
+Contrato ao vivo  GET  /contracts/{id}/analysis              banco → prever() → parecer; plano B pelo lote
+Laboratório       POST /contracts/{id}/scenario              o contrato com campos trocados → prever() de novo
+Auditoria         POST /contracts/{id}/invariance            gênero e idade trocados mudam o resultado?
+Decisões          POST /decisions · GET /decisions · GET /decisions/current
+Integração        POST /predict · POST /opinion              para outros sistemas; o painel não usa
 
-O parecer recebe a média do BC do mês da concessão (bc_credito_pessoal_aa), buscada no
-banco; com ela o código da Maria escreve o contexto_mercado. gerar_parecer() nunca falha:
-sem Gemini, sem chave ou sem banco, devolve o template de reserva.
+Toda conta é do modelo (src/modelos) e todo texto do parecer é da GenAI (genai/src): esta camada busca,
+junta, confere e devolve. O parecer recebe a média do BC do mês da concessão (bc_credito_pessoal_aa),
+buscada no banco; gerar_parecer() nunca falha (sem Gemini, sem chave ou sem banco: template de reserva).
 """
 import logging
 import os
@@ -59,15 +56,36 @@ async def lifespan_handler(_app: FastAPI):
     yield
 
 
+TAGS = [
+    {"name": "Situação", "description": "O que está no ar: modelo, banco, GenAI e busca nas normas."},
+    {"name": "Carteira (lote)", "description": "O lote da carteira (o prever() rodado em toda a base, "
+                                               "docs/resultados/): panorama da Home, lista, busca e exportação."},
+    {"name": "Contrato ao vivo", "description": "Um contrato da base, buscado no banco e calculado na hora. "
+                                                "Se o banco ou o modelo falharem, devolve os números do lote "
+                                                "marcados como modo \"lote\" (plano B)."},
+    {"name": "Laboratório", "description": "O mesmo contrato com campos trocados, recalculado pelo modelo. "
+                                           "Nada é gravado."},
+    {"name": "Auditoria", "description": "Teste de invariância: gênero e idade trocados mudam o resultado? "
+                                         "Não devolve os valores reais."},
+    {"name": "Decisões", "description": "Registro das decisões do analista no banco (trilha de auditoria)."},
+    {"name": "Integração", "description": "Para outros sistemas; o painel não usa. Calcula um contrato que "
+                                          "ainda não está no banco, ou gera o parecer de uma saída pronta."},
+]
+
 app = FastAPI(
-    title="Auditor de Juros - API",
-    version="1.0.0",
-    description="API para cálculo de risco, juro justo e auditoria com GenAI",
+    title="Auditor de Preço Justo · API",
+    version="1.1.0",
+    description=(
+        "Para cada contrato: chance de inadimplência (modelo XGBoost), juro justo para esse risco, comparação "
+        "com o juro cobrado e um parecer de apoio (IA generativa com conferência por código). "
+        "Todos os juros estão em fração ao ano (0,249 = 24,9% a.a. nominal). "
+        "Gênero e idade nunca entram no modelo, no parecer nem no registro."),
+    openapi_tags=TAGS,
     lifespan=lifespan_handler,
 )
 
 
-@app.get("/")
+@app.get("/", tags=["Situação"], summary="Estado da API, do modelo, do banco e da GenAI")
 def read_root():
     """Estado de cada parte, separado: uma parte fora não derruba as outras."""
     return {
@@ -118,8 +136,11 @@ def _opinion(resultado: dict, data_emprestimo: str | None = None) -> dict:
     return cadeia.gerar_parecer(input_data)
 
 
-@app.post("/predict", response_model=PredictionResponse)
+@app.post("/predict", response_model=PredictionResponse, tags=["Integração"],
+          summary="Calcular um contrato que não está no banco (risco, juro justo e parecer)")
 def predict_fair_rate(loan_request: LoanRequest):
+    """Roda o prever() num contrato enviado no corpo (nomes do formulário, convertidos para os do banco) e
+    gera o parecer. Gênero e idade não fazem parte da entrada."""
     loan_date = loan_request.data_emprestimo.isoformat()
     try:
         resultado = prever(build_contract(loan_request))
@@ -133,9 +154,11 @@ def predict_fair_rate(loan_request: LoanRequest):
     return {**resultado, "parecer_ia": _opinion(resultado, loan_date)}
 
 
-@app.post("/opinion", response_model=Parecer)
+@app.post("/opinion", response_model=Parecer, tags=["Integração"],
+          summary="Gerar o parecer para uma saída do prever() já calculada")
 def opinion_from_prediction(output: PredictionResponse):
-    """Parecer para uma saída do prever() já calculada (casos de exemplo e carteira)."""
+    """Parecer para uma saída do prever() já calculada (por exemplo, uma linha do lote). Nunca falha: sem
+    Gemini, sem chave ou sem banco, devolve o template de reserva."""
     return _opinion(output.model_dump(mode="json", exclude={"parecer_ia"}))
 
 
@@ -156,7 +179,8 @@ def _portfolio():
     return df
 
 
-@app.get("/portfolio/overview", response_model=PortfolioOverview)
+@app.get("/portfolio/overview", response_model=PortfolioOverview, tags=["Carteira (lote)"],
+         summary="Panorama da carteira para a Home (com filtros)")
 def portfolio_overview(year_min: int | None = None, year_max: int | None = None,
                        country: str | None = None, band: str | None = None):
     df = _portfolio()
@@ -172,7 +196,8 @@ def portfolio_overview(year_min: int | None = None, year_max: int | None = None,
     return portfolio.overview(df, fairness, years=years, pais=country, faixa=band, invariance=invariance_summary)
 
 
-@app.get("/contracts", response_model=ContractList)
+@app.get("/contracts", response_model=ContractList, tags=["Carteira (lote)"],
+         summary="Lista de contratos do lote, do mais distante da margem ao mais próximo")
 def list_contracts(situation: SituationFilter | None = None, offset: int = Query(0, ge=0),
                    limit: int = Query(25, ge=1, le=200)):
     """Contratos do lote, do mais distante para o mais próximo da margem."""
@@ -181,13 +206,14 @@ def list_contracts(situation: SituationFilter | None = None, offset: int = Query
     return {"total": len(listing), "itens": portfolio.records(listing.iloc[offset:offset + limit])}
 
 
-@app.get("/contracts/ids", response_model=list[str])
+@app.get("/contracts/ids", response_model=list[str], tags=["Carteira (lote)"],
+         summary="IDs para a caixa de busca")
 def contract_ids(limit: int = Query(5000, ge=1, le=20000)):
     """IDs para a caixa de busca, dos mais distantes da margem para os mais próximos."""
     return _portfolio()["contrato_id"].astype(str).head(limit).tolist()
 
 
-@app.get("/contracts/export")
+@app.get("/contracts/export", tags=["Carteira (lote)"], summary="Lista completa em CSV")
 def export_contracts(situation: SituationFilter | None = None):
     """CSV da lista completa (UTF-8 com BOM, abre certo no Excel)."""
     df = _portfolio()
@@ -196,7 +222,8 @@ def export_contracts(situation: SituationFilter | None = None):
                     headers={"Content-Disposition": "attachment; filename=contratos_da_base.csv"})
 
 
-@app.get("/contracts/{contrato_id}", response_model=dict[str, Any])
+@app.get("/contracts/{contrato_id}", response_model=dict[str, Any], tags=["Carteira (lote)"],
+         summary="Uma linha do lote (números calculados antes)")
 def contract_from_batch(contrato_id: str):
     """Uma linha do lote (números calculados antes). A tela usa no plano B."""
     row = portfolio.find_contract(_portfolio(), contrato_id)
@@ -254,7 +281,8 @@ def _analysis_from_batch(contrato_id: str, reason: str, not_found: bool = False,
     }
 
 
-@app.get("/contracts/{contrato_id}/analysis", response_model=ContractAnalysis)
+@app.get("/contracts/{contrato_id}/analysis", response_model=ContractAnalysis, tags=["Contrato ao vivo"],
+         summary="Análise completa de um contrato da base, calculada agora")
 def analyze_contract(contrato_id: str):
     """Busca o contrato no banco, roda o prever() agora e devolve tudo o que a tela de análise mostra.
 
@@ -302,7 +330,8 @@ def analyze_contract(contrato_id: str):
 
 # ---------- Laboratório ----------
 
-@app.post("/contracts/{contrato_id}/scenario", response_model=ScenarioResult)
+@app.post("/contracts/{contrato_id}/scenario", response_model=ScenarioResult, tags=["Laboratório"],
+          summary="Recalcular o contrato com campos trocados")
 def contract_scenario(contrato_id: str, changes: ScenarioChanges):
     """O contrato do banco com os campos trocados, recalculado pelo prever() (o original vem junto).
 
@@ -343,7 +372,8 @@ def contract_scenario(contrato_id: str, changes: ScenarioChanges):
 
 # ---------- Teste de invariância (Auditoria) ----------
 
-@app.post("/contracts/{contrato_id}/invariance", response_model=InvarianceResult)
+@app.post("/contracts/{contrato_id}/invariance", response_model=InvarianceResult, tags=["Auditoria"],
+          summary="Teste de invariância: gênero e idade trocados")
 def contract_invariance(contrato_id: str):
     """Roda o prever() com o gênero e a idade reais e de novo com os dois trocados, e compara.
 
@@ -412,8 +442,11 @@ def _database_down(exc: Exception) -> HTTPException:
     return HTTPException(status_code=503, detail=f"Banco indisponível: {exc}")
 
 
-@app.post("/decisions", response_model=RecordedDecision, status_code=201)
+@app.post("/decisions", response_model=RecordedDecision, status_code=201, tags=["Decisões"],
+          summary="Registrar a decisão do analista")
 def record_decision(new: NewDecision):
+    """Grava a decisão com a saída do prever() e o parecer (nunca gênero ou idade). O mesmo requisicao_id não
+    é gravado duas vezes. Banco fora: 503, e o painel mostra a decisão como não registrada."""
     try:
         return database.record_decision(build_record(new))
     except database.DecisionRejected as exc:
@@ -422,17 +455,20 @@ def record_decision(new: NewDecision):
         raise _database_down(exc)
 
 
-@app.get("/decisions", response_model=list[RecordedDecision])
+@app.get("/decisions", response_model=list[RecordedDecision], tags=["Decisões"],
+         summary="Histórico de decisões (todas ou de um contrato)")
 def list_decisions(contrato_id: str | None = None, limit: int = Query(200, ge=1, le=5000)):
+    """As decisões mais recentes primeiro; com contrato_id, só as daquele contrato."""
     try:
         return database.list_decisions(contrato_id, limit)
     except database.DatabaseUnavailable as exc:
         raise _database_down(exc)
 
 
-@app.get("/decisions/current", response_model=list[CurrentDecision])
+@app.get("/decisions/current", response_model=list[CurrentDecision], tags=["Decisões"],
+         summary="Decisão mais recente de cada contrato")
 def current_decisions():
-    """Decisão mais recente de cada contrato da carteira (para marcar "já decidido" na fila)."""
+    """Decisão mais recente de cada contrato da carteira (para marcar "já decidido" na lista)."""
     try:
         return database.current_decisions()
     except database.DatabaseUnavailable as exc:

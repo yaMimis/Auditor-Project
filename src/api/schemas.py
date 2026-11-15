@@ -1,4 +1,4 @@
-"""Schemas da API (entrada do formulário e saída para o painel).
+"""Schemas da API: entradas (POST /predict, Laboratório, decisões) e saídas para o painel.
 
 A saída segue o contrato do prever() (genai/FORMATO_JSON.md, seção 3) e reaproveita
 os modelos da GenAI (genai/src/checagem.py), que são a fonte da verdade do formato.
@@ -28,10 +28,8 @@ class LoanRequest(BaseModel):
     interest_cobrado: float = Field(ge=0, le=500, description="Juro cobrado em % ao ano (ex.: 24.9)")
     liabilities_total: float | None = Field(default=None, ge=0, description="Total de dívidas, em euro")
     data_emprestimo: date = Field(default_factory=date.today, description="Data de concessão")
-
-    # Só auditoria de equidade: NUNCA vão para o modelo nem para o LLM.
-    gender: int | None = Field(default=None, description="0 homem, 1 mulher, 2 indefinido")
-    age: int | None = None
+    # Gênero e idade não existem aqui (minimização): se vierem no JSON, são ignorados e não chegam
+    # ao modelo, ao LLM nem à decisão. Só o teste de invariância os lê, direto do banco.
 
     @field_validator("data_emprestimo")
     @classmethod

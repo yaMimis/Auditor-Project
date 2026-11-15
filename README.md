@@ -124,7 +124,7 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
    docker compose up --build api streamlit
    ```
    O primeiro build demora mais: a imagem instala o PyTorch (CPU) para a busca nas normas. Depois, `docker compose up -d` sobe sem reconstruir; use `--build` só quando mudar código ou requirements.
-   - Painel: http://localhost:8501 (sem o modelo, use os exemplos da aba de revisão)
+   - Painel: http://localhost:8501 (sem o modelo, a Análise abre com os valores do lote, com o aviso)
    - API: http://localhost:8000/docs (`GET /` informa se o modelo foi carregado)
    - Para os dados da carteira, a API lê `docs/resultados/carteira_auditoria.csv` e `equidade.json` (`src/api/portfolio.py`) e o painel pede pelas rotas `/portfolio/overview` e `/contracts`.
    - As decisões do analista ficam na tabela `decisao_analista`. Banco criado antes de 09/11? Aplique (ou reaplique) uma vez; pode rodar de novo sem problema:
@@ -171,6 +171,6 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 Cada frente registra aqui como usou assistentes de IA (agentic coding) e como revisou o resultado.
 
 - **Dados:** os scripts de carga, os esquemas SQL e a documentação foram escritos com apoio do Claude e revisados e testados pelo responsável da frente.
-- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas. O formulário com etapas travadas, a separação do visual em `styles.css` e os scripts `iniciar` seguiram o mesmo processo.
+- **App e infraestrutura:** a integração da API com o `prever()`, as telas do painel e os testes foram feitos com apoio do Claude, a partir dos protótipos do grupo e dos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). A responsável revisou o código e conferiu o resultado com testes automáticos e rodando as telas. As páginas do painel (Análise, Laboratório, Auditoria), o plano B, o teste de invariância, a separação do visual em `styles.css` e o `iniciar.ps1` seguiram o mesmo processo, conferidos também com dados reais (`scripts/conferir_analise.py`: 20/20; `scripts/invariancia_lote.py`: 500/500).
 - **Modelo:** a completar pela frente.
 - **GenAI:** o código do parecer, os prompts e os documentos da frente foram escritos com apoio do Claude, guiado pelos guias da frente em `skills/regras_negocio/` ([`normas_rag`](skills/regras_negocio/normas_rag/SKILL.md), [`parecer_genai`](skills/regras_negocio/parecer_genai/SKILL.md) e [`avaliacao_parecer`](skills/regras_negocio/avaliacao_parecer/SKILL.md)) e pelos contratos (`FORMATO_JSON.md`, `REGRAS_PARECER.md`). As propostas maiores (template, cadeia em LangChain, prompts v3 e v4) também passaram pela revisão de uma segunda IA. A responsável leu cada mudança antes de aplicá-la e conferiu o resultado com os testes automáticos (`tests/genai/`), a avaliação dos 20 casos e a revisão humana dos pareceres (`genai/avaliacao/`).

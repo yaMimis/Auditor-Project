@@ -78,6 +78,8 @@ class PortfolioOverview(BaseModel):
     por_faixa: list[dict[str, Any]]
     backtest: list[dict[str, Any]] | None = None
     equidade: list[dict[str, Any]] | None = None
+    invariancia_lote: dict[str, Any] | None = Field(
+        default=None, description="Resumo do teste de invariância em lote (scripts/invariancia_lote.py)")
 
 
 class ContractList(BaseModel):

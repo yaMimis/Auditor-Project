@@ -165,7 +165,11 @@ def portfolio_overview(year_min: int | None = None, year_max: int | None = None,
         fairness = portfolio.load_fairness()
     except (ValueError, OSError):
         fairness = None
-    return portfolio.overview(df, fairness, years=years, pais=country, faixa=band)
+    try:
+        invariance_summary = portfolio.load_invariance_summary()
+    except (ValueError, OSError):
+        invariance_summary = None
+    return portfolio.overview(df, fairness, years=years, pais=country, faixa=band, invariance=invariance_summary)
 
 
 @app.get("/contracts", response_model=ContractList)

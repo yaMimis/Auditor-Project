@@ -575,6 +575,25 @@ def html_invariance(result: dict) -> str:
         idade reais do cliente.</div>""")
 
 
+def html_invariance_summary(summary: dict | None) -> str:
+    """Resumo do teste em lote (scripts/invariancia_lote.py), ou como gerá-lo."""
+    if not summary:
+        return ('<div class="ap-card-sub">O teste em lote ainda não foi rodado. Na máquina com o banco: '
+                '<code>python -m scripts.invariancia_lote</code> (500 contratos sorteados).</div>')
+    tested, same = summary.get("n_testados", 0), summary.get("identicos", 0)
+    when = str(summary.get("gerado_em", ""))[:10]
+    if when[:4].isdigit():
+        when = f"{when[8:10]}/{when[5:7]}/{when[:4]}"
+    source = (f'modelo {esc(summary.get("versao_modelo"))} · pacote {esc(summary.get("pacote_hash"))} · '
+              f'semente {esc(summary.get("semente"))} · gerado em {esc(when)}')
+    if tested and same == tested:
+        return compact(f"""<div class="ap-verdict ap-verdict-ok">Em lote: {_num(tested, 0)} contratos sorteados do lote,
+            {_num(same, 0)} com resultado idêntico.</div><div class="ap-foot">{source}</div>""")
+    return compact(f"""<div class="ap-verdict ap-verdict-bad">Em lote: {_num(tested - same, 0)} de {_num(tested, 0)}
+        contratos deram resultado diferente. O modelo está usando gênero ou idade: avise o responsável pelo
+        modelo.</div><div class="ap-foot">{source}</div>""")
+
+
 def html_fairness_table(rows: list[dict]) -> str:
     body = []
     for e in rows:

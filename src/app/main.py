@@ -23,7 +23,7 @@ if str(ROOT) not in sys.path:  # "streamlit run src/app/main.py" não põe a rai
 from src.app.components import (COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact,  # noqa: E402
                                  esc, eur,
                                  html_band_bars, html_considered_data, html_fairness_table,
-                                 html_invariance, html_opinion, html_outcome, html_pricing, html_provenance,
+                                 html_invariance, html_invariance_summary, html_opinion, html_outcome, html_pricing, html_provenance,
                                  html_rate_bar,
                                  html_reasons, html_scenario_effects, html_scenario_table, line_icon, pct,
                                  readable_value, review_kpis, situation_badge)
@@ -244,8 +244,8 @@ def portfolio_kpis(summary: dict | None) -> None:
          SITUATIONS["acima_do_justo"]),
         ("Abaixo do justo", "[Y%]" if empty_ else pct(summary["abaixo"]), "juro não cobre a perda esperada",
          SITUATIONS["abaixo_do_justo"]),
-        ("Pago a mais pelos clientes", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
-         "soma acima da margem de incerteza", None),
+        ("Excesso estimado acima da margem", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
+         "estimativa: parcelas acima do teto da margem", None),
         ("Perda líquida realizada", "€ [VALOR]" if empty_ else eur(summary["perda_nao_coberta_eur"]),
          "abaixo do justo · só contratos encerrados", None),
     ]
@@ -943,13 +943,18 @@ def render_audit_page() -> None:
         fairness = (data or {}).get("equidade")
         md(f"""<div class="audit-eyebrow">Auditoria</div>
             <div class="ap-title">O preço trata grupos iguais de forma igual?</div>
+            <div class="ap-meta">Duas perguntas diferentes, com dois testes. <b>O preço cobrado trata grupos de forma
+            diferente a risco igual?</b> A equidade agregada mede isso nos preços do Bondora (é onde aparece
+            discriminação, inclusive indireta). <b>O nosso modelo usa gênero ou idade?</b> O teste de invariância
+            mostra que não, em um contrato e em lote, e passa a acusar se alguém um dia colocar esses dados no
+            modelo.</div>
             <div class="ap-card"><div class="ap-card-title">Equidade agregada</div>
             <div class="ap-card-sub">Diferença de juros (cobrado − justo) que sobra depois de controlar por risco, país,
             ano, valor e prazo.</div>
             {html_fairness_table(fairness or EMPTY_FAIRNESS)}
             <div class="ap-foot">Filtros por grupo ficam para depois da demo (a metodologia já existe em equidade.py).
             Gênero e idade servem só para esta auditoria: não aparecem na análise de um contrato.</div></div>""")
-        render_invariance()
+        render_invariance((data or {}).get("invariancia_lote"))
 
 
 def run_invariance() -> None:
@@ -961,7 +966,7 @@ def run_invariance() -> None:
     st.session_state.invariance = {"contrato_id": cid, "resultado": result, "erro": error_msg}
 
 
-def render_invariance() -> None:
+def render_invariance(summary: dict | None = None) -> None:
     """Teste de invariância: o modelo dá o mesmo resultado com gênero e idade trocados?"""
     if "invariance_id" not in st.session_state:  # começa com o contrato aberto na Análise, se houver
         st.session_state.invariance_id = (st.session_state.audit_last_result or {}).get("contrato_id", "")
@@ -971,6 +976,8 @@ def render_invariance() -> None:
             cliente e com os dois trocados. Como nenhum dos dois é variável do modelo, o resultado tem de ser igual.
             <b>Isso não prova que o preço é justo</b>: mostra só que o modelo não usa esses dados. A diferença que
             sobra entre grupos, a risco igual, está na equidade agregada acima.</div>""")
+        md(html_invariance_summary(summary))
+        md('<div class="ap-card-sub" style="margin-top:.6rem"><b>Um contrato, agora</b></div>')
         col_id, col_run = st.columns([3, 1], vertical_alignment="bottom")
         with col_id:
             st.text_input("ID do contrato", key="invariance_id", placeholder="cole o ID de um contrato da base")
@@ -1064,7 +1071,7 @@ def render_records_page() -> None:
 # ==========================================
 TEAM = [
     ("YG", "Yasmin Garcia", "App & Infraestrutura",
-     "Docker, API FastAPI, painel Streamlit, integração contínua e vídeo da demo."),
+     "Docker, API FastAPI, painel Streamlit (Análise, Laboratório e Auditoria), integração contínua e vídeo da demo."),
     ("MA", "Marcos", "Dados & Processo",
      "Carga do Bondora e das séries de juros no PostgreSQL, qualidade dos dados, EDA e BPMN."),
     ("SL", "Samuel", "Modelo & Juro Justo",
@@ -1074,13 +1081,16 @@ TEAM = [
 ]
 
 STUDY_MAP = [
-    ("Base Bondora no PostgreSQL", "Marcos", "Dados buscados pelo ID; resultado observado"),
+    ("Base Bondora no PostgreSQL", "Marcos", "Dados buscados pelo ID; resultado observado (ou o motivo de não haver)"),
     ("XGBoost calibrado + bootstrap", "Samuel", "Risco e intervalo calculados na hora; Laboratório"),
     ("SHAP", "Samuel", "“O que mais pesou”, com o valor do contrato"),
     ("Juro justo por fluxo de caixa", "Samuel", "Precificação; Laboratório"),
-    ("Equidade", "Samuel", "Auditoria; Home"),
+    ("Backtest por faixa", "Samuel e Marcos", "Home (rentabilidade realizada dentro de cada faixa)"),
+    ("Equidade agregada", "Samuel", "Auditoria; Home"),
+    ("Teste de invariância (gênero e idade trocados)", "Yasmin", "Auditoria: um contrato na hora e 500 em lote"),
+    ("Cenários (o modelo de novo com outros valores)", "Yasmin", "Laboratório; taxa testada vira proposta"),
     ("RAG com normas + checagem", "M. Vitória", "Parecer da Análise"),
-    ("API, painel, decisões no banco", "Yasmin", "Todo o fluxo e o Registro"),
+    ("API, painel, plano B, decisões no banco", "Yasmin", "Todo o fluxo e o Registro"),
 ]
 
 

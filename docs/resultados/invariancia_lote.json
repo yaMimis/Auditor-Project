@@ -1,0 +1,15 @@
+{
+  "n_sorteados": 500,
+  "n_testados": 500,
+  "identicos": 500,
+  "diferentes": [],
+  "semente": 7,
+  "atributos_trocados": [
+    "gênero",
+    "idade"
+  ],
+  "como_foi_trocado": "gênero trocado pelo outro valor (homem ↔ mulher; indefinido vira homem) e idade deslocada em 25 anos (para mais até 44 anos, para menos a partir de 45), dentro de 18 a 75",
+  "versao_modelo": "xgboost_v3",
+  "pacote_hash": "48784ba3742d",
+  "gerado_em": "2026-11-15T05:48:50+00:00"
+}

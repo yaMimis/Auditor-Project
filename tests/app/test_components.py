@@ -104,8 +104,8 @@ def test_nominal_rates_and_peer_median_on_card():
     r = dict(BY_SITUATION["acima_do_justo"], juro_pares_mediana=0.2233)
     cards = review_kpis(r)
     assert "a.a. nominal" in cards[1] and "a.a. nominal" in cards[2]
-    assert "Mediana dos pares: 22,3%" in cards[2]
-    assert "Mediana dos pares" not in review_kpis(dict(r, juro_pares_mediana=None))[2]
+    assert "Contratos parecidos (mediana): 22,3%" in cards[2]
+    assert "Contratos parecidos" not in review_kpis(dict(r, juro_pares_mediana=None))[2]
     assert "Juros nominais ao ano" in html_rate_bar(r)
 
 
@@ -207,3 +207,13 @@ def test_invariance_summary_states():
     assert "500 contratos sorteados do lote" in ok and "ap-verdict-ok" in ok and "14/11/2026" in ok
     bad = components.html_invariance_summary({"n_testados": 500, "identicos": 498})
     assert "2 de 500" in bad and "ap-verdict-bad" in bad
+
+
+def test_team_avatar_uses_the_photo_when_there_is_one(tmp_path):
+    assert components.image_data_uri(tmp_path, "yasmin") is None
+    assert "YG" in components.html_team_avatar("YG", None)
+    (tmp_path / "yasmin.png").write_bytes(b"\x89PNG fake")
+    uri = components.image_data_uri(tmp_path, "yasmin")
+    assert uri.startswith("data:image/png;base64,")
+    out = components.html_team_avatar("YG", uri)
+    assert "team-photo" in out and "YG" not in out

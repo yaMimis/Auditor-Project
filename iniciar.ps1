@@ -8,15 +8,34 @@
 # Se o Windows bloquear o script, rode antes, na mesma janela:
 #     Set-ExecutionPolicy Bypass -Scope Process
 #
-# PARA RODAR A INTERFACE
-# cd C:\caminho\do\Auditor-Project
-# git pull
-# .\iniciar.ps1
-# CASO GIT PULL TRAGA ALGUMA ATT, APLICAR:
-# .\iniciar.ps1 -Build
-# PARA FINALIZAR
-# .\iniciar.ps1 -Parar
-
+# PASSO A PASSO
+#
+# Primeira vez num computador:
+#   1. Instale e abra o Docker Desktop (espere "Engine running").
+#   2. Clone o projeto e entre na pasta:  git clone <url> ; cd Auditor-Project
+#   3. Coloque os arquivos que nao vao para o Git (pasta do Drive do grupo):
+#        .env                                    (CLIENTE_ID_SAL, DATABASE_URL e GOOGLE_API_KEY; veja o README)
+#        modelos_salvos\pacote_prever_v1.joblib  (modelo oficial; codigo 48784ba3742d)
+#        data\raw\LoanData_Bondora.csv          (contratos; sem ele a busca fica vazia)
+#        data\raw\ECB_Euribor_Serie-Mensal-12-Meses.csv, ECB_Euribor_Serie-Mensal-3-Meses.csv,
+#        data\raw\BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv, bcdata.sgs.20742.csv
+#   4. Se o PC tiver outro PostgreSQL na porta 5432 (Get-Service *postgres*), crie um
+#      docker-compose.override.yml com a porta 5433 e use localhost:5433 no .env.
+#   5. Rode:  powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
+#      A primeira vez leva de 15 a 25 minutos (imagem, normas e contratos).
+#   6. Confira em http://localhost:8000/ : modelo_carregavel e banco_disponivel true.
+#      Painel em http://localhost:8501
+#
+# Dia a dia:
+#   git pull
+#   .\iniciar.ps1            (ou .\iniciar.ps1 -Build se o git pull trouxe codigo novo)
+#   .\iniciar.ps1 -Parar     para tudo no fim (os dados do banco ficam guardados)
+#
+# Conferencias com dados reais (com o ambiente ativado: .venv):
+#   python -m scripts.conferir_analise                       esperado: 20/20
+#   docker compose run --rm api python -m scripts.invariancia_lote   esperado: 500/500
+#
+# Nunca use "docker compose down -v": apaga o banco.
 
 
 param(

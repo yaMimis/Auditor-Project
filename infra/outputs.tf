@@ -14,13 +14,23 @@ output "ip_publico" {
 }
 
 output "painel_url" {
-  description = "Painel do analista (Streamlit)"
+  description = "Painel do analista (Streamlit), na porta 80: o endereço para passar à banca"
+  value       = "http://${local.ip}"
+}
+
+output "painel_url_8501" {
+  description = "O mesmo painel na porta do Streamlit (reserva, se a 80 não responder)"
   value       = "http://${local.ip}:8501"
+}
+
+output "painel_publico" {
+  description = "true = qualquer pessoa abre o painel; false = só ips_liberados"
+  value       = var.painel_publico
 }
 
 output "painel_url_ipv6" {
   description = "Painel pelo IPv6 da VM (para quem só sai por IPv6; os colchetes fazem parte do endereço)"
-  value       = "http://[${google_compute_instance.vm.network_interface[0].ipv6_access_config[0].external_ipv6}]:8501"
+  value       = "http://[${google_compute_instance.vm.network_interface[0].ipv6_access_config[0].external_ipv6}]"
 }
 
 output "api_url" {

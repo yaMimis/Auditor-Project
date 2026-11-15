@@ -12,6 +12,12 @@ variable "ips_liberados" {
   type        = list(string)
 }
 
+variable "painel_publico" {
+  description = "true = painel aberto para qualquer pessoa (portas 80 e 8501), para o dia da apresentação. SSH e API continuam só para ips_liberados"
+  type        = bool
+  default     = false
+}
+
 variable "regiao" {
   description = "Região da GCP. southamerica-east1 = São Paulo (menor latência na demo)."
   type        = string

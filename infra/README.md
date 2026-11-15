@@ -4,14 +4,15 @@ O Terraform cria na Google Cloud (GCP) uma máquina virtual Ubuntu que, ao ligar
 
 Não é preciso Docker no computador de quem roda o Terraform: o Docker roda dentro da VM. O dia a dia continua pelo `.\iniciar.ps1`; a nuvem é para a demo e para mostrar a infraestrutura como código.
 
-## O que é criado (6 recursos)
+## O que é criado (6 recursos; 8 no dia da apresentação)
 
 | Recurso                                                          | Para quê                                                                                                     |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Rede `auditor-rede`                                            | Rede própria. Rede nova não aceita conexão de fora até uma regra liberar                                  |
 | Sub-rede `auditor-subrede`                                     | O pedaço da rede, em São Paulo, onde a VM se conecta. Dual-stack: a VM ganha também um IPv6 público        |
 | IP fixo `auditor-ip`                                           | Endereço do painel e da API                                                                                  |
-| Firewall `auditor-firewall` e `auditor-firewall-ipv6`        | Abrem só 22 (SSH), 8000 (API) e 8501 (painel), e só para `ips_liberados` (uma regra para IPv4, outra para IPv6). O banco (5432) não fica exposto |
+| Firewall `auditor-firewall` e `auditor-firewall-ipv6`        | Abrem só 22 (SSH), 8000 (API) e 80/8501 (painel), e só para `ips_liberados` (uma regra para IPv4, outra para IPv6). O banco (5432) não fica exposto |
+| Firewall `auditor-painel-publico` e `-ipv6` (só com `painel_publico = true`) | Abrem só o painel (80 e 8501) para qualquer endereço. SSH e API continuam restritos |
 | VM `auditor-vm` `e2-medium` (2 vCPUs, 4 GB) com Ubuntu 24.04 | Roda o Docker Compose                                                                                         |
 
 Na Azure eram 8 recursos: a GCP não tem grupo de recursos (o projeto faz esse papel) nem placa de rede separada (o firewall se liga à VM por etiqueta).
@@ -151,6 +152,22 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
       Busca em maiúsculas: buscar `0010881B-6CA8-43C1-A2CC-A6C000E3159F` (o primeiro ID em maiúsculas; vale também digitar um espaço antes ou depois) deve abrir **o mesmo contrato**. Registrar uma decisão nele: na página "Contratos da base", a lista deve mostrar o contrato como já decidido, e a decisão aparece na página "Registro" (o `contrato_id` gravado é o `loan_id` do banco, em minúsculas; `db/07`).
 
       Pré-requisito: o banco da VM precisa ter os contratos do Bondora, a `vw_desfecho_contrato` (`db/06`) e o gatilho do `db/07`. Se a busca não achar nenhum dos três IDs, confira com `sudo docker exec auditor_postgres psql -U postgres -d auditor_db -c "SELECT COUNT(*) FROM vw_desfecho_contrato"` dentro da VM (esperado: 179.235).
+
+### Dia da apresentação: painel aberto para qualquer pessoa
+
+A banca usa redes e operadoras que não estão em `ips_liberados`. No dia, abra só o painel para todos:
+
+```powershell
+cd infra
+notepad terraform.tfvars          # acrescente a linha:  painel_publico = true
+terraform apply                   # cria 2 regras de firewall; a VM não muda
+terraform output painel_url       # http://<IP>, sem porta: é o endereço para passar à banca
+```
+
+- O painel atende na porta **80** (endereço sem `:8501`), porque redes de universidade e de empresa costumam bloquear portas fora do padrão. A `painel_url_8501` é a reserva.
+- **Não há login:** quem tiver o endereço usa o painel, inclusive registra decisões e gasta a cota do Gemini. Passe o endereço só para a banca e destrua a VM logo depois.
+- SSH (22) e API (8000) continuam só para `ips_liberados`; o banco (5432) nunca abre. O painel fala com a API por dentro da VM.
+- Para fechar sem destruir: `painel_publico = false` (ou apague a linha) e `terraform apply`.
 
 ### Desligar e entregar
 

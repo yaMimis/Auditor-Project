@@ -1,8 +1,8 @@
 # main.tf
 # A "lista de compras": tudo o que o Terraform cria na Google Cloud.
-# São 6 recursos. O "terraform plan" deve mostrar "Plan: 6 to add".
+# São 6 recursos (8 com painel_publico = true). O "terraform plan" deve mostrar "Plan: 6 to add".
 # Não existe "grupo de recursos" como na Azure: o projeto da GCP faz esse papel,
-# e o "terraform destroy" apaga os 6 recursos (o projeto continua existindo).
+# e o "terraform destroy" apaga todos eles (o projeto continua existindo).
 
 # ips_liberados aceita IPv4 e IPv6 misturados; a GCP exige uma regra de firewall para cada tipo.
 locals {
@@ -34,7 +34,7 @@ resource "google_compute_address" "ip" {
   region = var.regiao
 }
 
-# 4. Firewall: só abre SSH (22), API (8000) e painel (8501), e só para os IPs liberados.
+# 4. Firewall: só abre SSH (22), API (8000) e painel (80 e 8501), e só para os IPs liberados.
 #    Vale para as VMs com a etiqueta "auditor" (na Azure era a ligação NSG + placa de rede).
 #    Uma regra para os IPv4 e outra para os IPv6 (a GCP não mistura os dois na mesma regra).
 resource "google_compute_firewall" "entrada" {
@@ -47,7 +47,7 @@ resource "google_compute_firewall" "entrada" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "8000", "8501"]
+    ports    = ["22", "80", "8000", "8501"]
   }
 }
 
@@ -62,7 +62,40 @@ resource "google_compute_firewall" "entrada_ipv6" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "8000", "8501"]
+    ports    = ["22", "80", "8000", "8501"]
+  }
+}
+
+# 4b. Dia da apresentação (painel_publico = true): o painel abre para qualquer endereço, IPv4 e IPv6.
+#     Só as portas do painel; SSH (22) e API (8000) seguem nas regras acima. O painel fala com a
+#     API por dentro da VM, então a 8000 não precisa ser pública. Não há login no painel.
+resource "google_compute_firewall" "painel_publico" {
+  count   = var.painel_publico ? 1 : 0
+  name    = "${var.prefixo}-painel-publico"
+  network = google_compute_network.rede.name
+
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = [var.prefixo]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "8501"]
+  }
+}
+
+resource "google_compute_firewall" "painel_publico_ipv6" {
+  count   = var.painel_publico ? 1 : 0
+  name    = "${var.prefixo}-painel-publico-ipv6"
+  network = google_compute_network.rede.name
+
+  direction     = "INGRESS"
+  source_ranges = ["::/0"]
+  target_tags   = [var.prefixo]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "8501"]
   }
 }
 

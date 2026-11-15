@@ -27,6 +27,16 @@ write_files:
       GOOGLE_API_KEY=${google_api_key}
       CLIENTE_ID_SAL=${cliente_id_sal}
 
+  # Só na VM: o painel atende também na porta 80 (redes de universidade e empresa costumam
+  # bloquear a 8501). O docker compose lê este arquivo sozinho, junto com o docker-compose.yml.
+  - path: /opt/auditor/docker-compose.override.yml
+    permissions: "0644"
+    content: |
+      services:
+        streamlit:
+          ports:
+            - "80:8501"
+
   # Montagem do primeiro boot (roda como root, uma vez só). Faz o que o iniciar.ps1 faz no Windows.
   - path: /opt/auditor/montar.sh
     permissions: "0755"
@@ -52,6 +62,7 @@ write_files:
       # 3. Projeto: clona e coloca o .env e as pastas que ficam fora do Git.
       git clone --branch "${ramo}" "${repositorio}" "$PROJETO"
       install -m 600 /opt/auditor/.env "$PROJETO/.env"
+      install -m 644 /opt/auditor/docker-compose.override.yml "$PROJETO/docker-compose.override.yml"
       mkdir -p "$PROJETO/modelos_salvos" "$PROJETO/data/raw" "/home/$USUARIO/envio"
       chown -R "$USUARIO:$USUARIO" "$PROJETO" "/home/$USUARIO/envio"
       cd "$PROJETO"

@@ -18,6 +18,11 @@ output "painel_url" {
   value       = "http://${local.ip}:8501"
 }
 
+output "painel_url_ipv6" {
+  description = "Painel pelo IPv6 da VM (para quem só sai por IPv6; os colchetes fazem parte do endereço)"
+  value       = "http://[${google_compute_instance.vm.network_interface[0].ipv6_access_config[0].external_ipv6}]:8501"
+}
+
 output "api_url" {
   description = "Documentação da API (FastAPI)"
   value       = "http://${local.ip}:8000/docs"

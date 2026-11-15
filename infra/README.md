@@ -4,14 +4,14 @@ O Terraform cria na Google Cloud (GCP) uma máquina virtual Ubuntu que, ao ligar
 
 Não é preciso Docker no computador de quem roda o Terraform: o Docker roda dentro da VM. O dia a dia continua pelo `.\iniciar.ps1`; a nuvem é para a demo e para mostrar a infraestrutura como código.
 
-## O que é criado (5 recursos)
+## O que é criado (6 recursos)
 
 | Recurso                                                          | Para quê                                                                                                     |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Rede `auditor-rede`                                            | Rede própria. Rede nova não aceita conexão de fora até uma regra liberar                                  |
-| Sub-rede `auditor-subrede`                                     | O pedaço da rede, em São Paulo, onde a VM se conecta                                                        |
+| Sub-rede `auditor-subrede`                                     | O pedaço da rede, em São Paulo, onde a VM se conecta. Dual-stack: a VM ganha também um IPv6 público        |
 | IP fixo `auditor-ip`                                           | Endereço do painel e da API                                                                                  |
-| Firewall `auditor-firewall`                                    | Abre só 22 (SSH), 8000 (API) e 8501 (painel), e só para `ips_liberados`. O banco (5432) não fica exposto |
+| Firewall `auditor-firewall` e `auditor-firewall-ipv6`        | Abrem só 22 (SSH), 8000 (API) e 8501 (painel), e só para `ips_liberados` (uma regra para IPv4, outra para IPv6). O banco (5432) não fica exposto |
 | VM `auditor-vm` `e2-medium` (2 vCPUs, 4 GB) com Ubuntu 24.04 | Roda o Docker Compose                                                                                         |
 
 Na Azure eram 8 recursos: a GCP não tem grupo de recursos (o projeto faz esse papel) nem placa de rede separada (o firewall se liga à VM por etiqueta).
@@ -104,7 +104,7 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
     terraform plan
     ```
 
-    Esperado: `Success! The configuration is valid.` e `Plan: 5 to add, 0 to change, 0 to destroy.` A saída do `plan` serve de print para a banca.
+    Esperado: `Success! The configuration is valid.` e `Plan: 6 to add, 0 to change, 0 to destroy.` (5 se `ips_liberados` não tiver nenhum IPv6: a regra IPv6 só é criada quando há um). A saída do `plan` serve de print para a banca.
 
 ### Subir na nuvem
 
@@ -126,7 +126,7 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
     ```
 
     O `scp` espera os arquivos em `modelos_salvos/` e `data/raw/` com os nomes do projeto. Se algum nome for diferente no seu computador, ajuste o comando. O envio da base do Bondora (~150 MB) leva alguns minutos. O `completar.sh` carrega os contratos (pode levar alguns minutos) e termina mostrando a resposta da API, com `"modelo_carregavel": true` e `"banco_disponivel": true`.
-15. Testar no navegador: `terraform -chdir=infra output painel_url` deve abrir o painel, e `api_url` deve abrir a documentação da API. Digite o endereço com `http://` (não há HTTPS). Se não abrir, veja "Painel não abre no navegador" em Cuidados.
+15. Testar no navegador: `terraform -chdir=infra output painel_url` deve abrir o painel, e `api_url` deve abrir a documentação da API. Digite o endereço com `http://` (não há HTTPS). Quem foi liberado por um IPv6 usa o `painel_url_ipv6` (com os colchetes). Se não abrir, veja "Painel não abre no navegador" em Cuidados.
     - **Conferência com dados reais.** Abre ~20 contratos pela API e compara com o lote da carteira; o esperado é 20/20:
       ```powershell
       terraform -chdir=infra output -raw comando_conferir   # copie e rode
@@ -176,7 +176,7 @@ Os passos 1 a 11 não gastam crédito. O gasto começa no 12, e o 16 desliga tud
 - **Custo:** a VM, o disco e o IP gastam crédito por hora enquanto existirem, mesmo sem uso. Crie perto do uso e destrua logo depois.
 - **Fim do trial:** depois de 90 dias ou dos US$ 300, a Google para os recursos e apaga os dados. Nada é cobrado sem o upgrade manual.
 - **Painel não abre no navegador** (a página fica carregando até dar tempo esgotado). Na ordem:
-  1. **IP:** compare `Invoke-RestMethod https://api.ipify.org` com `terraform -chdir=infra output ips_liberados`. Se o seu IP não estiver na lista (o provedor troca o IP; em 11/11 foi esse o problema), corrija o `terraform.tfvars` e rode `terraform apply`: só o firewall muda. Se o SSH também não conecta, é quase certamente isso.
+  1. **IP:** compare `Invoke-RestMethod https://api.ipify.org` (IPv4) e `Invoke-RestMethod https://api6.ipify.org` (IPv6) com `terraform -chdir=infra output ips_liberados`. Um IPv6 entra com o prefixo `/64` (ex.: `2804:389:c2b7:609d::/64`), porque o final do endereço muda sozinho ao longo do dia; um IPv6 liberado só funciona pelo `painel_url_ipv6`. Se o seu IP não estiver na lista (o provedor troca o IP; em 11/11 foi esse o problema), corrija o `terraform.tfvars` e rode `terraform apply`: só o firewall muda. Se o SSH também não conecta, é quase certamente isso.
   2. **Montagem:** a VM leva 15 a 20 minutos. Rode o `comando_esperar_vm` e espere `status: done`.
   3. **Containers:** dentro da VM, `sudo docker ps` deve mostrar `auditor_api` (healthy) e `auditor_streamlit`. Se o painel não estiver lá, `cd ~/Auditor-Project && sudo docker compose up -d streamlit`; o log fica em `sudo docker compose logs --tail 50 streamlit`.
   4. **Dentro da VM responde?** `curl -I http://localhost:8501` dentro da VM. Se responde lá e não no navegador, o problema é o firewall (passo 1) ou o endereço com `https://`.

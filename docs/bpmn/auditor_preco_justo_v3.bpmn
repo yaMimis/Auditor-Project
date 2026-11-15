@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Auditor" targetNamespace="http://auditor-preco-justo/bpmn" exporter="Auditor de Preco Justo" exporterVersion="3.0">
+  <bpmn:collaboration id="Collaboration_Auditor">
+    <bpmn:participant id="Participant_Contrato" name="Auditor de Preço Justo: avaliação de um contrato" processRef="Process_Contrato" />
+    <bpmn:participant id="Participant_Equidade" name="Auditoria de equidade da carteira (em lote)" processRef="Process_Equidade" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Contrato" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Contrato">
+      <bpmn:lane id="Lane_Analista" name="Analista de crédito (Streamlit)">
+        <bpmn:flowNodeRef>Start_Contrato</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Revisar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Decisao</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Mantido</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Revisado</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Compliance</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Sistema" name="Sistema e motor de regras (FastAPI)">
+        <bpmn:flowNodeRef>Task_Ler</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_AoVivo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Lote</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Faixa</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RevisaoManual</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PD</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Juro</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Comparar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_JuntaCalculo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Conferir</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Numeros</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Template</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_JuntaParecer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Registrar</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_IA" name="Motor de IA e RAG (LangChain, pgvector)">
+        <bpmn:flowNodeRef>Task_Normas</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Parecer</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Contrato" name="Analista busca o contrato pelo ID (tela Contratos da base)">
+      <bpmn:outgoing>Flow_Start_Ler</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_Ler" name="Ler o contrato do banco">
+      <bpmn:documentation>GET /contracts/{id}/analysis. O ID digitado é normalizado (minúsculas, sem espaços) e a API lê emprestimo, cliente e historico_credito pelo loan_id (SQL_CONTRACT em src/api/database.py): as 21 colunas da vw_contrato_modelo e mais 10. Gênero e idade não são lidos.</bpmn:documentation>
+      <bpmn:incoming>Flow_Start_Ler</bpmn:incoming>
+      <bpmn:outgoing>Flow_Ler_AoVivo</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_AoVivo" name="Cálculo ao vivo disponível?" gatewayDirection="Diverging">
+      <bpmn:documentation>Sim quando o banco responde, o contrato está no banco e o .joblib do modelo está em modelos_salvos/.</bpmn:documentation>
+      <bpmn:incoming>Flow_Ler_AoVivo</bpmn:incoming>
+      <bpmn:outgoing>Flow_AoVivo_Sim</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AoVivo_Nao</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Lote" name="Usar os valores do lote, com aviso (plano B)">
+      <bpmn:documentation>Números calculados antes para toda a carteira (docs/resultados/carteira_auditoria.csv), marcados como procedencia.modo = "lote", com o motivo. Nunca aparecem como cálculo ao vivo. Se o contrato também não está no lote, a tela mostra o erro.</bpmn:documentation>
+      <bpmn:incoming>Flow_AoVivo_Nao</bpmn:incoming>
+      <bpmn:outgoing>Flow_Lote_Junta</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Faixa" name="Dados dentro da faixa do treino?" gatewayDirection="Diverging">
+      <bpmn:documentation>O prever() confere se os dados do contrato estão dentro da faixa vista no treino antes de calcular.</bpmn:documentation>
+      <bpmn:incoming>Flow_AoVivo_Sim</bpmn:incoming>
+      <bpmn:outgoing>Flow_Faixa_Sim</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Faixa_Nao</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_RevisaoManual" name="Revisão manual: sem PD nem juro justo; parecer pelo template de reserva">
+      <bpmn:documentation>situacao_preco = revisao_manual; PD, faixa e juros justos ficam vazios. O parecer é montado por código, sem LLM, e o analista decide.</bpmn:documentation>
+      <bpmn:incoming>Flow_Faixa_Nao</bpmn:incoming>
+      <bpmn:outgoing>Flow_RevisaoManual_Junta</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_PD" name="Calcular a PD e a faixa de risco">
+      <bpmn:documentation>Modelo de risco (XGBoost calibrado, xgboost_v3) pelo prever(). Devolve a probabilidade de default, a faixa e os motivos (SHAP).</bpmn:documentation>
+      <bpmn:incoming>Flow_Faixa_Sim</bpmn:incoming>
+      <bpmn:outgoing>Flow_PD_Juro</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Juro" name="Calcular o juro justo e a margem de incerteza">
+      <bpmn:documentation>Preço por fluxo de caixa: custo do dinheiro (Euribor do mês da concessão, piso em zero), perda esperada, custos e margem calibrados na carteira.</bpmn:documentation>
+      <bpmn:incoming>Flow_PD_Juro</bpmn:incoming>
+      <bpmn:outgoing>Flow_Juro_Comparar</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:businessRuleTask id="Task_Comparar" name="Comparar o juro cobrado com o justo">
+      <bpmn:documentation>Classifica o contrato em dentro da margem, acima ou abaixo do justo, considerando a margem de incerteza. Todos seguem para o parecer e para o analista.</bpmn:documentation>
+      <bpmn:incoming>Flow_Juro_Comparar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Comparar_Junta</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gw_JuntaCalculo" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_Comparar_Junta</bpmn:incoming>
+      <bpmn:incoming>Flow_Lote_Junta</bpmn:incoming>
+      <bpmn:outgoing>Flow_Junta_Normas</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Normas" name="Buscar as normas aplicáveis (RAG)">
+      <bpmn:documentation>Busca semântica no pgvector em LGPD, CDC e normas do Banco Central (modo hipotético: se este contrato fosse brasileiro).</bpmn:documentation>
+      <bpmn:incoming>Flow_Junta_Normas</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normas_Parecer</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Parecer" name="Gerar o parecer em JSON (LLM)">
+      <bpmn:documentation>Saída estruturada: resumo, pontos de atenção, recomendação, fontes e números citados. Fala em indício, nunca em ilegalidade.</bpmn:documentation>
+      <bpmn:incoming>Flow_Normas_Parecer</bpmn:incoming>
+      <bpmn:outgoing>Flow_Parecer_Conferir</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Conferir" name="Conferir os números do parecer contra a API">
+      <bpmn:documentation>Cada número citado no parecer tem que ser igual ao devolvido pela API.</bpmn:documentation>
+      <bpmn:incoming>Flow_Parecer_Conferir</bpmn:incoming>
+      <bpmn:outgoing>Flow_Conferir_Numeros</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Numeros" name="Os números conferem?" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_Conferir_Numeros</bpmn:incoming>
+      <bpmn:outgoing>Flow_Numeros_Sim</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Numeros_Nao</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Template" name="Gerar o parecer pelo template de reserva (SHAP)">
+      <bpmn:documentation>Texto montado por código a partir dos motivos do SHAP, sem LLM, quando os números divergem ou o LLM não responde.</bpmn:documentation>
+      <bpmn:incoming>Flow_Numeros_Nao</bpmn:incoming>
+      <bpmn:outgoing>Flow_Template_Junta</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_JuntaParecer" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_Numeros_Sim</bpmn:incoming>
+      <bpmn:incoming>Flow_Template_Junta</bpmn:incoming>
+      <bpmn:incoming>Flow_RevisaoManual_Junta</bpmn:incoming>
+      <bpmn:outgoing>Flow_Junta_Revisar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Revisar" name="Revisar o parecer e as métricas e decidir, com justificativa">
+      <bpmn:documentation>Tela de análise do contrato: parecer, métricas, origem dos números (ao vivo ou lote) e, como contexto, a taxa média do mercado brasileiro no mês da concessão (série 20742 do BC). A justificativa é obrigatória.</bpmn:documentation>
+      <bpmn:incoming>Flow_Junta_Revisar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Revisar_Registrar</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_Registrar" name="Registrar a decisão no banco (decisao_analista, só inclusão)">
+      <bpmn:documentation>POST /decisions. Grava a decisão, a justificativa, a nova taxa proposta (só em "revisar o preço"), a recomendação do sistema e os números do momento, sem gênero nem idade. O banco bloqueia UPDATE, DELETE e TRUNCATE; a decisão mais recente vale (vw_decisao_atual). Quem reprecifica o contrato é o sistema de crédito do banco, fora deste processo.</bpmn:documentation>
+      <bpmn:incoming>Flow_Revisar_Registrar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Registrar_Decisao</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Decisao" name="Decisão do analista" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_Registrar_Decisao</bpmn:incoming>
+      <bpmn:outgoing>Flow_Decisao_Mantem</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Decisao_Revisa</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Decisao_Compliance</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Mantido" name="Preço mantido, com justificativa">
+      <bpmn:incoming>Flow_Decisao_Mantem</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Revisado" name="Revisão do preço proposta, com nova taxa">
+      <bpmn:incoming>Flow_Decisao_Revisa</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Compliance" name="Caso encaminhado ao Compliance">
+      <bpmn:documentation>Direito de revisão (LGPD, art. 20).</bpmn:documentation>
+      <bpmn:incoming>Flow_Decisao_Compliance</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Ler" sourceRef="Start_Contrato" targetRef="Task_Ler" />
+    <bpmn:sequenceFlow id="Flow_Ler_AoVivo" sourceRef="Task_Ler" targetRef="Gw_AoVivo" />
+    <bpmn:sequenceFlow id="Flow_AoVivo_Sim" name="Sim" sourceRef="Gw_AoVivo" targetRef="Gw_Faixa" />
+    <bpmn:sequenceFlow id="Flow_AoVivo_Nao" name="Não" sourceRef="Gw_AoVivo" targetRef="Task_Lote" />
+    <bpmn:sequenceFlow id="Flow_Lote_Junta" sourceRef="Task_Lote" targetRef="Gw_JuntaCalculo" />
+    <bpmn:sequenceFlow id="Flow_Faixa_Sim" name="Sim" sourceRef="Gw_Faixa" targetRef="Task_PD" />
+    <bpmn:sequenceFlow id="Flow_Faixa_Nao" name="Não" sourceRef="Gw_Faixa" targetRef="Task_RevisaoManual" />
+    <bpmn:sequenceFlow id="Flow_RevisaoManual_Junta" sourceRef="Task_RevisaoManual" targetRef="Gw_JuntaParecer" />
+    <bpmn:sequenceFlow id="Flow_PD_Juro" sourceRef="Task_PD" targetRef="Task_Juro" />
+    <bpmn:sequenceFlow id="Flow_Juro_Comparar" sourceRef="Task_Juro" targetRef="Task_Comparar" />
+    <bpmn:sequenceFlow id="Flow_Comparar_Junta" sourceRef="Task_Comparar" targetRef="Gw_JuntaCalculo" />
+    <bpmn:sequenceFlow id="Flow_Junta_Normas" sourceRef="Gw_JuntaCalculo" targetRef="Task_Normas" />
+    <bpmn:sequenceFlow id="Flow_Normas_Parecer" sourceRef="Task_Normas" targetRef="Task_Parecer" />
+    <bpmn:sequenceFlow id="Flow_Parecer_Conferir" sourceRef="Task_Parecer" targetRef="Task_Conferir" />
+    <bpmn:sequenceFlow id="Flow_Conferir_Numeros" sourceRef="Task_Conferir" targetRef="Gw_Numeros" />
+    <bpmn:sequenceFlow id="Flow_Numeros_Sim" name="Sim" sourceRef="Gw_Numeros" targetRef="Gw_JuntaParecer" />
+    <bpmn:sequenceFlow id="Flow_Numeros_Nao" name="Não" sourceRef="Gw_Numeros" targetRef="Task_Template" />
+    <bpmn:sequenceFlow id="Flow_Template_Junta" sourceRef="Task_Template" targetRef="Gw_JuntaParecer" />
+    <bpmn:sequenceFlow id="Flow_Junta_Revisar" sourceRef="Gw_JuntaParecer" targetRef="Task_Revisar" />
+    <bpmn:sequenceFlow id="Flow_Revisar_Registrar" sourceRef="Task_Revisar" targetRef="Task_Registrar" />
+    <bpmn:sequenceFlow id="Flow_Registrar_Decisao" sourceRef="Task_Registrar" targetRef="Gw_Decisao" />
+    <bpmn:sequenceFlow id="Flow_Decisao_Mantem" name="Mantém o preço" sourceRef="Gw_Decisao" targetRef="End_Mantido" />
+    <bpmn:sequenceFlow id="Flow_Decisao_Revisa" name="Revisa o preço" sourceRef="Gw_Decisao" targetRef="End_Revisado" />
+    <bpmn:sequenceFlow id="Flow_Decisao_Compliance" name="Encaminha ao Compliance" sourceRef="Gw_Decisao" targetRef="End_Compliance" />
+    <bpmn:textAnnotation id="Anot_Normas"><bpmn:text>Normas: LGPD, CDC e Banco Central, em modo hipotético (se este contrato fosse brasileiro).</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Assoc_Anot_Normas" sourceRef="Anot_Normas" targetRef="Task_Normas" />
+    <bpmn:textAnnotation id="Anot_Governanca"><bpmn:text>O sistema não decide sozinho: o analista decide e pode encaminhar ao Compliance (LGPD, art. 20).</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Assoc_Anot_Governanca" sourceRef="Anot_Governanca" targetRef="Task_Revisar" />
+  </bpmn:process>
+  <bpmn:process id="Process_Equidade" isExecutable="false">
+    <bpmn:startEvent id="Start_Carteira" name="Carteira carregada no banco">
+      <bpmn:outgoing>Flow_Carteira_Lote</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_LoteCarteira" name="Calcular o juro justo de todos os contratos (lote)">
+      <bpmn:documentation>src/modelos/carteira.py grava docs/resultados/carteira_auditoria.csv.</bpmn:documentation>
+      <bpmn:incoming>Flow_Carteira_Lote</bpmn:incoming>
+      <bpmn:outgoing>Flow_Lote_Equidade</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Equidade" name="Estimar a diferença de preço por gênero e idade (o país é controle), com intervalo de confiança">
+      <bpmn:documentation>src/modelos/equidade.py. Regressão do resíduo (juro cobrado − juro justo) controlando por PD, faixa, país × ano, valor e prazo. Gênero em 2013–2016, dentro do país; idade 18–25 contra 35–44. O resultado é um indício a investigar, nunca uma conclusão.</bpmn:documentation>
+      <bpmn:incoming>Flow_Lote_Equidade</bpmn:incoming>
+      <bpmn:outgoing>Flow_Equidade_Invariancia</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Invariancia" name="Testar a invariância: gênero e idade trocados em 500 contratos">
+      <bpmn:documentation>scripts/invariancia_lote.py: troca o gênero e a idade e confere que o resultado do prever() não muda. Grava docs/resultados/invariancia_lote.json.</bpmn:documentation>
+      <bpmn:incoming>Flow_Equidade_Invariancia</bpmn:incoming>
+      <bpmn:outgoing>Flow_Invariancia_Gravar</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Gravar" name="Gravar os resultados em arquivos (docs/resultados/), servidos pela API">
+      <bpmn:documentation>equidade.json e invariancia_lote.json, lidos por src/api/portfolio.py.</bpmn:documentation>
+      <bpmn:incoming>Flow_Invariancia_Gravar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gravar_Painel</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Painel" name="Atualizar o painel de auditoria por grupo">
+      <bpmn:incoming>Flow_Gravar_Painel</bpmn:incoming>
+      <bpmn:outgoing>Flow_Painel_Fim</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Indicios" name="Indícios disponíveis ao analista e ao Compliance">
+      <bpmn:incoming>Flow_Painel_Fim</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Carteira_Lote" sourceRef="Start_Carteira" targetRef="Task_LoteCarteira" />
+    <bpmn:sequenceFlow id="Flow_Lote_Equidade" sourceRef="Task_LoteCarteira" targetRef="Task_Equidade" />
+    <bpmn:sequenceFlow id="Flow_Equidade_Invariancia" sourceRef="Task_Equidade" targetRef="Task_Invariancia" />
+    <bpmn:sequenceFlow id="Flow_Invariancia_Gravar" sourceRef="Task_Invariancia" targetRef="Task_Gravar" />
+    <bpmn:sequenceFlow id="Flow_Gravar_Painel" sourceRef="Task_Gravar" targetRef="Task_Painel" />
+    <bpmn:sequenceFlow id="Flow_Painel_Fim" sourceRef="Task_Painel" targetRef="End_Indicios" />
+    <bpmn:textAnnotation id="Anot_Genero"><bpmn:text>Gênero e idade só servem para auditar: nunca entram no modelo nem na decisão.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Assoc_Anot_Genero" sourceRef="Anot_Genero" targetRef="Task_Equidade" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Auditor">
+    <bpmndi:BPMNPlane id="BPMNPlane_Auditor" bpmnElement="Collaboration_Auditor">
+      <bpmndi:BPMNShape id="Participant_Contrato_di" bpmnElement="Participant_Contrato" isHorizontal="true"><dc:Bounds x="160" y="80" width="2680" height="980" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Equidade_di" bpmnElement="Participant_Equidade" isHorizontal="true"><dc:Bounds x="160" y="1120" width="1400" height="260" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Analista_di" bpmnElement="Lane_Analista" isHorizontal="true"><dc:Bounds x="190" y="80" width="2650" height="300" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Sistema_di" bpmnElement="Lane_Sistema" isHorizontal="true"><dc:Bounds x="190" y="380" width="2650" height="440" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_IA_di" bpmnElement="Lane_IA" isHorizontal="true"><dc:Bounds x="190" y="820" width="2650" height="240" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Contrato_di" bpmnElement="Start_Contrato"><dc:Bounds x="232" y="212" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="280" y="202" width="150" height="56" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Ler_di" bpmnElement="Task_Ler"><dc:Bounds x="300" y="560" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_AoVivo_di" bpmnElement="Gw_AoVivo" isMarkerVisible="true"><dc:Bounds x="480" y="575" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="450" y="530" width="110" height="40" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Lote_di" bpmnElement="Task_Lote"><dc:Bounds x="730" y="710" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Faixa_di" bpmnElement="Gw_Faixa" isMarkerVisible="true"><dc:Bounds x="620" y="575" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="590" y="630" width="110" height="40" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RevisaoManual_di" bpmnElement="Task_RevisaoManual"><dc:Bounds x="730" y="400" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PD_di" bpmnElement="Task_PD"><dc:Bounds x="730" y="560" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Juro_di" bpmnElement="Task_Juro"><dc:Bounds x="900" y="560" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Comparar_di" bpmnElement="Task_Comparar"><dc:Bounds x="1070" y="560" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_JuntaCalculo_di" bpmnElement="Gw_JuntaCalculo" isMarkerVisible="true"><dc:Bounds x="1240" y="575" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Normas_di" bpmnElement="Task_Normas"><dc:Bounds x="1340" y="900" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Parecer_di" bpmnElement="Task_Parecer"><dc:Bounds x="1520" y="900" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Conferir_di" bpmnElement="Task_Conferir"><dc:Bounds x="1640" y="560" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Numeros_di" bpmnElement="Gw_Numeros" isMarkerVisible="true"><dc:Bounds x="1800" y="575" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1775" y="530" width="100" height="40" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Template_di" bpmnElement="Task_Template"><dc:Bounds x="1900" y="710" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_JuntaParecer_di" bpmnElement="Gw_JuntaParecer" isMarkerVisible="true"><dc:Bounds x="2040" y="575" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Revisar_di" bpmnElement="Task_Revisar"><dc:Bounds x="2080" y="190" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Registrar_di" bpmnElement="Task_Registrar"><dc:Bounds x="2260" y="400" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Decisao_di" bpmnElement="Gw_Decisao" isMarkerVisible="true"><dc:Bounds x="2440" y="205" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="2500" y="262" width="80" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Mantido_di" bpmnElement="End_Mantido"><dc:Bounds x="2592" y="112" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2640" y="116" width="170" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Revisado_di" bpmnElement="End_Revisado"><dc:Bounds x="2592" y="212" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2640" y="216" width="170" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Compliance_di" bpmnElement="End_Compliance"><dc:Bounds x="2592" y="312" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2640" y="316" width="170" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Anot_Normas_di" bpmnElement="Anot_Normas"><dc:Bounds x="960" y="908" width="300" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Anot_Governanca_di" bpmnElement="Anot_Governanca"><dc:Bounds x="1700" y="110" width="300" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Carteira_di" bpmnElement="Start_Carteira"><dc:Bounds x="232" y="1252" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="194" y="1292" width="112" height="42" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LoteCarteira_di" bpmnElement="Task_LoteCarteira"><dc:Bounds x="330" y="1230" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Equidade_di" bpmnElement="Task_Equidade"><dc:Bounds x="510" y="1220" width="160" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Invariancia_di" bpmnElement="Task_Invariancia"><dc:Bounds x="720" y="1230" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Gravar_di" bpmnElement="Task_Gravar"><dc:Bounds x="900" y="1230" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Painel_di" bpmnElement="Task_Painel"><dc:Bounds x="1080" y="1230" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Indicios_di" bpmnElement="End_Indicios"><dc:Bounds x="1262" y="1252" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1224" y="1292" width="112" height="42" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Anot_Genero_di" bpmnElement="Anot_Genero"><dc:Bounds x="450" y="1135" width="300" height="56" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Ler_di" bpmnElement="Flow_Start_Ler"><di:waypoint x="250" y="248" /><di:waypoint x="250" y="600" /><di:waypoint x="300" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Ler_AoVivo_di" bpmnElement="Flow_Ler_AoVivo"><di:waypoint x="430" y="600" /><di:waypoint x="480" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AoVivo_Sim_di" bpmnElement="Flow_AoVivo_Sim"><di:waypoint x="530" y="600" /><di:waypoint x="620" y="600" /><bpmndi:BPMNLabel><dc:Bounds x="560" y="580" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AoVivo_Nao_di" bpmnElement="Flow_AoVivo_Nao"><di:waypoint x="505" y="625" /><di:waypoint x="505" y="750" /><di:waypoint x="730" y="750" /><bpmndi:BPMNLabel><dc:Bounds x="512" y="680" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Lote_Junta_di" bpmnElement="Flow_Lote_Junta"><di:waypoint x="860" y="750" /><di:waypoint x="1265" y="750" /><di:waypoint x="1265" y="625" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Faixa_Sim_di" bpmnElement="Flow_Faixa_Sim"><di:waypoint x="670" y="600" /><di:waypoint x="730" y="600" /><bpmndi:BPMNLabel><dc:Bounds x="682" y="580" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Faixa_Nao_di" bpmnElement="Flow_Faixa_Nao"><di:waypoint x="645" y="575" /><di:waypoint x="645" y="440" /><di:waypoint x="730" y="440" /><bpmndi:BPMNLabel><dc:Bounds x="652" y="500" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RevisaoManual_Junta_di" bpmnElement="Flow_RevisaoManual_Junta"><di:waypoint x="860" y="440" /><di:waypoint x="2065" y="440" /><di:waypoint x="2065" y="575" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PD_Juro_di" bpmnElement="Flow_PD_Juro"><di:waypoint x="860" y="600" /><di:waypoint x="900" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Juro_Comparar_di" bpmnElement="Flow_Juro_Comparar"><di:waypoint x="1030" y="600" /><di:waypoint x="1070" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Comparar_Junta_di" bpmnElement="Flow_Comparar_Junta"><di:waypoint x="1200" y="600" /><di:waypoint x="1240" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Junta_Normas_di" bpmnElement="Flow_Junta_Normas"><di:waypoint x="1290" y="600" /><di:waypoint x="1405" y="600" /><di:waypoint x="1405" y="900" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Normas_Parecer_di" bpmnElement="Flow_Normas_Parecer"><di:waypoint x="1470" y="940" /><di:waypoint x="1520" y="940" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Parecer_Conferir_di" bpmnElement="Flow_Parecer_Conferir"><di:waypoint x="1650" y="940" /><di:waypoint x="1705" y="940" /><di:waypoint x="1705" y="640" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Conferir_Numeros_di" bpmnElement="Flow_Conferir_Numeros"><di:waypoint x="1770" y="600" /><di:waypoint x="1800" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Numeros_Sim_di" bpmnElement="Flow_Numeros_Sim"><di:waypoint x="1850" y="600" /><di:waypoint x="2040" y="600" /><bpmndi:BPMNLabel><dc:Bounds x="1862" y="580" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Numeros_Nao_di" bpmnElement="Flow_Numeros_Nao"><di:waypoint x="1825" y="625" /><di:waypoint x="1825" y="750" /><di:waypoint x="1900" y="750" /><bpmndi:BPMNLabel><dc:Bounds x="1832" y="680" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Template_Junta_di" bpmnElement="Flow_Template_Junta"><di:waypoint x="2030" y="750" /><di:waypoint x="2065" y="750" /><di:waypoint x="2065" y="625" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Junta_Revisar_di" bpmnElement="Flow_Junta_Revisar"><di:waypoint x="2090" y="600" /><di:waypoint x="2145" y="600" /><di:waypoint x="2145" y="270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Revisar_Registrar_di" bpmnElement="Flow_Revisar_Registrar"><di:waypoint x="2210" y="230" /><di:waypoint x="2325" y="230" /><di:waypoint x="2325" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Registrar_Decisao_di" bpmnElement="Flow_Registrar_Decisao"><di:waypoint x="2390" y="440" /><di:waypoint x="2415" y="440" /><di:waypoint x="2415" y="230" /><di:waypoint x="2440" y="230" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Decisao_Mantem_di" bpmnElement="Flow_Decisao_Mantem"><di:waypoint x="2465" y="205" /><di:waypoint x="2465" y="130" /><di:waypoint x="2592" y="130" /><bpmndi:BPMNLabel><dc:Bounds x="2475" y="110" width="100" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Decisao_Revisa_di" bpmnElement="Flow_Decisao_Revisa"><di:waypoint x="2490" y="230" /><di:waypoint x="2592" y="230" /><bpmndi:BPMNLabel><dc:Bounds x="2500" y="210" width="90" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Decisao_Compliance_di" bpmnElement="Flow_Decisao_Compliance"><di:waypoint x="2465" y="255" /><di:waypoint x="2465" y="330" /><di:waypoint x="2592" y="330" /><bpmndi:BPMNLabel><dc:Bounds x="2475" y="336" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_Anot_Normas_di" bpmnElement="Assoc_Anot_Normas"><di:waypoint x="1260" y="940" /><di:waypoint x="1340" y="940" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_Anot_Governanca_di" bpmnElement="Assoc_Anot_Governanca"><di:waypoint x="2000" y="142" /><di:waypoint x="2080" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Carteira_Lote_di" bpmnElement="Flow_Carteira_Lote"><di:waypoint x="268" y="1270" /><di:waypoint x="330" y="1270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Lote_Equidade_di" bpmnElement="Flow_Lote_Equidade"><di:waypoint x="460" y="1270" /><di:waypoint x="510" y="1270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Equidade_Invariancia_di" bpmnElement="Flow_Equidade_Invariancia"><di:waypoint x="670" y="1270" /><di:waypoint x="720" y="1270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Invariancia_Gravar_di" bpmnElement="Flow_Invariancia_Gravar"><di:waypoint x="850" y="1270" /><di:waypoint x="900" y="1270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gravar_Painel_di" bpmnElement="Flow_Gravar_Painel"><di:waypoint x="1030" y="1270" /><di:waypoint x="1080" y="1270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Painel_Fim_di" bpmnElement="Flow_Painel_Fim"><di:waypoint x="1210" y="1270" /><di:waypoint x="1262" y="1270" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_Anot_Genero_di" bpmnElement="Assoc_Anot_Genero"><di:waypoint x="600" y="1191" /><di:waypoint x="600" y="1220" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

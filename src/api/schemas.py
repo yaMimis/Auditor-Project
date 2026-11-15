@@ -17,7 +17,7 @@ from genai.src.checagem import EntradaPrever, Motivo, Parecer
 # Sem data, vale a de hoje (combinado com o Samuel em 05/11). A API sempre envia a data ao prever().
 
 
-# ---------- Entrada (o que o Streamlit envia) ----------
+# ---------- Entrada de POST /predict (integração: um contrato que ainda não está no banco) ----------
 
 class LoanRequest(BaseModel):
     loan_id: str

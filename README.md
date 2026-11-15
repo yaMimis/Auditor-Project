@@ -146,6 +146,7 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
 - [`genai/avaliacao/`](genai/avaliacao/CRITERIOS.md): critérios, os 20 casos de avaliação e os resultados do parecer (prompts v2 a v4), com a revisão humana da v4.
 - [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md): roteiro da demo, plano B e perguntas prováveis.
+- [`docs/APP_E_INFRA.md`](docs/APP_E_INFRA.md): o que é cada arquivo da API, do painel, do Docker e dos scripts de conferência.
 - [`infra/`](infra/README.md): Terraform que cria na Google Cloud uma VM rodando o mesmo Docker Compose (para a demo na nuvem).
 - [`skills/`](skills/README.md): guia do projeto por setor (estrutura, ambiente, dados, modelo, juro justo, parecer, API, painel, governança).
 

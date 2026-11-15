@@ -8,8 +8,8 @@ POST /contracts/{id}/invariance: Auditoria; o mesmo contrato com gênero e idade
      do prever() muda? (sem devolver os valores reais).
 POST /contracts/{id}/scenario: Laboratório; o mesmo contrato com campos trocados → prever() de novo,
      com o original ao lado e o efeito de cada campo trocado sozinho.
-POST /predict:  dados de um contrato → prever() real (Samuel) → parecer (gerar_parecer, Maria).
-POST /opinion:  parecer para uma saída do prever() já calculada (casos de exemplo, carteira).
+POST /predict:  integração; um contrato que não está no banco → prever() → parecer. O painel não usa.
+POST /opinion:  integração; parecer para uma saída do prever() já calculada. O painel não usa.
 POST/GET /decisions: trilha das decisões do analista no banco (tabela do Marcos).
 
 O parecer recebe a média do BC do mês da concessão (bc_credito_pessoal_aa), buscada no
@@ -85,7 +85,7 @@ def read_root():
 # ---------- Risco, juro justo e parecer ----------
 
 def build_contract(loan_request: LoanRequest) -> dict:
-    """Formulário → dict com os nomes do banco, como o prever() espera.
+    """Entrada do POST /predict → dict com os nomes do banco, como o prever() espera.
 
     Todas as chaves abaixo precisam existir (com None quando não houver dado).
     Gênero e idade NÃO entram: servem só para a auditoria de equidade.

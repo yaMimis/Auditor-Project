@@ -2,8 +2,8 @@
 
 Páginas: Home (panorama da carteira) · Contratos da base · Análise do contrato · Laboratório ·
 Auditoria · Registro · Sobre. O estilo fica em src/app/styles.css; os blocos de HTML, em components.py.
-O painel só EXIBE: todos os números vêm da API (prever() do Samuel, ao vivo) ou dos arquivos do
-lote da carteira (plano B); o parecer vem da GenAI (ou do template de reserva).
+O painel só EXIBE: todos os números vêm da API, seja o prever() rodado na hora, seja o lote da
+carteira (Home, lista e plano B). O parecer vem da GenAI, ou do template de reserva.
 """
 import json
 import os
@@ -20,13 +20,11 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:  # "streamlit run src/app/main.py" não põe a raiz no path
     sys.path.insert(0, str(ROOT))
 
-from src.app.components import (COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact,  # noqa: E402
-                                 esc, eur,
-                                 html_band_bars, html_considered_data, html_fairness_table,
-                                 html_invariance, html_invariance_summary, html_opinion, html_outcome, html_pricing, html_provenance,
-                                 html_rate_bar,
-                                 html_reasons, html_scenario_effects, html_scenario_table, line_icon, pct,
-                                 readable_value, review_kpis, situation_badge)
+from src.app.components import (  # noqa: E402
+    COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact, esc, eur, html_band_bars,
+    html_considered_data, html_fairness_table, html_invariance, html_invariance_summary, html_opinion,
+    html_outcome, html_pricing, html_provenance, html_rate_bar, html_reasons, html_scenario_effects,
+    html_scenario_table, line_icon, pct, readable_value, review_kpis, situation_badge)
 
 BR_TIMEZONE = timezone(timedelta(hours=-3))
 
@@ -772,7 +770,7 @@ def render_analysis_page() -> None:
 
 
 # ==========================================
-# 9. LABORATÓRIO (etapa 2)
+# 9. LABORATÓRIO
 # ==========================================
 def open_lab(contrato_id: str) -> None:
     """Abre o contrato no Laboratório: pede à API o original e os campos editáveis (sem trocas)."""
@@ -934,7 +932,7 @@ def render_lab_page() -> None:
 
 
 # ==========================================
-# 10. AUDITORIA (equidade agregada; teste de invariância na etapa 3)
+# 10. AUDITORIA (equidade agregada e teste de invariância)
 # ==========================================
 def render_audit_page() -> None:
     _, area, _ = st.columns([0.35, 5, 0.35])
@@ -952,7 +950,7 @@ def render_audit_page() -> None:
             <div class="ap-card-sub">Diferença de juros (cobrado − justo) que sobra depois de controlar por risco, país,
             ano, valor e prazo.</div>
             {html_fairness_table(fairness or EMPTY_FAIRNESS)}
-            <div class="ap-foot">Filtros por grupo ficam para depois da demo (a metodologia já existe em equidade.py).
+            <div class="ap-foot">Os números vêm do lote (src/modelos/equidade.py); o painel não filtra por grupo.
             Gênero e idade servem só para esta auditoria: não aparecem na análise de um contrato.</div></div>""")
         render_invariance((data or {}).get("invariancia_lote"))
 

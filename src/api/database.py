@@ -65,8 +65,8 @@ CONTRACT_COLUMNS = {
 SQL_CONTRACT = (
     "SELECT " + ", ".join(f"{alias}.{col}" for alias, cols in CONTRACT_COLUMNS.items() for col in cols)
     + " FROM emprestimo e JOIN cliente c ON c.loan_id = e.loan_id"
-    + " LEFT JOIN historico_credito h ON h.loan_id = e.loan_id WHERE e.loan_id = %s"  # ID já normalizado no Python (usa a chave primária)
-)
+    + " LEFT JOIN historico_credito h ON h.loan_id = e.loan_id WHERE e.loan_id = %s"
+)  # o ID chega normalizado por normalize_id(): a busca usa a chave primária
 SQL_OUTCOME = ("SELECT inadimplente, recebido_total, resultado_eur, retorno_realizado, principal_perdido, "
                "duracao_meses FROM vw_retorno_realizado WHERE loan_id = %s")
 # db/06 (Marcos, 13/11): uma linha por contrato, com o motivo quando não há desfecho

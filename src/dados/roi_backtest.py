@@ -15,7 +15,7 @@ Reestruturados (`fora_da_auditoria`) ficam fora, como na auditoria de preço.
 
 Se a auditoria funciona, em cada faixa de risco "abaixo do justo" rende menos que "acima do justo".
 
-Só 2016: de 2017 a 2021 não há desfecho, e o `excesso_eur` espera a repontuação do Samuel.
+Só 2016: de 2017 a 2021 não há desfecho; o `excesso_eur` desses anos é estimativa (DATA.md, seção 14).
 Os números dependem do modelo que gerou o CSV (coluna `versao_modelo`): regerar quando ele mudar.
 """
 from __future__ import annotations

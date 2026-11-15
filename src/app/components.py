@@ -8,8 +8,10 @@ Regras de exibição (genai/REGRAS_PARECER.md e FORMATO_JSON.md):
 """
 from __future__ import annotations
 
+import base64
 import html
 import math
+from pathlib import Path
 
 # ---------------------------------------------------------------- formatação
 
@@ -57,13 +59,13 @@ def compact(block: str) -> str:
 
 SITUATIONS = {
     "acima_do_justo": {"rotulo": "Acima do justo", "icone": "↑", "cor": "#e8a462",
-                       "fundo": "rgba(232,164,98,.10)", "leitura": "risco de perder bons clientes"},
+                       "fundo": "rgba(232,164,98,.10)", "leitura": "juro acima do que o risco justifica"},
     "abaixo_do_justo": {"rotulo": "Abaixo do justo", "icone": "↓", "cor": "#c3a6f0",
                         "fundo": "rgba(195,166,240,.10)", "leitura": "juro pode não cobrir a perda esperada"},
     "dentro_da_margem": {"rotulo": "Dentro da margem", "icone": "=", "cor": "#8cc7a1",
                          "fundo": "rgba(140,199,161,.10)", "leitura": "preço compatível com o risco"},
     "revisao_manual": {"rotulo": "Revisão manual", "icone": "!", "cor": "#9aa5b5",
-                       "fundo": "rgba(154,165,181,.10)", "leitura": "dados fora da faixa de treino"},
+                       "fundo": "rgba(154,165,181,.10)", "leitura": "dados fora do que o modelo conhece"},
 }
 
 RECOMMENDATIONS = {
@@ -145,12 +147,12 @@ def review_kpis(r: dict) -> list[str]:
                   else '<span class="ap-faixa ap-faixa-off">Sem faixa</span>')
 
     if r.get("juro_justo") is None:
-        fair_sub = "Não calculado: dados fora da faixa de treino"
+        fair_sub = "Não calculado: dados fora do que o modelo conhece"
     else:
         label = "Margem de incerteza" if ci else "Margem padrão de ±2 p.p. (sem bootstrap)"
         fair_sub = f"{label}: {pct(r.get('juro_justo_min'), decimals)} – {pct(r.get('juro_justo_max'), decimals)}"
     if r.get("juro_pares_mediana") is not None:  # segunda opinião: não muda a situação
-        fair_sub += f"<br>Mediana dos pares: {pct(r['juro_pares_mediana'])}"
+        fair_sub += f"<br>Contratos parecidos (mediana): {pct(r['juro_pares_mediana'])}"
 
     dist = margin_distance_pp(r)
     if situation == "revisao_manual":
@@ -337,7 +339,7 @@ def html_pricing(params: dict | None, r: dict, country: str | None = None) -> st
             ("Juro justo (margem)", f'{pct(r.get("juro_justo"), 2)} ({pct(r.get("juro_justo_min"), 2)} a '
                                     f'{pct(r.get("juro_justo_max"), 2)})'),
             ("Diferença cobrado − justo", pp(diff) if diff is not None else "—"),
-            ("Mediana dos pares (2ª opinião)", pct(r.get("juro_pares_mediana"), 2))]
+            ("Juro mediano de contratos parecidos (2ª opinião)", pct(r.get("juro_pares_mediana"), 2))]
     if params:
         rows += [("Euribor 12m da época", pct(params["euribor_12m"], 2)),
                  ("Custos e margem da safra", pct(params["custo_margem_safra"], 1)),
@@ -351,7 +353,7 @@ def html_pricing(params: dict | None, r: dict, country: str | None = None) -> st
     return compact(f"""<div class="ap-grid-2"><div>{left}</div>
         <div><div class="ap-card-sub"><b>Juro justo sem risco × com o risco estimado</b></div>
             <table class="ap-table ap-data-table"><tbody>
-            <tr><td>Com chance de não pagar zero</td><td>{pct(params["juro_justo_sem_risco"], 2)}</td></tr>
+            <tr><td>Se o risco fosse zero (PD 0%)</td><td>{pct(params["juro_justo_sem_risco"], 2)}</td></tr>
             <tr><td>Com o risco estimado ({pct(params["pd"], 1)})</td><td><b>{pct(r.get("juro_justo"), 2)}</b></td></tr>
             <tr><td>Diferença associada ao risco</td><td><b>{pp(params["efeito_do_risco_pp"])}</b></td></tr>
             </tbody></table>
@@ -592,6 +594,29 @@ def html_invariance_summary(summary: dict | None) -> str:
     return compact(f"""<div class="ap-verdict ap-verdict-bad">Em lote: {_num(tested - same, 0)} de {_num(tested, 0)}
         contratos deram resultado diferente. O modelo está usando gênero ou idade: avise o responsável pelo
         modelo.</div><div class="ap-foot">{source}</div>""")
+
+
+# ---------------------------------------------------------------- imagens (capa e equipe)
+
+IMAGE_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+
+
+def image_data_uri(folder: Path, name: str) -> str | None:
+    """A imagem <name>.jpg/.jpeg/.png/.webp da pasta, embutida no HTML (data URI), ou None se não existir.
+
+    Embutida porque o st.markdown não serve arquivos locais; assim funciona também sem internet."""
+    for suffix, mime in IMAGE_TYPES.items():
+        path_ = Path(folder) / f"{name}{suffix}"
+        if path_.exists():
+            return f"data:{mime};base64,{base64.b64encode(path_.read_bytes()).decode('ascii')}"
+    return None
+
+
+def html_team_avatar(initials: str, photo_uri: str | None) -> str:
+    """Foto do integrante, se houver; senão, as iniciais."""
+    if photo_uri:
+        return f'<div class="team-avatar team-photo" style="background-image:url(\'{photo_uri}\')"></div>'
+    return f'<div class="team-avatar">{esc(initials)}</div>'
 
 
 def html_fairness_table(rows: list[dict]) -> str:

@@ -44,7 +44,7 @@ Custo total no fluxo: `euribor + margem_da_safra`. Sensibilidade documentada: ma
 
 ## Contratos novos (vindos da API)
 
-- Sem `data_emprestimo` → data de hoje. A API sempre envia a data do formulário.
+- Sem `data_emprestimo` → data de hoje. A API sempre envia a data do contrato, lida do banco.
 - Mês além da série → último Euribor disponível.
 - Ano além do treino → último ano do país para a renda relativa e a **última safra** (2016) para a margem.
 

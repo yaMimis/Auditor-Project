@@ -22,7 +22,7 @@ Garantir que o sistema **apoia** a decisão sem discriminar, sem expor pessoas e
 7. **Pseudonimização.** `cliente_id = HMAC-SHA256(UserName, CLIENTE_ID_SAL)` truncado em 16 caracteres, feito **só na carga**. A chave fica no `.env`, é igual para o grupo, e trocá-la exige recarregar o banco.
 8. **Dados brutos e segredos fora do Git** (repositório público): CSVs, `.env`, chaves de API, `.joblib`.
 9. **Nunca culpar o cliente.** "Abaixo do justo" é risco para o banco, não falha do cliente.
-10. **Minimização.** A API aceita gênero e idade no formulário só para registro de auditoria e **não** os repassa ao modelo nem ao LLM. Nada além do necessário é gravado.
+10. **Minimização.** Nenhuma rota recebe gênero ou idade (se vierem no JSON, são ignorados) e a consulta do contrato não os lê. Só o teste de invariância lê os dois, numa consulta separada, e não devolve os valores. Equidade é medida em lote, de forma agregada. Nada além do necessário é gravado.
 
 ## Limitações que devem estar declaradas (README, DATA.md, slides)
 

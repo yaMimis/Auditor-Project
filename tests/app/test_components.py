@@ -197,3 +197,13 @@ def test_invariance_identical():
 def test_invariance_different_points_to_the_field():
     out = components.html_invariance(_invariance(pd=0.35))
     assert "Resultado diferente em: PD" in out and out.count("ap-changed") == 1
+
+
+def test_invariance_summary_states():
+    assert "python -m scripts.invariancia_lote" in components.html_invariance_summary(None)
+    ok = components.html_invariance_summary({"n_testados": 500, "identicos": 500, "versao_modelo": "xgboost_v3",
+                                             "pacote_hash": "48784ba3742d", "semente": 7,
+                                             "gerado_em": "2026-11-14T18:00:00+00:00"})
+    assert "500 contratos sorteados do lote" in ok and "ap-verdict-ok" in ok and "14/11/2026" in ok
+    bad = components.html_invariance_summary({"n_testados": 500, "identicos": 498})
+    assert "2 de 500" in bad and "ap-verdict-bad" in bad

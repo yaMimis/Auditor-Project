@@ -120,3 +120,12 @@ def test_overview_has_everything_the_home_shows(folder):
     assert out["backtest"][0]["faixa"] == "A"
     import json
     json.dumps(out)  # pronto para a resposta da API
+
+
+def test_invariance_summary_goes_to_the_overview(folder):
+    import json
+    assert portfolio.load_invariance_summary(folder) is None
+    (folder / portfolio.INVARIANCE_FILE).write_text(json.dumps({"n_testados": 3, "identicos": 3}), encoding="utf-8")
+    summary = portfolio.load_invariance_summary(folder)
+    out = portfolio.overview(portfolio.load_portfolio(folder), None, invariance=summary)
+    assert out["invariancia_lote"] == {"n_testados": 3, "identicos": 3}

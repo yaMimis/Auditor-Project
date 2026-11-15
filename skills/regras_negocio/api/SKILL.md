@@ -18,7 +18,7 @@ Ser a **única porta** para o modelo, o parecer, o banco e o lote: tudo que calc
 | `GET /` | — | `{status, modelo_carregavel, banco_disponivel, versao_modelo, pacote_modelo, pacote_hash, genai_configurada, busca_normas}` | — (healthcheck do Docker; responde logo ao subir, a busca nas normas carrega em segundo plano) |
 | `POST /predict` | `LoanRequest` | `PredictionResponse` (saída do `prever()` + `parecer_ia`) | 422 · 503 sem `.joblib` |
 | `POST /opinion` | `PredictionResponse` já calculada | `Parecer` | 422 |
-| `GET /portfolio/overview?year_min=&year_max=&country=&band=` | filtros opcionais | `PortfolioOverview` (anos, países, faixas, resumo, por faixa, backtest, equidade) | 503 sem lote |
+| `GET /portfolio/overview?year_min=&year_max=&country=&band=` | filtros opcionais | `PortfolioOverview` (anos, países, faixas, resumo, por faixa, backtest, equidade, `invariancia_lote`) | 503 sem lote |
 | `GET /contracts?situation=&offset=&limit=` | situação opcional, limit 1–200 | `ContractList` (`total`, `itens` do lote, do mais distante da margem) | 422 · 503 sem lote |
 | `GET /contracts/ids?limit=` | até 20000 (padrão 5000) | lista de IDs | 503 |
 | `GET /contracts/export?situation=` | situação opcional | CSV (UTF-8 com BOM) | 503 |
@@ -48,6 +48,7 @@ As rotas fixas `/contracts/ids` e `/contracts/export` ficam declaradas **antes**
 
 - `tests/api/test_api.py`, `test_contract_analysis.py`, `test_scenario.py`, `test_invariance.py`, `test_portfolio.py`, `test_portfolio_routes.py`: começam com `pytest.importorskip("fastapi")` e `("xgboost")`; banco, `prever()` e LLM trocados por `monkeypatch`. Nenhum precisa do `.joblib`, do banco real ou de internet.
 - `tests/api/test_integracao_analise.py`: só roda com banco, pacote e lote reais (pulado no CI). Abre contratos reais e compara com o lote.
+- `scripts/invariancia_lote.py`: teste de invariância em N contratos sorteados do lote (padrão 500, semente 7); grava `docs/resultados/invariancia_lote.json` (sem gênero nem idade: só contagens, IDs que deram diferente e a identificação do modelo), que a Auditoria mostra. Rodar de novo quando o pacote do modelo mudar.
 
 ## Pronto quando
 

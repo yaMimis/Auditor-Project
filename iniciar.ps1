@@ -138,7 +138,7 @@ if ($Build -or $LASTEXITCODE -ne 0) {
 }
 
 # 5. Normas do parecer no pgvector e referencia de mercado do BC (dentro do container: sem Python local)
-Passo "5/6 Normas do parecer e referencia do BC"
+Passo "5/6 Normas do parecer, contratos do Bondora e referencia do BC"
 $trechos = docker exec auditor_postgres psql -tA -U postgres -d auditor_db -c "SELECT count(*) FROM trechos_normas" 2>$null
 if ("$trechos".Trim() -match "^[1-9]") {
     Ok "normas ja indexadas ($("$trechos".Trim()) trechos)"
@@ -146,6 +146,21 @@ if ("$trechos".Trim() -match "^[1-9]") {
     docker compose run --rm --no-deps api python genai/src/indexar.py
     if ($LASTEXITCODE -ne 0) { Aviso "Nao consegui indexar as normas: o parecer funciona, mas sai sem fontes." }
     else { Ok "normas indexadas" }
+}
+
+# Contratos do Bondora (busca por ID e Analise do contrato): so carrega se o banco estiver vazio.
+# A carga apaga e recarrega as tabelas (TRUNCATE), entao rodar de novo da o mesmo resultado.
+$contratos = docker exec auditor_postgres psql -tA -U postgres -d auditor_db -c "SELECT count(*) FROM emprestimo" 2>$null
+if ("$contratos".Trim() -match "^[1-9]") {
+    Ok "contratos do Bondora ja carregados ($("$contratos".Trim()))"
+} elseif (Test-Path "data\raw\LoanData_Bondora.csv") {
+    Write-Host "Carregando os contratos do Bondora (alguns minutos)..."
+    $pasta_raw = (Resolve-Path "data\raw").Path
+    docker compose run --rm --no-deps -v "${pasta_raw}:/app/data/raw:ro" api python src/dados/carga_bondora.py --csv data/raw/LoanData_Bondora.csv
+    if ($LASTEXITCODE -ne 0) { Aviso "A carga do Bondora falhou (veja a mensagem acima): a busca de contratos vai ficar vazia." }
+    else { Ok "contratos do Bondora carregados" }
+} else {
+    Aviso "Sem contratos no banco: falta data\raw\LoanData_Bondora.csv (pasta do Drive do grupo). A busca de contratos vai ficar vazia."
 }
 
 # Referencia do BC: series mensais de 4 CSVs pequenos em data\raw (a base do Bondora nao e necessaria).

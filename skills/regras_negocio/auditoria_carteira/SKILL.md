@@ -18,7 +18,7 @@ Responder para a carteira inteira: **o preço acompanha o risco?**, **clientes d
    - `excesso_eur` (só acima do justo): `prazo × (parcela no juro cobrado − parcela no juro_justo_max)`, com i/12;
    - `perda_nao_coberta_eur` (só encerrados): `max(0, −resultado_eur)` da `vw_retorno_realizado`;
    - `rentabilidade_realizada` (só encerrados): `retorno_realizado` da mesma view.
-   No painel, "Pago a mais" soma `excesso_eur` dos acima do justo e "Perda não coberta" soma `perda_nao_coberta_eur` dos abaixo do justo; por isso a perda só aparece para contratos com desfecho (2016).
+   No painel, "Excesso estimado acima da margem" (antes "Pago a mais"; é estimativa, não fato) soma `excesso_eur` dos acima do justo e "Perda não coberta" soma `perda_nao_coberta_eur` dos abaixo do justo; por isso a perda só aparece para contratos com desfecho (2016).
 3. **Equidade:** estimar a diferença de juro **entre clientes de mesmo risco** (auditoria de resíduos: `juro cobrado − juro justo`, controlando por risco, país, ano, valor e prazo), com IC 95%:
    - **Gênero:** só 0 × 1 (gênero 2 = ausente), **dentro de cada país**, janela 2013–2016 (codificação suspeita em 2017–2019).
    - **Idade:** 18–25 × 35–44 anos; contratos com idade < 18 ficam fora.

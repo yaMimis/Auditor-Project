@@ -17,6 +17,7 @@ Só refazer o relatório .md a partir do .json já gravado (sem chamar o LLM):
 import json
 import logging
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -46,6 +47,14 @@ class _GuardaAvisos(logging.Handler):
 
 def _texto(parecer):
     return " ".join([parecer["resumo"], *parecer["pontos_de_atencao"], parecer["recomendacao_texto"]])
+
+
+# v5: o texto da recomendação não deve falar dos bastidores ("o código calculou", "o sistema recomendou").
+BASTIDORES = re.compile(r"\b(c[óo]digo|sistema|calculad[ao] pel[oa]|escolhid[ao])\b", re.IGNORECASE)
+
+
+def fala_dos_bastidores(parecer) -> bool:
+    return bool(BASTIDORES.search(parecer["recomendacao_texto"]))
 
 
 def proibidos(texto):
@@ -159,6 +168,8 @@ def escrever_markdown(resultados, caminho):
         f"| Pareceres do LLM que citam a {FONTE_FIXA} | {_pct([any(f.startswith(FONTE_FIXA) for f in r['fontes']) for r in com_llm])} |",
         f"| Recusas da conferência por palavra/atributo proibido | {sum(_recusa_por_palavra(r) for r in todas)} |",
         f"| Recusas da conferência por artigo | {sum(_recusa_por_artigo(r) for r in todas)} |",
+        f"| Recomendação que fala do código ou do sistema (pareceres do LLM) "
+        f"| {_pct([fala_dos_bastidores(r['parecer']) for r in com_llm])} |",
         f"| Sem palavra/atributo proibido | {_pct([not proibidos(_texto(r['parecer'])) for r in todas])} |",
         f"| Mesma resposta nas 2 rodadas | {_pct([res['consistente'] for res in resultados])} |",
         f"| Tempo médio do LLM | {sum(r['tempo_s'] for r in com_llm) / max(len(com_llm), 1):.1f} s |",

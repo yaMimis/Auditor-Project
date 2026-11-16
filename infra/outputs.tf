@@ -14,8 +14,23 @@ output "ip_publico" {
 }
 
 output "painel_url" {
-  description = "Painel do analista (Streamlit)"
+  description = "Painel do analista (Streamlit), na porta 80: o endereço para passar à banca"
+  value       = "http://${local.ip}"
+}
+
+output "painel_url_8501" {
+  description = "O mesmo painel na porta do Streamlit (reserva, se a 80 não responder)"
   value       = "http://${local.ip}:8501"
+}
+
+output "painel_publico" {
+  description = "true = qualquer pessoa abre o painel; false = só ips_liberados"
+  value       = var.painel_publico
+}
+
+output "painel_url_ipv6" {
+  description = "Painel pelo IPv6 da VM (para quem só sai por IPv6; os colchetes fazem parte do endereço)"
+  value       = "http://[${google_compute_instance.vm.network_interface[0].ipv6_access_config[0].external_ipv6}]"
 }
 
 output "api_url" {
@@ -36,6 +51,16 @@ output "comando_esperar_vm" {
 output "comando_enviar_arquivos" {
   description = "Envia o modelo, os CSVs de custo do dinheiro e a base do Bondora (~150 MB), que não estão no Git"
   value       = "scp -i ${local.chave} modelos_salvos/pacote_prever_v1.joblib data/raw/LoanData_Bondora.csv data/raw/ECB_Euribor_Serie-Mensal-12-Meses.csv data/raw/ECB_Euribor_Serie-Mensal-3-Meses.csv data/raw/BC-Selic_Acumulada_Mes_Anuzalizada_base252.csv data/raw/bcdata.sgs.20742.csv data/raw/bcdata.sgs.25464.csv ${var.usuario}@${local.ip}:~/envio/"
+}
+
+output "ips_liberados" {
+  description = "Quem passa pelo firewall. Se o painel não abrir, confira se o seu IP de hoje está aqui"
+  value       = var.ips_liberados
+}
+
+output "comando_conferir" {
+  description = "Depois do completar.sh: abre ~20 contratos reais pela API e compara com o lote (esperado 20/20)"
+  value       = "ssh -i ${local.chave} ${var.usuario}@${local.ip} 'cd ~/Auditor-Project && sudo docker compose exec -T api python -m scripts.conferir_analise'"
 }
 
 output "comando_completar" {

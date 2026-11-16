@@ -24,7 +24,7 @@ from src.app.components import (  # noqa: E402
     COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact, esc, eur, html_band_bars,
     html_considered_data, html_fairness_table, html_invariance, html_invariance_summary, html_opinion,
     html_outcome, html_pricing, html_provenance, html_rate_bar, html_reasons, html_scenario_effects,
-    html_how_to_read, html_scenario_table, html_team_avatar, image_data_uri, line_icon, pct, readable_value,
+    html_scenario_table, info_tip, html_team_avatar, image_data_uri, line_icon, pct, readable_value,
     review_kpis, situation_badge)
 
 BR_TIMEZONE = timezone(timedelta(hours=-3))
@@ -73,6 +73,7 @@ st.session_state.setdefault("pending_decisions", [])  # rascunhos NÃO registrad
 st.session_state.setdefault("analista", "")
 st.session_state.setdefault("page", "home")
 st.session_state.setdefault("invariance", {})  # último teste de invariância: contrato, resultado, erro
+st.session_state.setdefault("outcome_open", None)  # contrato com o Resultado observado aberto
 st.session_state.setdefault("lab", {})  # Laboratório: contrato, original (campos e limites), último cenário, erro
 
 # Páginas do menu do topo. Botões (e não st.tabs) porque o painel troca de página sozinho:
@@ -241,20 +242,20 @@ def portfolio_kpis(summary: dict | None) -> None:
     cards = [
         ("Contratos auditados", "[N]" if empty_ else f"{summary['auditados']:,}".replace(",", "."),
          "no período e filtros escolhidos" if empty_ else
-         f"+ {summary['revisao_manual']:,} em revisão manual".replace(",", "."), None),
+         f"+ {summary['revisao_manual']:,} em revisão manual".replace(",", "."), None, "auditados"),
         ("Acima do justo", "[X%]" if empty_ else pct(summary["acima"]), "juro acima do que o risco justifica",
-         SITUATIONS["acima_do_justo"]),
+         SITUATIONS["acima_do_justo"], "acima"),
         ("Abaixo do justo", "[Y%]" if empty_ else pct(summary["abaixo"]), "juro pode não cobrir o risco",
-         SITUATIONS["abaixo_do_justo"]),
+         SITUATIONS["abaixo_do_justo"], "abaixo"),
         ("Cobrado a mais (estimativa)", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
-         "soma do que se pagou acima do teto da margem", None),
+         "soma do que se pagou acima do teto da margem", None, "cobrado_mais"),
         ("Prejuízo real (abaixo do justo)", "€ [VALOR]" if empty_ else eur(summary["perda_nao_coberta_eur"]),
-         "o que não voltou, só contratos já encerrados", None),
+         "o que não voltou, só contratos já encerrados", None, "prejuizo"),
     ]
-    for column_, (label_, valor, sub, color) in zip(st.columns(5, gap="medium"), cards):
+    for column_, (label_, valor, sub, color, info) in zip(st.columns(5, gap="medium"), cards):
         with column_:
             style = f'style="color:{color["cor"]}"' if color else ""
-            md(f"""<div class="ap-kpi"><div class="ap-kpi-label">{esc(label_)}</div>
+            md(f"""<div class="ap-kpi">{info_tip(info)}<div class="ap-kpi-label">{esc(label_)}</div>
                 <div class="ap-kpi-value" {style}>{esc(valor)}</div><div class="ap-kpi-sub">{esc(sub)}</div></div>""")
 
 
@@ -330,23 +331,23 @@ def render_home() -> None:
             data, portfolio_error = portfolio_overview(years[0], years[1], None if p == "Todos" else p,
                                                        None if f == "Todas" else f)
 
-        md(html_how_to_read())  # logo abaixo do título e do botão "Ver os contratos"
-
         if portfolio_error:
             md(f"""<div class="ap-alert"><b>Panorama indisponível.</b> {esc(portfolio_error)} Os campos aparecem entre
                 colchetes até a API servir o lote da carteira.</div>""")
 
         portfolio_kpis(data["resumo"] if data else None)
 
-        # Situação por faixa, em largura total (a equidade fica só na página Auditoria).
+        # Situação por faixa e backtest lado a lado (a equidade fica só na página Auditoria).
+        col_band, col_backtest = st.columns(2, gap="medium")
         if data and data["por_faixa"]:
             body = html_band_bars(data["por_faixa"])
             note = "Proporções na carteira filtrada; à direita, número de contratos por faixa."
         else:
             body = '<div class="ap-empty">Distribuição disponível quando o lote da carteira for gerado.</div>'
             note = "Mostra, em cada faixa, a parte abaixo, dentro e acima do juro justo."
-        md(f"""<div class="ap-card"><div class="ap-card-title">Situação do preço por faixa de risco</div>
-            {body}<div class="ap-foot">{note}</div></div>""")
+        with col_band:
+            md(f"""<div class="ap-card">{info_tip("faixas")}<div class="ap-card-title">Situação do preço por faixa de risco</div>
+                {body}<div class="ap-foot">{note}</div></div>""")
 
         if data and data.get("backtest"):
             columns_ = ["abaixo_do_justo", "dentro_da_margem", "acima_do_justo"]
@@ -354,8 +355,8 @@ def render_home() -> None:
                 [[pct(row.get(c)) if row.get(c) is not None else "—" for c in columns_] for row in data["backtest"]],
                 index=[f'Faixa {row["faixa"]}' for row in data["backtest"]],
                 columns=[SITUATIONS[c]["rotulo"] for c in columns_])
-            with st.container(border=True, key="home_backtest"):  # margem de cima no styles.css
-                md("""<div class="ap-card-title">Backtest (2016): retorno real por faixa e situação do preço</div>
+            with col_backtest, st.container(border=True, key="home_backtest"):  # alinhado ao cartão ao lado (styles.css)
+                md(f"""{info_tip("backtest")}<div class="ap-card-title">Backtest (2016): retorno real por faixa e situação</div>
                     <div class="ap-card-sub">Contratos encerrados. Se a auditoria funciona, em cada faixa “abaixo do justo”
                     rende menos e “acima do justo” rende mais.</div>""")
                 st.dataframe(table, use_container_width=True)
@@ -699,34 +700,38 @@ def render_analysis(r: dict, ctx: dict) -> None:
             md(card)
 
     if situation != "revisao_manual":
-        md(f"""<div class="ap-card"><div class="ap-card-title">Juro cobrado × juro justo</div>
+        md(f"""<div class="ap-card">{info_tip("regua")}<div class="ap-card-title">Juro cobrado × juro justo</div>
             <div class="ap-card-sub">O juro justo é o juro que paga o risco deste cliente: o custo do dinheiro na época,
             a perda esperada com inadimplência e os custos da operação. A faixa dourada é a margem de incerteza.</div>
             {html_rate_bar(r)}</div>""")
-    contract_data_block(analysis)
+    # Dados do contrato (esquerda) e Precificação (direita); embaixo, o botão do Resultado observado.
     if situation != "revisao_manual":
-        source = "parâmetros devolvidos pelo prever()" if analysis.get("precificacao") else "valores do lote"
-        md(f"""<div class="ap-card"><div class="ap-card-title">Precificação: como o juro justo foi calculado</div>
-            <div class="ap-card-sub">{source}</div>
-            {html_pricing(analysis.get("precificacao"), r, country)}</div>""")
+        col_data, col_pricing = st.columns(2, gap="medium")
+        with col_data:
+            contract_data_block(analysis)
+        with col_pricing, st.container(key="pricing_area"):  # tabelas empilhadas na meia largura (styles.css)
+            source = "parâmetros devolvidos pelo prever()" if analysis.get("precificacao") else "valores do lote"
+            md(f"""<div class="ap-card ap-card-tight">{info_tip("precificacao")}
+                <div class="ap-card-title">Precificação: como o juro justo foi calculado</div>
+                <div class="ap-card-sub">{source}</div>
+                {html_pricing(analysis.get("precificacao"), r, country)}</div>""")
+    else:
+        contract_data_block(analysis)
+    outcome_block(analysis, ctx, live)
 
-    col_reasons, col_opinion = st.columns([1, 1.55], gap="medium")
+    col_opinion, col_reasons = st.columns([1.55, 1], gap="medium")  # parecer à esquerda, motivos à direita
+    with col_opinion:
+        md(f"""<div class="ap-card">{info_tip("parecer")}<div class="ap-seal">Simulação normativa pela lei brasileira ·
+            os dados são europeus; a leitura jurídica é hipotética.</div>{html_opinion(r.get("parecer_ia"))}</div>""")
+
     with col_reasons:
         empty = ("Os motivos vêm do modelo calculado na hora; o lote não os guarda." if not live
                  else "Sem motivos para este contrato.")
-        md(f"""<div class="ap-card"><div class="ap-card-title">O que mais pesou no risco</div>
+        md(f"""<div class="ap-card">{info_tip("motivos")}<div class="ap-card-title">O que mais pesou no risco</div>
             <div class="ap-card-sub">Quanto cada dado empurrou o risco para cima ou para baixo (método SHAP), com o
             valor deste contrato. Mostra o que pesou na previsão, não causa e efeito. Gênero e idade não entram no modelo. O modelo também considera o mercado do
             contrato (país): ele não aparece nesta lista, por regra do projeto, e os pesos foram calculados sem ele.</div>
             {html_reasons(r.get("motivos") or [], empty)}</div>""")
-    with col_opinion:
-        md(f"""<div class="ap-card"><div class="ap-seal">Simulação normativa pela lei brasileira ·
-            os dados são europeus; a leitura jurídica é hipotética.</div>{html_opinion(r.get("parecer_ia"))}</div>""")
-
-    md(f"""<div class="ap-card"><div class="ap-card-title">Resultado observado</div>
-        <div class="ap-card-sub">Só para contratos encerrados: o que aconteceu de verdade depois da concessão.</div>
-        {html_outcome(analysis.get("resultado_observado"), ctx.get("lote") if not live else None,
-                      analysis.get("motivo_sem_desfecho"))}</div>""")
 
     lab_invite(r, ctx)
     st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
@@ -734,13 +739,32 @@ def render_analysis(r: dict, ctx: dict) -> None:
 
 
 def contract_data_block(analysis: dict) -> None:
-    """As variáveis que o modelo usou, recolhidas (clique para abrir), logo antes da Precificação."""
+    """As variáveis que o modelo usou, recolhidas (clique para abrir), à esquerda da Precificação."""
     variables = analysis.get("dados_considerados") or []
     if variables:
         given = sum(v.get("origem") == "fornecida" for v in variables)
         with st.expander(f"Dados direto do contrato · {len(variables)} variáveis usadas pelo modelo "
                          f"({given} fornecidas e {len(variables) - given} calculadas a partir delas)"):
             md(html_considered_data(variables))
+
+
+def toggle_outcome(contract_id) -> None:
+    shown = st.session_state.outcome_open
+    st.session_state.outcome_open = None if shown == contract_id else contract_id
+
+
+def outcome_block(analysis: dict, ctx: dict, live: bool) -> None:
+    """Botão logo abaixo de Dados e Precificação: abre o Resultado observado ali embaixo (fecha ao trocar de contrato)."""
+    contract_id = (analysis.get("resultado") or {}).get("contrato_id")
+    is_open = st.session_state.get("outcome_open") == contract_id
+    st.button("Ocultar resultado observado" if is_open else "Ver resultado observado: o que aconteceu com o contrato",
+              key="toggle_outcome", icon=":material/visibility_off:" if is_open else ":material/history:",
+              on_click=toggle_outcome, args=(contract_id,))
+    if is_open:
+        md(f"""<div class="ap-card ap-card-tight">{info_tip("resultado")}<div class="ap-card-title">Resultado observado</div>
+            <div class="ap-card-sub">Só para contratos encerrados: o que aconteceu de verdade depois da concessão.</div>
+            {html_outcome(analysis.get("resultado_observado"), ctx.get("lote") if not live else None,
+                          analysis.get("motivo_sem_desfecho"))}</div>""")
 
 
 def lab_invite(r: dict, ctx: dict) -> None:

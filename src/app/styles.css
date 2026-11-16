@@ -262,14 +262,28 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-verdict-ok { background: rgba(140, 199, 161, 0.12); border: 1px solid rgba(140, 199, 161, 0.45); color: #8cc7a1; }
 .ap-verdict-bad { background: rgba(232, 164, 98, 0.12); border: 1px solid rgba(232, 164, 98, 0.5); color: #e8a462; }
 
-/* "Como ler" (Início): o que é juro justo e como ler as situações do preço */
-.ap-define { margin-top: 1.6rem; padding: 1.1rem 1.4rem 1.2rem; border-radius: 14px;
-    border: 1px solid rgba(200,154,88,.22); background: rgba(200,154,88,.04); }
-.ap-define .ap-sec { margin-top: 0; }
-.ap-define-grid { display: grid; grid-template-columns: 1.6fr repeat(4, 1fr); gap: .7rem 1.6rem; }
-@media (max-width: 1200px) { .ap-define-grid { grid-template-columns: 1fr 1fr; } }
-.ap-define-item { color: #c9ccd3; font-size: .84rem; line-height: 1.55; }
-.ap-define-item b { color: var(--gold-light); font-weight: 600; margin-right: .25rem; }
+/* Ícone "i" dos cartões: aparece ao passar o mouse no cartão; clicar abre a explicação */
+.ap-kpi, .ap-card, .st-key-home_backtest { position: relative; }
+.ap-info { position: absolute; top: .65rem; right: .7rem; z-index: 20; opacity: 0; transition: opacity .15s; }
+.ap-kpi:hover .ap-info, .ap-card:hover .ap-info, .st-key-home_backtest:hover .ap-info, .ap-info[open] { opacity: 1; }
+.ap-info summary { list-style: none; cursor: pointer; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+    border: 1px solid var(--gold-light); color: var(--gold-light); font: italic 700 .78rem/1.3rem Georgia, serif;
+    text-align: center; user-select: none; }
+.ap-info summary::-webkit-details-marker { display: none; }
+.ap-info summary:hover, .ap-info[open] summary { background: var(--gold-light); color: #15161a; }
+.ap-info-box { position: absolute; right: 0; top: 1.75rem; width: 270px; padding: .8rem .95rem; border-radius: 12px;
+    background: #1f2026; border: 1px solid rgba(200,154,88,.45); box-shadow: 0 10px 28px rgba(0,0,0,.45);
+    color: #dcdfe5; font-size: .82rem; line-height: 1.5; font-style: normal; text-align: left; }
+/* o título não passa por baixo do ícone */
+.ap-card-title, .ap-kpi-label { padding-right: 1.6rem; }
+/* deixa a caixinha aparecer por cima dos blocos vizinhos */
+[data-testid="stMarkdownContainer"], [data-testid="stElementContainer"], [data-testid="stColumn"] { overflow: visible !important; }
+
+/* Precificação em meia largura: as duas tabelas internas ficam uma embaixo da outra */
+.st-key-pricing_area .ap-grid-2 { grid-template-columns: 1fr !important; }
+.st-key-pricing_area .ap-card { margin-top: 0; }
+/* o "Dados direto do contrato" alinha pelo topo com a Precificação */
+[data-testid="stColumn"] [data-testid="stExpander"] { margin-top: 0; }
 
 /* Caixas expansíveis (Dados considerados) no mesmo estilo dos cartões */
 [data-testid="stExpander"] details { border: 1px solid rgba(200,154,88,.24) !important; border-radius: 14px !important;

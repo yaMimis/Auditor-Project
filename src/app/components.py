@@ -106,14 +106,14 @@ def situation_badge(situation: str) -> str:
 # ---------------------------------------------------------------- revisão de contrato
 
 def html_kpi(label_: str, valor: str, unit: str = "", sub: str = "", extra: str = "",
-             highlight: dict | None = None) -> str:
+             highlight: dict | None = None, info: str = "") -> str:
     style = ""
     value_color = ""
     if highlight:  # cartão da situação: cor da situação e fonte menor (texto, não número)
         style = f'style="border-color:{highlight["cor"]}66;background:{highlight["fundo"]}"'
         value_color = f'style="color:{highlight["cor"]};font-size:1.75rem;white-space:nowrap"'
     return compact(f"""
-        <div class="ap-kpi" {style}>
+        <div class="ap-kpi" {style}>{info_tip(info) if info else ""}
             <div class="ap-kpi-label">{esc(label_)}</div>
             <div class="ap-kpi-value" {value_color}>{valor}<span class="ap-kpi-unit">{esc(unit)}</span></div>
             <div class="ap-kpi-sub">{sub}</div>
@@ -167,11 +167,11 @@ def review_kpis(r: dict) -> list[str]:
     pd_value = pct(r.get("pd")) if r.get("pd") is not None else "—"
     return [
         html_kpi("Risco de inadimplência", pd_value, "", esc(ci_text),
-                 extra=f'<div class="ap-kpi-foot">{band_html}</div>'),
-        html_kpi("Juro cobrado", pct(r.get("juro_cobrado"), decimals), RATE_UNIT, "Taxa do contrato"),
+                 extra=f'<div class="ap-kpi-foot">{band_html}</div>', info="risco"),
+        html_kpi("Juro cobrado", pct(r.get("juro_cobrado"), decimals), RATE_UNIT, "Taxa do contrato", info="cobrado"),
         html_kpi("Juro justo calculado", pct(r.get("juro_justo"), decimals), RATE_UNIT if r.get("juro_justo") else "",
-                 fair_sub),  # fair_sub só tem números formatados por pct() e texto fixo
-        html_kpi("Situação do preço", f'{s["icone"]} {esc(s["rotulo"])}', "", esc(situation_sub), highlight=s),
+                 fair_sub, info="justo"),  # fair_sub só tem números formatados por pct() e texto fixo
+        html_kpi("Situação do preço", f'{s["icone"]} {esc(s["rotulo"])}', "", esc(situation_sub), highlight=s, info="situacao"),
     ]
 
 
@@ -513,21 +513,46 @@ def html_opinion(opinion: dict | None) -> str:
 
 # ---------------------------------------------------------------- carteira
 
-# Definições curtas para a tela (Início): o que é "justo" e como ler as situações do preço.
-HOW_TO_READ = [
-    ("Juro justo", "o juro que paga o risco do cliente: custo do dinheiro na época + perda esperada com "
-                   "inadimplência + custos da operação. Não é o juro \"certo\" por lei: é o que o risco explica."),
-    ("Margem", "a faixa de incerteza do juro justo (mínimo e máximo), estimada pelo modelo."),
-    ("Acima do justo", "o juro cobrado passa do teto da margem: indício de que se cobra mais do que o risco "
-                       "explica. É para investigar, não é conclusão."),
-    ("Abaixo do justo", "o juro cobrado fica abaixo do piso da margem: pode não cobrir as perdas esperadas."),
-    ("Dentro da margem", "o juro cobrado está entre o mínimo e o máximo: o preço acompanha o risco."),
-]
+# Explicação de cada bloco: aparece num ícone "i" no canto do cartão (passe o mouse no cartão e clique no ícone).
+INFO = {
+    "auditados": "Contratos da carteira (2016 a 2021) que o modelo conseguiu avaliar, no período e filtros "
+                 "escolhidos. Os de revisão manual ficam de fora: têm dados fora do que o modelo conhece.",
+    "acima": "Juro cobrado acima do teto da margem do juro justo: cobra-se mais do que o risco explica. "
+             "É indício para investigar, não conclusão.",
+    "abaixo": "Juro cobrado abaixo do piso da margem do juro justo: o juro pode não cobrir as perdas esperadas "
+              "com inadimplência.",
+    "cobrado_mais": "Estimativa, em euros, do que os clientes acima do justo pagaram além do teto da margem, "
+                    "somando as parcelas.",
+    "prejuizo": "Nos contratos abaixo do justo já encerrados: valor emprestado menos tudo o que voltou "
+                "(parcelas, juros e multas), sem correção no tempo.",
+    "risco": "Chance de o cliente ficar inadimplente (PD), calculada pelo modelo de risco com os dados do "
+             "contrato. A faixa embaixo é a incerteza do modelo.",
+    "cobrado": "A taxa que o contrato cobra de fato, em juros nominais ao ano.",
+    "justo": "O juro que paga o risco deste cliente: custo do dinheiro na época + perda esperada com "
+             "inadimplência + custos da operação. A margem (mínimo e máximo) é a incerteza desse cálculo.",
+    "situacao": "Compara o juro cobrado com a margem do juro justo: acima do teto, abaixo do piso ou dentro. "
+                "Revisão manual quando os dados estão fora do que o modelo conhece.",
+    "regua": "Onde o juro cobrado cai em relação à margem do juro justo (a faixa dourada). Fora da faixa, "
+             "o preço não acompanha o risco.",
+    "precificacao": "Os ingredientes do juro justo deste contrato e quanto o risco do cliente acrescenta ao juro.",
+    "faixas": "Risco de A (menor) a E (maior). Em cada faixa, quanto dos contratos ficou abaixo, dentro ou "
+              "acima da margem do juro justo.",
+    "backtest": "Teste com o que aconteceu de verdade: quanto rendeu, em 2016, cada grupo de contratos, por faixa "
+                "e situação do preço.",
+    "motivos": "Os dados que mais empurraram o risco deste cliente para cima ou para baixo (método SHAP). "
+               "Mostra o peso na previsão, não causa e efeito.",
+    "parecer": "Texto de apoio gerado por IA a partir dos números do modelo e das normas; o código confere cada "
+               "número. Se a IA falhar, entra um texto padrão. Quem decide é o analista.",
+    "resultado": "O que aconteceu de verdade com o contrato depois da concessão. Só existe para contratos já "
+                 "encerrados.",
+}
 
 
-def html_how_to_read() -> str:
-    items = "".join(f'<div class="ap-define-item"><b>{esc(term)}</b> {esc(text)}</div>' for term, text in HOW_TO_READ)
-    return f'<div class="ap-define"><div class="ap-sec">Como ler</div><div class="ap-define-grid">{items}</div></div>'
+def info_tip(key: str) -> str:
+    """Ícone "i" no canto do cartão; clicar abre a explicação (details/summary: funciona sem JavaScript)."""
+    text = INFO.get(key, key)
+    return (f'<details class="ap-info"><summary title="O que é isto?">i</summary>'
+            f'<div class="ap-info-box">{esc(text)}</div></details>')
 
 
 def html_band_bars(table: list[dict]) -> str:

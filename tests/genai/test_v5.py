@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from genai.avaliacao.avaliar import _aceita
+from genai.avaliacao.avaliar import _aceita, fala_dos_bastidores
 from genai.avaliacao.montar_casos import NORMAS_ESPERADAS
 from genai.src.checagem import PALAVRAS_PROIBIDAS, EntradaPrever, artigos_no_texto
 from genai.src.prompt import VERSAO_PROMPT, carregar_prompt, montar_mensagens
@@ -43,14 +43,21 @@ def test_v5_continua_sem_artigo_nomeado_nas_regras():
     assert artigos_no_texto(sistema) == set()
 
 
+# Linhas da v4 que a v5 muda de propósito (o resto da v4 continua igual).
+MUDADAS_NA_V5 = {
+    "Você só escreve.": "abertura sem a palavra \"código\" (mudança 3)",
+    "- Acima do justo:": "a v5 acrescenta uma frase no fim (mudança 1)",
+}
+
+
 def test_v5_mantem_as_regras_da_v4():
     sistema_v4, usuario_v4 = carregar_prompt("parecer_v4")
     sistema_v5, usuario_v5 = carregar_prompt("parecer_v5")
-    assert usuario_v5 == usuario_v4
+    assert usuario_v5 == usuario_v4.replace("RECOMENDAÇÃO ESCOLHIDA PELO CÓDIGO:", "RECOMENDAÇÃO:")
     for linha in sistema_v4.splitlines():
         if linha.startswith("- Acima do justo:"):
-            assert linha.rstrip() in sistema_v5   # a v5 só acrescenta uma frase no fim desta linha
-        else:
+            assert linha.rstrip() in sistema_v5
+        elif not any(linha.startswith(inicio) for inicio in MUDADAS_NA_V5):
             assert linha in sistema_v5
 
 
@@ -64,7 +71,7 @@ def test_notas_da_v5_nao_vao_para_o_llm():
 REGRAS_DE_CLAREZA = {
     "D05 (indício de aderência)": "Use \"indício\" só para apontar um possível problema no preço.",
     "C10 (recomendação calculada pelo código)":
-        "Não diga que a recomendação foi calculada, escolhida ou definida pelo código.",
+        "Em \"recomendacao_texto\", comece com \"Recomenda-se\" seguido da recomendação recebida",
     "C07 (relatório chamado de norma)":
         "O Relatório de Estabilidade Financeira é um relatório do Banco Central, não uma norma",
     "C04 (faixa com dois sentidos)": "Use a palavra \"faixa\" só para a faixa de risco (A a E).",
@@ -112,3 +119,24 @@ def test_casos_e_montar_casos_tem_o_mesmo_gabarito():
     """O JSON foi editado à mão (rodar montar_casos.py sortearia outros contratos): os dois não podem divergir."""
     for caso in CASOS:
         assert caso["esperado"]["normas_aceitas"] == NORMAS_ESPERADAS[_situacao_do_gabarito(caso)], caso["id"]
+
+
+# ---------- mudança 3: nada de "código" nas mensagens ----------
+
+def test_mensagens_da_v5_nao_falam_do_codigo():
+    """A regra negativa sobre o código piorou o problema (6/20): a palavra não aparece mais para o modelo."""
+    sistema, usuario = montar_mensagens(ENTRADA, "revisar_preco", [])
+    sem_cdc = (sistema + usuario).lower().replace("código de defesa do consumidor", "")
+    assert "código" not in sem_cdc
+    assert usuario.startswith("SITUAÇÃO DO PREÇO:") and "\nRECOMENDAÇÃO: revisar o preço\n" in usuario
+
+
+@pytest.mark.parametrize("texto, fala", [
+    ("O código calculou a recomendação de manter o preço. A decisão final é do analista.", True),
+    ("A recomendação calculada pelo código é revisar o preço. A decisão final é do analista.", True),
+    ("O sistema recomendou revisar o preço. A decisão final é do analista.", True),
+    ("A recomendação escolhida é manter o preço. A decisão final é do analista.", True),
+    ("Recomenda-se revisar o preço, porque o juro passa da margem. A decisão final é do analista.", False),
+])
+def test_metrica_de_bastidores(texto, fala):
+    assert fala_dos_bastidores({"recomendacao_texto": texto}) is fala

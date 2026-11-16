@@ -29,7 +29,7 @@ Demo ao vivo de cerca de **8 minutos**, com ensaio em 15/11 e banca em 21/11, se
 | 5 | 3:45 |  **Contratos da base** → chip "Acima do justo" → **Abrir 98ffaaa4-0b86** (faixa D: cobrado 39,0%, justo 34,0%, margem 31,7%–36,8%) → **Resultado observado** | "Indício a investigar, não conclusão." | Linguagem de indício |
 | 6 | 4:30 |  **Contratos da base** → chip "Revisão manual" → **Abrir 1cb66730-5f46** | "Dados fora da faixa de treino: o sistema não arrisca um número e devolve ao analista." | Revisão manual |
 | 7 | 5:00 | Decisão do analista: justificativa + **Revisar preço** com nova taxa | "A decisão é humana e fica gravada no banco, com o parecer e a justificativa." | LGPD art. 20 |
-| 8 | 5:45 | **Home → Panorama da carteira**: cartões, faixas e equidade | "Gênero: −0,53 pp; idade 18–25 × 35–44: +5,45 pp. Os dois intervalos não cruzam o zero: indício a investigar, com as ressalvas de proxies e qualidade do dado." | Auditoria de equidade |
+| 8 | 5:45 | **Home → Panorama da carteira**: cartões, faixas e equidade | "Gênero: −0,53 pp; idade 18–25 × 35–44: +5,31 pp. Os dois intervalos não cruzam o zero: indício a investigar, com as ressalvas de proxies e qualidade do dado." | Auditoria de equidade |
 | 9 | 7:00 |  **Laboratório**: mudar prazo e renda e ver o modelo recalcular (original × recalculado); mudar o juro e ver que só o preço muda; "Usar como proposta" | "O analista testa um juro e vê na hora se entra na margem; o risco não muda, porque o modelo não usa o preço." | Uso operacional |
 | 10 | 7:30 |  Página **Registro** → contadores → Exportar | "Trilha completa: quem decidiu, o quê, por quê e se discordou do sistema." | Rastreabilidade |
 

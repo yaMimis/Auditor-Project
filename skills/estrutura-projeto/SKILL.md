@@ -55,7 +55,8 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
 ├── src/
 │   ├── api/       main.py (rotas), schemas.py (pydantic), database.py (PostgreSQL), contract_analysis.py (tela Análise),
 │   │              scenario.py (Laboratório), portfolio.py (lote da carteira, lido só pela API)
-│   ├── app/       main.py (páginas Streamlit), styles.css (CSS), components.py (formatação e HTML)
+│   ├── app/       main.py (moldura e menu), nucleo.py (API e navegação), paginas/ (uma por arquivo),
+│   │              components/ (formatação e HTML por página), styles/ (CSS por parte)
 │   ├── dados/     carga_bondora, carga_macro, validacao, relatorio_qualidade, moeda
 │   └── modelos/   dados, variaveis, treino, xgb, prever, incerteza, segmentacao
 ├── modelos_salvos/              pacote_prever_v1.joblib (FORA do Git) + .gitkeep

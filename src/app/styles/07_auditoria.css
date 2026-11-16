@@ -1,0 +1,34 @@
+/* Página Auditoria: equidade em gráfico e teste de invariância (anel e tabela). */
+/* Teste de invariância (Auditoria) */
+.ap-verdict { border-radius: 10px; padding: .7rem .9rem; margin: .2rem 0 .8rem; font-size: .9rem; font-weight: 600; }
+.ap-verdict-ok { background: rgba(140, 199, 161, 0.12); border: 1px solid rgba(140, 199, 161, 0.45); color: #8cc7a1; }
+.ap-verdict-bad { background: rgba(232, 164, 98, 0.12); border: 1px solid rgba(232, 164, 98, 0.5); color: #e8a462; }
+
+
+/* Auditoria: equidade em gráfico (ponto = diferença, barra = IC 95%, zero no meio) */
+.ap-fair-row { margin: 1.1rem 0 1.4rem; }
+.ap-fair-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem; font-size: .88rem; color: #e8e5df; }
+.ap-fair-track { position: relative; height: 26px; margin: .7rem 0 .35rem; border-radius: 8px;
+    background: linear-gradient(90deg, rgba(195,166,240,.06), rgba(154,165,181,.05) 50%, rgba(232,164,98,.06)); }
+.ap-fair-zero { position: absolute; left: 50%; top: -4px; bottom: -4px; border-left: 1px dashed rgba(240,242,244,.45); }
+.ap-fair-ci { position: absolute; top: 10px; height: 6px; border-radius: 3px; opacity: .55; }
+.ap-fair-dot { position: absolute; top: 5px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
+    background: #121315; border: 3px solid; box-sizing: border-box; }
+.ap-fair-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .75rem; color: var(--text-muted); }
+.ap-fair-nums { font-size: .85rem; }
+.ap-fair-axis { display: flex; justify-content: space-between; font-size: .7rem; color: var(--text-muted);
+    border-top: 1px solid rgba(255,255,255,.08); padding-top: .4rem; }
+/* Auditoria: teste em lote como anel */
+.ap-ring-wrap { display: flex; align-items: center; gap: 1.4rem; margin: .4rem 0 1rem; }
+.ap-ring { width: 128px; height: 128px; border-radius: 50%; flex: none; display: grid; place-items: center; }
+.ap-ring-in { width: 100px; height: 100px; border-radius: 50%; background: #1b1c20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+.ap-ring-n { font-family: 'Playfair Display', serif; font-size: 2rem; line-height: 1; }
+.ap-ring-of { font-size: .75rem; color: var(--text-muted); margin-top: .2rem; }
+.ap-ring-title { font-size: .95rem; color: var(--text-light); font-weight: 600; }
+.ap-ring-verdict { font-size: .88rem; margin-top: .3rem; font-weight: 600; }
+.ap-same { color: #8cc7a1; font-weight: 700; }
+.ap-diff { color: #e8a462; font-weight: 700; }
+.ap-fair-explain { font-size: .84rem; line-height: 1.6; color: #c9ccd3; margin-top: .5rem; padding: .6rem .8rem;
+    border-left: 2px solid rgba(200,154,88,.45); background: rgba(200,154,88,.04); border-radius: 0 8px 8px 0; }
+.ap-fair-explain b { color: var(--text-light); }

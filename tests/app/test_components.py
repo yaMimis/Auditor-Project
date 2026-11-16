@@ -1,4 +1,4 @@
-"""Formatação e blocos HTML do painel (src/app/components.py)."""
+"""Formatação e blocos HTML do painel (src/app/components/)."""
 import json
 from pathlib import Path
 

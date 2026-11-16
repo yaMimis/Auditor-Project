@@ -1,0 +1,37 @@
+/* Menu do topo: marca, botões das páginas, página aberta. */
+/* --- MENU DO TOPO: páginas do painel (botões que trocam de página) --- */
+.st-key-top_nav {
+    position: sticky; top: 0; z-index: 999; padding: .55rem 2.5rem;
+    background-color: rgba(14, 15, 17, 0.97); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--card-border);
+}
+.nav-brand {
+    font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700;
+    color: var(--gold-light) !important; letter-spacing: .08em; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+}
+.st-key-top_nav [data-testid="stButton"] button {
+    min-height: 38px; padding: .2rem .4rem; border: none !important; border-radius: 0 !important;
+    background: transparent !important; box-shadow: none !important;
+    border-bottom: 2px solid transparent !important;
+}
+.st-key-top_nav [data-testid="stButton"] button p { color: var(--text-light) !important; font-size: .92rem !important; font-weight: 500 !important; white-space: nowrap; overflow: visible; }
+/* notebook (tela estreita): marca e menu um pouco menores, para os 7 nomes caberem inteiros */
+@media (max-width: 1350px) {
+    .st-key-top_nav { padding: .5rem 1.2rem; }
+    .nav-brand { font-size: .9rem; letter-spacing: .04em; }
+    .st-key-top_nav [data-testid="stButton"] button p { font-size: .84rem !important; }
+}
+.st-key-top_nav [data-testid="stButton"] button:hover p { color: var(--gold-light) !important; }
+/* página aberta: fundo escuro levemente dourado, texto dourado e traço embaixo. Mais específico que a
+   regra geral dos botões principais (gradiente dourado), que deixava texto dourado sobre fundo dourado. */
+.st-key-top_nav [data-testid="stButton"] button[kind="primary"],
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"],
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover {
+    background: rgba(200, 154, 88, 0.12) !important; border-bottom: 2px solid var(--gold) !important;
+    border-radius: 6px 6px 0 0 !important;
+}
+.st-key-top_nav [data-testid="stButton"] button[kind="primary"] p,
+.st-key-top_nav [data-testid="stButton"] button[data-testid="stBaseButton-primary"] p { color: var(--gold-light) !important; font-weight: 700 !important; }
+.st-key-top_nav [data-testid="stTextInput"] input { min-height: 36px; font-size: .85rem; }
+.st-key-hero_cta { padding: 0 4rem 2.4rem 4rem; margin-top: -1.2rem; }

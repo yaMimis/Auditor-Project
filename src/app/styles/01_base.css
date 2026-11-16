@@ -1,0 +1,74 @@
+/* Base: cores (variáveis), fundo, botões, campos e componentes do Streamlit, caixas expansíveis. */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+    --gold: #c89a58;
+    --gold-light: #e4bd7d;
+    --dark-bg: #121315;
+    --card-bg: #1c1d21;
+    --card-border: rgba(200, 154, 88, 0.2);
+    --text-light: #f0f2f4;
+    --text-muted: #9aa5b5;
+}
+html { scroll-behavior: smooth; }
+#MainMenu, header, footer, [data-testid="stSidebar"] { display: none !important; }
+.block-container { padding: 0 !important; max-width: 100% !important; }
+body { background-color: var(--dark-bg); color: var(--text-light); font-family: 'DM Sans', sans-serif; }
+
+
+/* --- COMPONENTES STREAMLIT --- */
+[data-testid="stAppViewContainer"], [data-testid="stMain"] { background: var(--dark-bg); color: var(--text-light); }
+[data-testid="stMain"] .block-container { padding-top: 1.5rem !important; padding-bottom: 5rem !important; }
+/* mais respiro entre os blocos de cada página (o padrão do Streamlit é 1rem) */
+[data-testid="stMain"] [data-testid="stVerticalBlock"] { row-gap: 1.25rem; }
+.st-key-top_nav [data-testid="stVerticalBlock"] { row-gap: .4rem; }
+
+[data-testid="stButton"] button, [data-testid="stDownloadButton"] button {
+    min-height: 52px; width: 100%; white-space: pre-wrap !important; text-align: center !important;
+    line-height: 1.55 !important; padding: 1.1rem 1rem !important; border-radius: 14px !important;
+    border: 1px solid rgba(200, 154, 88, 0.34) !important;
+    background: linear-gradient(145deg, #202126 0%, #17181c 100%) !important;
+    color: var(--text-light) !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+[data-testid="stButton"] button:hover, [data-testid="stDownloadButton"] button:hover {
+    transform: translateY(-3px); border-color: var(--gold-light) !important; box-shadow: 0 12px 28px rgba(200, 154, 88, 0.12);
+}
+/* botão principal (Revisar preço, Revisar, Abrir caso...): dourado da paleta */
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"],
+[data-testid="stButton"] button[kind="primary"] {
+    background: linear-gradient(135deg, #c89a58 0%, #e4bd7d 100%) !important;
+    color: #171315 !important; border: 1px solid #e4bd7d !important; font-weight: 700 !important;
+}
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"] p,
+[data-testid="stButton"] button[kind="primary"] p { color: #171315 !important; }
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover,
+[data-testid="stButton"] button[kind="primary"]:hover {
+    filter: brightness(1.06); box-shadow: 0 12px 28px rgba(200, 154, 88, 0.25);
+}
+
+/* ícones de linha (components.line_icon): brancos, alinhados ao texto */
+.ap-ico { display: inline-block; vertical-align: -0.2em; color: #f0f2f4; flex: none; }
+.feature-icon .ap-ico { color: #f0f2f4; opacity: .9; }
+
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: linear-gradient(145deg, rgba(31, 32, 37, .96), rgba(23, 24, 28, .96));
+    border: 1px solid rgba(200, 154, 88, .24) !important; border-radius: 16px !important; padding: 1.4rem 1.5rem !important;
+}
+[data-testid="stTextInput"] input, [data-testid="stNumberInput"] input, [data-testid="stDateInput"] input,
+[data-testid="stTextArea"] textarea, [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    background: #141519 !important; color: var(--text-light) !important;
+    border-color: rgba(200, 154, 88, .28) !important; border-radius: 8px !important;
+}
+.audit-eyebrow { color: var(--gold-light); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin-bottom: .45rem; }
+
+
+/* Caixas expansíveis (Dados considerados) no mesmo estilo dos cartões */
+[data-testid="stExpander"] details { border: 1px solid rgba(200,154,88,.24) !important; border-radius: 14px !important;
+    background: rgba(28,29,34,.6); }
+[data-testid="stExpander"] summary { padding: .9rem 1.1rem !important; }
+[data-testid="stExpander"] summary p { font-weight: 600; color: var(--text-light); }
+
+/* Títulos das páginas internas com mais espaço embaixo; avisos do Streamlit com cantos iguais aos cartões */
+.ap-title { margin-bottom: .2rem; }
+[data-testid="stAlert"] { border-radius: 12px !important; }

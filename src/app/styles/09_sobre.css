@@ -1,0 +1,27 @@
+/* Página Sobre: cartões da equipe e fotos. */
+/* --- SOBRE (EQUIPE) --- */
+.team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8rem; margin-top: 2.5rem; padding: 0 4rem 4rem 4rem; max-width: 1400px; margin-left: auto; margin-right: auto; }
+.team-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.2rem; text-align: left; transition: transform 0.3s ease, border-color 0.3s ease; }
+.team-card:hover { transform: translateY(-5px); border-color: var(--gold); }
+.team-avatar {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    height: auto;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 20%, rgba(228,189,125,.22), rgba(18,19,21,1) 70%);
+    border: 1px solid rgba(255,255,255,0.05);
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    color: var(--gold-light);
+    letter-spacing: 2px;
+    overflow: hidden;
+}
+
+.team-photo { background-size: cover; background-position: center 25%; }  /* foto do integrante no lugar das iniciais */
+.team-name { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--text-light); margin-bottom: 0.2rem; }
+.team-role { font-size: 0.82rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 0.6rem; }
+.team-bio { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }

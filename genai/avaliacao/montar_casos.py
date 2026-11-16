@@ -32,8 +32,14 @@ RECOMENDACAO = {"acima_do_justo": "revisar_preco", "abaixo_do_justo": "revisar_p
 
 # Normas que fazem sentido citar em cada situação (prefixo do trecho_id). Fonte vazia também é aceita.
 # 09/11 (antes de rodar a v3): LGPD art. 20 aceita em todas as situações, porque a busca v3 sempre a traz.
+# Normas aceitas por situação: o gabarito da métrica "fontes dentro das normas aceitas".
+# Só muda ANTES de rodar uma versão, com o motivo anotado aqui e no CRITERIOS.md.
+# 16/11 (antes da rodada final da v5): o CDC art. 54-D entra no "acima". Ele manda informar o consumidor,
+# antes da contratação, de todos os custos do crédito (mesmo assunto do 52 e do 54-B, já aceitos). Ficou de
+# fora por esquecimento ao montar os casos: na v4, o C03 o citou corretamente (sim na revisão humana) e a
+# métrica contou como fora do gabarito.
 NORMAS_ESPERADAS = {
-    "acima_do_justo": ["cdc-art52", "cdc-art54b", "cdc-art39", "cdc-art6", "lgpd-art20", "cet-art"],
+    "acima_do_justo": ["cdc-art52", "cdc-art54b", "cdc-art54d", "cdc-art39", "cdc-art6", "lgpd-art20", "cet-art"],
     "abaixo_do_justo": ["ref-p", "cdc-art52", "cdc-art54b", "lgpd-art20"],
     "dentro_da_margem": ["cdc-art52", "cdc-art54b", "cet-art", "cdc-art6", "lgpd-art20"],
     "revisao_manual": [],

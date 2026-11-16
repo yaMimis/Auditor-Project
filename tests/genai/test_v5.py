@@ -1,10 +1,21 @@
-"""Testes da v5 (16/11): no caso "acima do justo", ponto de atenção sobre a informação do preço.
-Origem: a busca trazia os trechos do CDC sobre a informação do preço em todos os casos "acima", e o modelo
-quase não os citava (avaliação v4 e contar_fontes.py de 16/11).
+"""Testes da v5 (16/11).
+
+1. Citação: no caso "acima do justo", ponto de atenção sobre a informação do preço ao consumidor. A busca trazia
+   os trechos do CDC sobre isso em todos os casos "acima", e o modelo quase não os citava (avaliação v4 e
+   contar_fontes.py de 16/11).
+2. Clareza: quatro regras vindas da primeira rodada da v5 (D05, C10, C07 e C04).
+3. Gabarito: o CDC art. 54-D passa a ser aceito no "acima" (CRITERIOS.md, "Mudanças no gabarito").
 
 Rodar na pasta raiz:  python -m pytest tests/genai -q
 """
-from genai.src.checagem import EntradaPrever, artigos_no_texto
+import json
+from pathlib import Path
+
+import pytest
+
+from genai.avaliacao.avaliar import _aceita
+from genai.avaliacao.montar_casos import NORMAS_ESPERADAS
+from genai.src.checagem import PALAVRAS_PROIBIDAS, EntradaPrever, artigos_no_texto
 from genai.src.prompt import VERSAO_PROMPT, carregar_prompt, montar_mensagens
 
 ENTRADA = EntradaPrever.model_validate({
@@ -46,3 +57,58 @@ def test_v5_mantem_as_regras_da_v4():
 def test_notas_da_v5_nao_vao_para_o_llm():
     sistema, usuario = carregar_prompt()
     assert "Por que existe a v5" not in sistema + usuario
+
+
+# ---------- clareza (primeira rodada da v5) ----------
+
+REGRAS_DE_CLAREZA = {
+    "D05 (indício de aderência)": "Use \"indício\" só para apontar um possível problema no preço.",
+    "C10 (recomendação calculada pelo código)":
+        "Não diga que a recomendação foi calculada, escolhida ou definida pelo código.",
+    "C07 (relatório chamado de norma)":
+        "O Relatório de Estabilidade Financeira é um relatório do Banco Central, não uma norma",
+    "C04 (faixa com dois sentidos)": "Use a palavra \"faixa\" só para a faixa de risco (A a E).",
+}
+
+
+@pytest.mark.parametrize("origem", REGRAS_DE_CLAREZA)
+def test_v5_tem_as_regras_de_clareza(origem):
+    sistema, _ = carregar_prompt("parecer_v5")
+    assert REGRAS_DE_CLAREZA[origem] in sistema
+
+
+def test_regras_de_clareza_nao_ensinam_palavra_proibida():
+    """Uma regra do prompt não pode ser a origem de uma palavra que a conferência recusa (lição da v3)."""
+    novas = "\n".join(REGRAS_DE_CLAREZA.values())
+    assert PALAVRAS_PROIBIDAS.search(novas) is None
+    assert artigos_no_texto(novas) == set()
+
+
+# ---------- gabarito da avaliação ----------
+
+CASOS = json.loads(Path("genai/avaliacao/casos_avaliacao.json").read_text(encoding="utf-8"))
+
+
+def _situacao_do_gabarito(caso):
+    """Revisão manual prevalece sobre a situação do preço (D04), como em montar_casos.py."""
+    if caso["esperado"]["recomendacao"] == "revisao_manual":
+        return "revisao_manual"
+    return caso["entrada"]["situacao_preco"]
+
+
+def test_cdc_54d_aceito_no_acima_do_justo():
+    assert "cdc-art54d" in NORMAS_ESPERADAS["acima_do_justo"]
+    acima = [c for c in CASOS if _situacao_do_gabarito(c) == "acima_do_justo"]
+    assert [c["id"] for c in acima] == ["C01", "C02", "C03", "C04", "C05", "D01", "D02", "D03"]
+    assert all(_aceita("cdc-art54d-1", c["esperado"]["normas_aceitas"]) for c in acima)
+
+
+def test_cdc_54d_nao_entrou_nas_outras_situacoes():
+    for situacao in ("abaixo_do_justo", "dentro_da_margem", "revisao_manual"):
+        assert "cdc-art54d" not in NORMAS_ESPERADAS[situacao]
+
+
+def test_casos_e_montar_casos_tem_o_mesmo_gabarito():
+    """O JSON foi editado à mão (rodar montar_casos.py sortearia outros contratos): os dois não podem divergir."""
+    for caso in CASOS:
+        assert caso["esperado"]["normas_aceitas"] == NORMAS_ESPERADAS[_situacao_do_gabarito(caso)], caso["id"]

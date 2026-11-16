@@ -32,8 +32,12 @@ load_dotenv()
 log = logging.getLogger("genai.cadeia")
 
 MODELO_LLM = os.getenv("MODELO_LLM", "gemini-3.5-flash-lite")
-SEGUNDOS_POR_TENTATIVA = 10  # mínimo aceito pelo Gemini; 2 tentativas = cerca de 20 s
-TENTATIVAS_LLM = 2          # a segunda só acontece em erro temporário (ex.: 503)
+# Modelo reserva: assume quando o principal falha (ex.: 503 "high demand", servidor lotado).
+# Repetir no mesmo modelo lotado quase nunca resolve; trocar de modelo, sim (outra fila de
+# servidores). Vazio ("") desliga a reserva: a avaliação usa isso para medir só o principal.
+MODELO_LLM_RESERVA = os.getenv("MODELO_LLM_RESERVA", "gemini-3.1-flash-lite")
+SEGUNDOS_POR_TENTATIVA = 10  # mínimo aceito pelo Gemini; principal + reserva = cerca de 20 s
+TENTATIVAS_LLM = 1           # 1 tentativa por modelo; a "segunda tentativa" agora é a reserva
 
 MODELO_EMBEDDINGS = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 TABELA = "trechos_normas"
@@ -127,23 +131,41 @@ def _para_resposta_llm(bruta: _RespostaGemini) -> RespostaLLM:
     return RespostaLLM.model_validate(dados)
 
 
-def chamar_llm(sistema: str, usuario: str) -> RespostaLLM:
-    """Gemini via LangChain, com saída estruturada. Erros sobem para gerar_parecer() tratar."""
-    from langchain_core.messages import HumanMessage, SystemMessage
+def _modelo_estruturado(nome: str):
+    """Um Gemini com saída estruturada, devolvendo (nome do modelo, resposta bruta)."""
+    from langchain_core.runnables import RunnableLambda
     from langchain_google_genai import ChatGoogleGenerativeAI
 
     modelo = ChatGoogleGenerativeAI(
-        model=MODELO_LLM,
+        model=nome,
         temperature=0,
         timeout=SEGUNDOS_POR_TENTATIVA,
-        max_retries=TENTATIVAS_LLM - 1,  # a 1ª chamada + 1 nova tentativa em erro temporário
+        max_retries=TENTATIVAS_LLM - 1,  # 0: não repete no mesmo modelo; quem tenta de novo é a reserva
     )
     estruturado = modelo.with_structured_output(_RespostaGemini)
+    # O nome vai junto da resposta para o log dizer qual modelo escreveu o parecer.
+    return RunnableLambda(lambda mensagens: (nome, estruturado.invoke(mensagens)), name=nome)
+
+
+def chamar_llm(sistema: str, usuario: str) -> RespostaLLM:
+    """Gemini via LangChain, com saída estruturada e modelo reserva (with_fallbacks).
+
+    Se o principal falhar (503, tempo esgotado, JSON fora do esquema), o reserva recebe as
+    mesmas mensagens. Se os dois falharem, o erro sobe e o gerar_parecer() usa o template.
+    A resposta do reserva passa pela mesma conferência: a reserva troca quem escreve, não as regras.
+    """
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    llm = _modelo_estruturado(MODELO_LLM)
+    if MODELO_LLM_RESERVA and MODELO_LLM_RESERVA != MODELO_LLM:
+        llm = llm.with_fallbacks([_modelo_estruturado(MODELO_LLM_RESERVA)])
     with warnings.catch_warnings():
         # Os modelos Gemini mais novos ignoram a temperatura (amostragem fixa) e o LangChain avisa
         # a cada chamada. Mantemos temperature=0 para os modelos que a aceitam e calamos o aviso.
         warnings.filterwarnings("ignore", message=".*fixed sampling defaults.*")
-        bruta = estruturado.invoke([SystemMessage(content=sistema), HumanMessage(content=usuario)])
+        nome, bruta = llm.invoke([SystemMessage(content=sistema), HumanMessage(content=usuario)])
+    if nome != MODELO_LLM:
+        log.warning("modelo principal %s falhou: parecer escrito pelo reserva %s", MODELO_LLM, nome)
     return _para_resposta_llm(bruta)
 
 

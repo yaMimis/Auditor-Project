@@ -48,8 +48,8 @@ Porta 5432 ocupada → `docker-compose.override.yml` local com 5433 e ajustar a 
 
 ## Docker
 
-- `Dockerfile`: `python:3.14-slim` + `build-essential` + `libpq-dev`; instala `requirements.txt`; `COPY . .`; `CMD uvicorn src.api.main:app --host 0.0.0.0 --port 8000`.
-- **[PENDENTE]** Para o parecer com IA, a imagem da API precisa também de `requirements-genai.txt` (busca nas normas + Gemini). Sem isso, o `gerar_parecer()` sempre cai para o template.
+- `Dockerfile`: `python:3.14-slim` + `build-essential` + `libpq-dev`; instala `requirements-genai.txt`; `COPY . .`; `CMD uvicorn src.api.main:app --host 0.0.0.0 --port 8000`.
+- A imagem instala o `requirements-genai.txt` (que já inclui o `requirements.txt`): busca nas normas + Gemini. Sem a `GOOGLE_API_KEY`, o `gerar_parecer()` cai para o template.
 - `.dockerignore`: `.env`, `.venv`, `data/raw/*`, `*.joblib`, caches.
 
 `docker-compose.yml`, com **um único nome para o serviço do banco: `postgres`** (no compose, no README e nas URLs):
@@ -57,7 +57,7 @@ Porta 5432 ocupada → `docker-compose.override.yml` local com 5433 e ajustar a 
 | Serviço | Imagem / build | Porta | Ambiente | Volumes |
 |---|---|---|---|---|
 | `postgres` | `pgvector/pgvector:pg16`, banco `auditor_db` | 5432 | usuário/senha `postgres` | volume persistente + `./db:/docker-entrypoint-initdb.d` |
-| `api` | `build: .` | 8000 | `DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auditor_db`; **[PENDENTE]** `env_file: .env` para a chave do Gemini | `./modelos_salvos:/app/modelos_salvos` |
+| `api` | `build: .` | 8000 | `DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auditor_db`; `env_file: .env` (chave do Gemini) | `./modelos_salvos:/app/modelos_salvos` |
 | `streamlit` | mesma imagem; `streamlit run src/app/main.py --server.port=8501 --server.address=0.0.0.0` | 8501 | `API_URL=http://api:8000` | `./docs/resultados:/app/docs/resultados` |
 
 Os SQL de `db/` só rodam sozinhos na **primeira criação** do volume. Em banco já existente, aplicar à mão ou usar `--ddl` nas cargas.

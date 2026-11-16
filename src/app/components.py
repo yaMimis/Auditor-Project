@@ -140,8 +140,8 @@ def review_kpis(r: dict) -> list[str]:
     s = SITUATIONS.get(situation, SITUATIONS["revisao_manual"])
     decimals = rate_decimals(r)
     ci = r.get("pd_ic95")
-    ci_text = (f"Incerteza (bootstrap): {pct(ci[0])} – {pct(ci[1])}" if ci
-               else "Sem intervalo da PD: o pacote do modelo não tem o bootstrap")
+    ci_text = (f"Pode variar de {pct(ci[0])} a {pct(ci[1])} (incerteza do modelo)" if ci
+               else "Sem faixa de incerteza do risco neste modelo")
     faixa = r.get("faixa")
     band_html = (f'<span class="ap-faixa">Faixa {esc(faixa)}</span>' if faixa
                   else '<span class="ap-faixa ap-faixa-off">Sem faixa</span>')
@@ -149,18 +149,20 @@ def review_kpis(r: dict) -> list[str]:
     if r.get("juro_justo") is None:
         fair_sub = "Não calculado: dados fora do que o modelo conhece"
     else:
-        label = "Margem de incerteza" if ci else "Margem padrão de ±2 p.p. (sem bootstrap)"
-        fair_sub = f"{label}: {pct(r.get('juro_justo_min'), decimals)} – {pct(r.get('juro_justo_max'), decimals)}"
+        label = "Margem" if ci else "Margem padrão de ±2 p.p."
+        fair_sub = f"{label}: de {pct(r.get('juro_justo_min'), decimals)} a {pct(r.get('juro_justo_max'), decimals)}"
     if r.get("juro_pares_mediana") is not None:  # segunda opinião: não muda a situação
         fair_sub += f"<br>Contratos parecidos (mediana): {pct(r['juro_pares_mediana'])}"
 
     dist = margin_distance_pp(r)
     if situation == "revisao_manual":
-        situation_sub = "PD e juro justo não calculados; analista revisa os dados"
+        situation_sub = "risco e juro justo não calculados; o analista confere os dados"
     elif situation == "dentro_da_margem":
-        situation_sub = "diferença menor que a incerteza do modelo"
+        situation_sub = "o juro cobrado está entre o mínimo e o máximo da margem"
+    elif situation == "acima_do_justo":
+        situation_sub = f"{pp(dist)} acima do teto da margem"
     else:
-        situation_sub = f"{pp(dist)} além da margem de incerteza"
+        situation_sub = f"{pp(dist)} abaixo do piso da margem"
 
     pd_value = pct(r.get("pd")) if r.get("pd") is not None else "—"
     return [
@@ -207,7 +209,7 @@ def html_rate_bar(r: dict) -> str:
         </div>
         <div class="ap-legend">
             <span><i style="background:rgba(228,189,125,.28)"></i>Margem de incerteza do modelo</span>
-            <span>Juros nominais ao ano. Juro justo = custo do dinheiro (Euribor da época) + perda esperada ao longo do contrato + custos e margem calibrados na safra</span>
+            <span>Juros nominais ao ano</span>
         </div>
     """)
 
@@ -316,17 +318,17 @@ def html_considered_data(variables: list[dict]) -> str:
         return "".join(out)
     given, derived = rows("fornecida"), rows("derivada")
     return compact(f"""<div class="ap-grid-2">
-        <div><div class="ap-card-sub"><b>Fornecidas</b> · vieram do cadastro e do contrato no banco</div>
+        <div><div class="ap-card-sub"><b>Fornecidas</b> · vêm do cadastro e do contrato, no banco</div>
             <table class="ap-table ap-data-table"><tbody>{given}</tbody></table></div>
-        <div><div class="ap-card-sub"><b>Derivadas</b> · calculadas pelo pipeline do modelo</div>
+        <div><div class="ap-card-sub"><b>Calculadas</b> · obtidas a partir dos dados fornecidos</div>
             <table class="ap-table ap-data-table"><tbody>{derived}</tbody></table>
-            <div class="ap-card-sub" style="margin-top:.8rem">As derivadas usam alguns dados de entrada que não são
+            <div class="ap-card-sub" style="margin-top:.8rem">As calculadas usam alguns dados de entrada que não são
             variáveis do modelo, como as parcelas mensais das dívidas (só entram na conta de “dívidas em relação à renda”;
             não confundir com o número de dívidas em aberto, que é fornecida). Ao todo, o modelo usa
             {len(variables)} variáveis.</div>
             <div class="ap-card-sub" style="margin-top:.8rem">Não entram no modelo: juro cobrado e parcela (o preço
-            já embute o risco), gênero, idade, estado civil e dependentes (só auditoria de equidade), rating e PD do
-            Bondora.</div></div></div>""")
+            já embute o risco), gênero, idade, estado civil e dependentes (só auditoria de equidade), e a nota de risco e a
+            chance de inadimplência calculadas pelo próprio Bondora.</div></div></div>""")
 
 
 def html_pricing(params: dict | None, r: dict, country: str | None = None) -> str:
@@ -336,14 +338,15 @@ def html_pricing(params: dict | None, r: dict, country: str | None = None) -> st
     if diff is None and r.get("juro_cobrado") is not None and r.get("juro_justo") is not None:
         diff = round((r["juro_cobrado"] - r["juro_justo"]) * 100, 1)
     rows = [("Juro cobrado", pct(r.get("juro_cobrado"), 2)),
-            ("Juro justo (margem)", f'{pct(r.get("juro_justo"), 2)} ({pct(r.get("juro_justo_min"), 2)} a '
+            ("Juro justo (margem: mínimo a máximo)", f'{pct(r.get("juro_justo"), 2)} ({pct(r.get("juro_justo_min"), 2)} a '
                                     f'{pct(r.get("juro_justo_max"), 2)})'),
-            ("Diferença cobrado − justo", pp(diff) if diff is not None else "—"),
+            ("Cobrado menos justo", pp(diff) if diff is not None else "—"),
             ("Juro mediano de contratos parecidos (2ª opinião)", pct(r.get("juro_pares_mediana"), 2))]
     if params:
-        rows += [("Euribor 12m da época", pct(params["euribor_12m"], 2)),
-                 ("Custos e margem da safra", pct(params["custo_margem_safra"], 1)),
-                 (f"Perda se não pagar ({esc(country) if country else 'país'})", pct(params["lgd"], 0)),
+        rows += [("Custo do dinheiro (Euribor 12 meses da época)", pct(params["euribor_12m"], 2)),
+                 ("Custos e lucro do credor no ano da concessão", pct(params["custo_margem_safra"], 1)),
+                 (f"Quanto se perde se o cliente não pagar ({esc(country) if country else 'país'})",
+                  pct(params["lgd"], 0)),
                  ("Prazo", f'{params["prazo_meses"]} meses')]
     body = "".join(f"<tr><td>{a}</td><td>{b}</td></tr>" for a, b in rows)
     left = f'<table class="ap-table ap-data-table"><tbody>{body}</tbody></table>'
@@ -351,15 +354,16 @@ def html_pricing(params: dict | None, r: dict, country: str | None = None) -> st
         return compact(f"""{left}<div class="ap-card-sub" style="margin-top:.6rem">Os parâmetros da conta aparecem
             quando o modelo calcula o contrato na hora.</div>""")
     return compact(f"""<div class="ap-grid-2"><div>{left}</div>
-        <div><div class="ap-card-sub"><b>Juro justo sem risco × com o risco estimado</b></div>
+        <div><div class="ap-card-sub"><b>Quanto o risco deste cliente pesa no juro justo</b></div>
             <table class="ap-table ap-data-table"><tbody>
-            <tr><td>Se o risco fosse zero (PD 0%)</td><td>{pct(params["juro_justo_sem_risco"], 2)}</td></tr>
-            <tr><td>Com o risco estimado ({pct(params["pd"], 1)})</td><td><b>{pct(r.get("juro_justo"), 2)}</b></td></tr>
-            <tr><td>Diferença associada ao risco</td><td><b>{pp(params["efeito_do_risco_pp"])}</b></td></tr>
+            <tr><td>Se o cliente não tivesse risco nenhum</td><td>{pct(params["juro_justo_sem_risco"], 2)}</td></tr>
+            <tr><td>Com o risco deste cliente ({pct(params["pd"], 1)} de chance de inadimplência)</td>
+                <td><b>{pct(r.get("juro_justo"), 2)}</b></td></tr>
+            <tr><td>Quanto o risco acrescenta ao juro</td><td><b>{pp(params["efeito_do_risco_pp"])}</b></td></tr>
             </tbody></table>
-            <div class="ap-card-sub" style="margin-top:.6rem">É uma comparação, não uma decomposição: o juro justo
-            resolve uma equação de fluxo de caixa mês a mês (o valor presente esperado das parcelas, com a chance de
-            não pagar e a perda, iguala o valor emprestado), não soma parcelas.</div></div></div>""")
+            <div class="ap-card-sub" style="margin-top:.6rem">Não é uma soma de parcelas: o juro justo é o juro que faz
+            o valor que se espera receber, mês a mês (já descontada a chance de o cliente não pagar), igualar o valor
+            emprestado.</div></div></div>""")
 
 
 # ---------------------------------------------------------------- laboratório
@@ -373,7 +377,7 @@ def _margin(r: dict) -> str:
 def html_scenario_table(original: dict, scenario: dict, installment_before=None, installment_after=None) -> str:
     """Original × recalculado, linha a linha; o que mudou fica destacado."""
     rows = [
-        ("Risco de inadimplência (PD)", pct(original.get("pd")), pct(scenario.get("pd"))),
+        ("Chance de inadimplência", pct(original.get("pd")), pct(scenario.get("pd"))),
         ("Faixa de risco", original.get("faixa") or "—", scenario.get("faixa") or "—"),
         ("Juro justo", pct(original.get("juro_justo")), pct(scenario.get("juro_justo"))),
         ("Margem do juro justo", _margin(original), _margin(scenario)),
@@ -395,7 +399,7 @@ def html_scenario_table(original: dict, scenario: dict, installment_before=None,
 EFFECT_TEXT = {"aumenta": ("aumenta o risco", "#d9825b"), "reduz": ("reduz o risco", "#7fa7d9"),
                "neutro": ("quase não muda o risco", "#9aa5b5"),
                "revisao_manual": ("leva o contrato para fora do que o modelo conhece", "#9aa5b5"),
-               "sem_pd": ("sem PD para comparar (revisão manual)", "#9aa5b5")}
+               "sem_pd": ("sem risco calculado para comparar (revisão manual)", "#9aa5b5")}
 
 
 def _field_value(field: str, value) -> str:
@@ -421,7 +425,7 @@ def html_scenario_effects(effects: list[dict]) -> str:
     for e in effects:
         text_, color = EFFECT_TEXT.get(e.get("efeito"), EFFECT_TEXT["neutro"])
         change = f'{_field_value(e["campo"], e.get("valor_original"))} → {_field_value(e["campo"], e.get("valor_novo"))}'
-        detail = (f' · PD {pct(e.get("pd_original"))} → {pct(e.get("pd_so_este_campo"))}'
+        detail = (f' · risco {pct(e.get("pd_original"))} → {pct(e.get("pd_so_este_campo"))}'
                   if e.get("pd_so_este_campo") is not None and e.get("pd_original") is not None else "")
         items.append(f'<li><b>{esc(e.get("rotulo"))}</b>: {esc(change)} '
                      f'<span style="color:{color}">{esc(text_)}</span>{esc(detail)}</li>')
@@ -436,21 +440,21 @@ def html_provenance(rows: list[tuple[str, str]]) -> str:
 
 def html_outcome(outcome: dict | None, from_portfolio: dict | None = None, reason: str | None = None) -> str:
     """O que aconteceu de verdade. Do banco (vw_desfecho_contrato) ou, sem banco, do arquivo do lote."""
-    explain = ("Perda líquida realizada = valor concedido − tudo o que foi recebido (principal, juros e multas), "
-               "sem desconto no tempo.")
+    explain = ("Prejuízo líquido = valor emprestado − tudo o que voltou (parcelas, juros e multas), "
+               "sem correção no tempo.")
     if outcome:
         defaulted = "Sim" if outcome.get("inadimplente") else "Não"
         result = outcome.get("resultado_eur") or 0
         result_color = COLOR_DECREASES if result >= 0 else COLOR_INCREASES
         retorno = outcome.get("retorno_realizado")
-        cells = [("Deu default", defaulted), ("Recebido no total", eur(outcome.get("recebido_total"), 2)),
-                 ("Resultado (recebido − concedido)", f'<span style="color:{result_color}">{eur(result, 2)}</span>'),
-                 ("Retorno realizado", pct(retorno, 1) if retorno is not None else "—"),
-                 ("Principal que não voltou", eur(outcome.get("principal_perdido"), 2))]
-        source = "Fonte: banco (vw_desfecho_contrato), contrato encerrado."
+        cells = [("O cliente ficou inadimplente?", defaulted), ("Total que voltou", eur(outcome.get("recebido_total"), 2)),
+                 ("Ganho ou perda (voltou − emprestado)", f'<span style="color:{result_color}">{eur(result, 2)}</span>'),
+                 ("Retorno real do contrato", pct(retorno, 1) if retorno is not None else "—"),
+                 ("Valor emprestado que não voltou", eur(outcome.get("principal_perdido"), 2))]
+        source = "Fonte: banco de dados (contrato já encerrado)."
     elif from_portfolio and from_portfolio.get("rentabilidade_realizada") is not None:
-        cells = [("Rentabilidade realizada", pct(from_portfolio["rentabilidade_realizada"], 1)),
-                 ("Perda líquida realizada", eur(from_portfolio.get("perda_nao_coberta_eur") or 0, 2))]
+        cells = [("Retorno real do contrato", pct(from_portfolio["rentabilidade_realizada"], 1)),
+                 ("Prejuízo líquido", eur(from_portfolio.get("perda_nao_coberta_eur") or 0, 2))]
         source = "Fonte: arquivo do lote da carteira (sem banco nesta consulta)."
     elif reason:
         return (f'<div class="ap-empty"><b>Sem desfecho</b>: {esc(reason)}. O sistema não mostra perda de um '
@@ -509,6 +513,23 @@ def html_opinion(opinion: dict | None) -> str:
 
 # ---------------------------------------------------------------- carteira
 
+# Definições curtas para a tela (Início): o que é "justo" e como ler as situações do preço.
+HOW_TO_READ = [
+    ("Juro justo", "o juro que paga o risco do cliente: custo do dinheiro na época + perda esperada com "
+                   "inadimplência + custos da operação. Não é o juro \"certo\" por lei: é o que o risco explica."),
+    ("Margem", "a faixa de incerteza do juro justo (mínimo e máximo), estimada pelo modelo."),
+    ("Acima do justo", "o juro cobrado passa do teto da margem: indício de que se cobra mais do que o risco "
+                       "explica. É para investigar, não é conclusão."),
+    ("Abaixo do justo", "o juro cobrado fica abaixo do piso da margem: pode não cobrir as perdas esperadas."),
+    ("Dentro da margem", "o juro cobrado está entre o mínimo e o máximo: o preço acompanha o risco."),
+]
+
+
+def html_how_to_read() -> str:
+    items = "".join(f'<div class="ap-define-item"><b>{esc(term)}</b> {esc(text)}</div>' for term, text in HOW_TO_READ)
+    return f'<div class="ap-define"><div class="ap-sec">Como ler</div><div class="ap-define-grid">{items}</div></div>'
+
+
 def html_band_bars(table: list[dict]) -> str:
     """tabela = [{"faixa": "A", "abaixo_do_justo": 0.1, "dentro_da_margem": 0.7, "acima_do_justo": 0.2, "n": 120}]"""
     order = ["abaixo_do_justo", "dentro_da_margem", "acima_do_justo"]
@@ -549,7 +570,7 @@ def html_invariance(result: dict) -> str:
     """Teste de invariância: original × gênero e idade trocados (sem os valores reais)."""
     original, changed = result["original"], result["trocado"]
     rows = [
-        ("Risco de inadimplência (PD)", pct(original.get("pd")), pct(changed.get("pd"))),
+        ("Chance de inadimplência", pct(original.get("pd")), pct(changed.get("pd"))),
         ("Faixa de risco", original.get("faixa") or "—", changed.get("faixa") or "—"),
         ("Juro justo", pct(original.get("juro_justo")), pct(changed.get("juro_justo"))),
         ("Margem do juro justo", _margin(original), _margin(changed)),
@@ -565,7 +586,7 @@ def html_invariance(result: dict) -> str:
         verdict = ('<div class="ap-verdict ap-verdict-ok">Resultado idêntico: trocar gênero e idade não mudou nada '
                    'no que o modelo calcula.</div>')
     else:
-        labels = {"pd": "PD", "faixa": "faixa", "juro_justo": "juro justo", "juro_justo_min": "margem",
+        labels = {"pd": "risco", "faixa": "faixa", "juro_justo": "juro justo", "juro_justo_min": "margem",
                   "juro_justo_max": "margem", "situacao_preco": "situação", "motivos": "motivos"}
         changed_names = sorted({labels.get(d, d) for d in result.get("diferencas", [])})
         verdict = (f'<div class="ap-verdict ap-verdict-bad">Resultado diferente em: {esc(", ".join(changed_names))}. '

@@ -190,17 +190,19 @@ Garantido por teste automático (`tests/modelos/test_seguranca.py`).
 | v2 sem renda                | 0,714           | 0,193           | 67,5%            |
 | v2 sem scores de bureau     | 0,704           | 0,196           | 68,9%            |
 
-### Equidade e backtest (08/11, `python -m src.modelos.equidade`)
+### Equidade e backtest (08/11, `python -m src.modelos.equidade`; idade atualizada em 15/11)
 
 Resíduo = juro cobrado − juro justo, controlando por PD, faixa, país × ano, valor e prazo; IC 95% robusto (HC1). Resultado é **indício, nunca conclusão**.
 
 | Comparação                                           | Diferença           | IC 95%          | n                |
 | ------------------------------------------------------ | -------------------- | --------------- | ---------------- |
 | Gênero: mulher × homem (2013–2016, dentro do país) | −0,53 p.p.          | −0,91 a −0,15 | 7.435 × 10.821  |
-| Idade: 18–25 × 35–44 (2013–2021)                   | **+5,45 p.p.** | +5,06 a +5,84   | 13.682 × 31.987 |
+| Idade: 18–25 × 35–44 (2013–2021)                   | **+5,31 p.p.** | +4,92 a +5,69   | 13.682 × 31.987 |
+
+**15/11:** o `equidade.json` foi regerado com o `xgboost_v3` (carteira de 2017–2021 repontuada em 14/11; mesmo pacote, hash `48784ba3742d`). A idade foi de +5,45 (IC +5,06 a +5,84) para +5,31 p.p.; o gênero, o teste "default realizado − PD" e o backtest 2016 abaixo não mudaram, porque só usam 2013–2016.
 
 - **Gênero:** mulheres pagaram meio ponto a menos que homens de mesmo risco. Pequeno e a favor delas: sem sinal de discriminação contra mulheres. Ressalvas: codificação de gênero suspeita em 2017–2019 (por isso a janela 2013–2016) e gênero 2 (ausente) quase só da Espanha.
-- **Idade:** jovens pagaram 5,5 p.p. a mais que clientes de 35–44 com a mesma PD. Duas leituras possíveis: (a) cobrança maior só pela idade; (b) risco que o modelo não vê (o rating do Bondora usa idade; o nosso não, por decisão). Teste "default realizado − PD" por grupo (encerrados 2013–2016): jovens deram **+3,56 p.p.** mais default do que a PD previa (IC +1,42 a +5,70; n 2.596 × 5.325). Parte do prêmio tem base em risco, mas pela conta aproximada (3,6 p.p. × LGD ~0,6 em ~3 anos ≈ 1 p.p. ao ano) a perda extra explica cerca de 1 dos 5,5 p.p. Os ~4 p.p. restantes são  **indício de cobrança pela idade além do risco** , a investigar à luz do CDC. Gênero: mulheres deram **−3,34 p.p.** menos default que o previsto (IC −4,62 a −2,07): a diferença de preço vai na direção do risco, sem indício contra mulheres. Ressalva: o teste de default usa só encerrados 2013–2016.
+- **Idade:** jovens pagaram 5,3 p.p. a mais que clientes de 35–44 com a mesma PD. Duas leituras possíveis: (a) cobrança maior só pela idade; (b) risco que o modelo não vê (o rating do Bondora usa idade; o nosso não, por decisão). Teste "default realizado − PD" por grupo (encerrados 2013–2016): jovens deram **+3,56 p.p.** mais default do que a PD previa (IC +1,42 a +5,70; n 2.596 × 5.325). Parte do prêmio tem base em risco, mas pela conta aproximada (3,6 p.p. × LGD ~0,6 em ~3 anos ≈ 1 p.p. ao ano) a perda extra explica cerca de 1 dos 5,3 p.p. Os ~4 p.p. restantes são  **indício de cobrança pela idade além do risco** , a investigar à luz do CDC. Gênero: mulheres deram **−3,34 p.p.** menos default que o previsto (IC −4,62 a −2,07): a diferença de preço vai na direção do risco, sem indício contra mulheres. Ressalva: o teste de default usa só encerrados 2013–2016.
 - **Backtest 2016** (margem pela mediana + incerteza por bootstrap; rentabilidade realizada média, igual ao painel):
 
 | Faixa | Abaixo do justo | Dentro  | Acima do justo |

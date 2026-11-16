@@ -1,0 +1,28 @@
+/* Páginas Contratos e Análise: busca, lista, procedência, dados e precificação lado a lado. */
+/* --- BUSCA DE CONTRATOS: barra em destaque no topo da lista --- */
+.st-key-contract_search_bar {
+    padding: 1rem 1.2rem .4rem 1.2rem; border-radius: 18px;
+    border: 1px solid rgba(200, 154, 88, 0.45); background: rgba(200, 154, 88, 0.05);
+}
+
+
+/* --- ANÁLISE DO CONTRATO: selos, procedência, lista com "Abrir" --- */
+.ap-chip-solid { color: #121315; background: #c89a58; border-color: #c89a58; font-weight: 600; }
+.ap-chip-batch { color: #121315; background: #f2b48a; border-color: #f2b48a; font-weight: 600; }
+.ap-seal { font-size: .78rem; color: #d8c3a0; border: 1px dashed rgba(200,154,88,.5); border-radius: 10px;
+    padding: .45rem .7rem; margin-bottom: .9rem; background: rgba(200,154,88,.05); }
+.ap-list-head { color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding-bottom: .3rem; border-bottom: 1px solid rgba(200,154,88,.25); }
+.ap-list-cell { font-size: .88rem; color: var(--text-light); }
+.ap-mono { font-family: ui-monospace, Menlo, monospace; font-size: .82rem; }
+.st-key-contract_list [data-testid="stHorizontalBlock"] { border-bottom: 1px solid rgba(255,255,255,.05); padding: .15rem 0; }
+.st-key-contract_list [data-testid="stButton"] button { min-height: 34px; padding: .1rem .6rem; }
+
+
+/* Precificação em meia largura: as duas tabelas internas ficam uma embaixo da outra */
+.st-key-pricing_area .ap-grid-2, .st-key-data_area .ap-grid-2 { grid-template-columns: 1fr !important; }
+.st-key-pricing_area .ap-card, .st-key-data_area .ap-card { margin-top: 0; }
+/* botão do Resultado observado, embaixo da Precificação */
+.st-key-pricing_area .st-key-toggle_outcome { margin-top: .4rem; }
+/* o "Dados direto do contrato" alinha pelo topo com a Precificação */
+[data-testid="stColumn"] [data-testid="stExpander"] { margin-top: 0; }

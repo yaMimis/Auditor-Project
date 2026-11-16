@@ -1,0 +1,4 @@
+/* Página Registro: botões de exportar ao lado do título. */
+/* Registro: botões de exportar no canto direito, ao lado do título */
+.st-key-records_export { justify-content: flex-end; gap: .6rem; }
+.st-key-records_export [data-testid="stDownloadButton"] button { width: auto; min-height: 40px; padding: .5rem 1.1rem !important; }

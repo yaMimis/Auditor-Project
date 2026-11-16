@@ -44,7 +44,6 @@ Código e documentos que qualquer frente entende, testa e muda sem quebrar o tra
 
 - Cabeçalho: título, **versão, data, responsável, revisor e status**.
 - Final: **Pendências** (checkbox) e **Histórico** (versão, data, mudança).
-- Item não decidido: **[A CONFIRMAR]** com a escolha padrão adotada até a decisão.
 - Decisão sempre com **o motivo** (`docs/DECISOES.md`).
 
 ## Como mudar um contrato entre frentes

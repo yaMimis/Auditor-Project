@@ -8,9 +8,9 @@ Esta pasta descreve o projeto **por setor**, para que uma IA (ou uma pessoa nova
 4. **Regras**: requisitos. Número, nome de campo ou regra escrita aqui **é requisito, não sugestão**.
 5. **Como construir**: ordem dos passos.
 6. **Pronto quando**: testes e conferências que provam que está certo.
-7. **Estado atual e pendências**: o que já existe e o que falta (com a escolha padrão até a decisão). É a única parte que muda a cada entrega: atualize no mesmo PR que entregar ou decidir algo.
+7. **Estado atual**: o que já existe e as decisões tomadas. É a única parte que muda a cada entrega: atualize no mesmo PR que entregar ou decidir algo.
 
-Marcadores usados: **[PRONTO]** já existe e funciona · **[EM ANDAMENTO]** alguém está fazendo (nome entre parênteses) · **[PENDENTE]** ainda não começou · **[A DECIDIR]** depende de decisão do grupo (o texto diz a escolha padrão).
+Marcadores usados: **[PRONTO]** (ou **[CONCLUÍDO]**) já existe e funciona · **[DECIDIDO]** (ou **[DEFINIDO]**) decisão do grupo, com o motivo.
 
 Atualizado em **06/11/2026**, a partir do repositório nessa data. Skills da GenAI (`normas_rag`, `parecer_genai`, `avaliacao_parecer`) atualizadas em **10/11/2026**.
 
@@ -49,5 +49,5 @@ Envie à IA o `SKILL.md` do setor que ela vai trabalhar **junto** com `governanc
 
 1. siga os números, nomes de campos e regras como requisitos;
 2. não mude contratos de dados sem dizer explicitamente que é uma mudança de versão;
-3. respeite os marcadores: em **[A DECIDIR]**, usar a escolha padrão e avisar; em **[EM ANDAMENTO]**, não reescrever o trabalho de outra frente;
+3. respeite as decisões marcadas como **[DECIDIDO]** e não reescreva o trabalho de outra frente;
 4. só dê o setor por pronto quando a seção "Pronto quando" passar.

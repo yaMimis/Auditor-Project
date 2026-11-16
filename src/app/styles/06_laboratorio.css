@@ -1,0 +1,11 @@
+/* Página Laboratório e o botão "Abrir no Laboratório" da Análise. */
+/* Laboratório */
+.ap-lab-table td:nth-child(2), .ap-lab-table td:nth-child(3) { text-align: right; }
+.ap-lab-table th:nth-child(2), .ap-lab-table th:nth-child(3) { text-align: right; }
+.ap-lab-table td.ap-changed { color: #e4bd7d; font-weight: 700; }
+.ap-lab-effects { margin: .4rem 0 0; padding-left: 1.1rem; color: #e8e5df; font-size: .88rem; line-height: 1.7; }
+
+/* Botão "Abrir no Laboratório" alinhado à direita, no cartão do fim da Análise (antes da decisão) */
+.st-key-lab_button_area { align-items: flex-end !important; }
+.st-key-lab_button_area [data-testid="stElementContainer"] { width: 100% !important; }
+.st-key-lab_button_area [data-testid="stButton"] { width: 100%; display: flex; justify-content: flex-end; }

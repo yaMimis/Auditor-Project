@@ -1,0 +1,32 @@
+/* Página Início: capa (hero), faixa com os 3 blocos, títulos de seção, backtest. */
+/* --- HERO SECTION --- */
+.hero-container {
+    margin-top: 0px;
+    background-image: linear-gradient(to right, rgba(18, 19, 21, 0.95) 25%, rgba(18, 19, 21, 0.7) 100%),
+                      url('https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000&auto=format&fit=crop');
+    background-color: #16171a;
+    background-size: cover; background-position: center;
+    padding: 25rem 4rem 4rem 4rem;
+    border-bottom: 5px solid var(--card-border);
+}
+.hero-title { font-family: 'Playfair Display', serif; font-size: 3.8rem; font-weight: 700; color: var(--text-light); line-height: 1.15; margin-bottom: 1rem; }
+.hero-title span { color: var(--gold); font-style: italic; }
+.hero-subtitle { font-size: 1.15rem; color: var(--text-muted); max-width: 680px; margin-bottom: 2rem; line-height: 1.6; }
+
+/* --- FAIXA ESCURA COM 3 BLOCOS EXPLICATIVOS --- */
+.features-strip { background-color: #0b0c0e; border-bottom: 1px solid var(--card-border); padding: 2.5rem 4rem; margin-bottom: 2.2rem; }
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1300px; margin: 0 auto; }
+.feature-item { display: flex; align-items: flex-start; gap: 1.2rem; background: rgba(28, 29, 33, 0.15); padding: 1.5rem; border-radius: 12px; }
+.feature-icon { font-size: 1.8rem; color: var(--gold); }
+.feature-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--text-light); margin-bottom: 0.4rem; }
+.feature-desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
+
+/* --- SEÇÕES --- */
+.section-header { text-align: center; margin-bottom: 2rem; }
+.section-header h2 { font-family: 'Playfair Display', serif; font-size: 2.6rem; color: var(--text-light); }
+.section-header p { color: var(--text-muted); font-size: 1.05rem; }
+.gold-divider { width: 60px; height: 3px; background-color: var(--gold); margin: 1rem auto; border-radius: 2px; }
+
+
+/* Backtest da Início: separado do bloco de cima */
+.st-key-home_backtest { margin-top: 1.6rem; }

@@ -161,7 +161,7 @@ Feito na carga (`src/dados/carga_bondora.py` e `src/dados/carga_macro.py`), com 
 ## 7. Manutenção
 
 - **Responsável:** Marcos (frente de Dados). Dúvidas e correções: issue no repositório ou mensagem ao grupo.
-- **Versão dos dados:** o arquivo é identificado pela impressão digital SHA-256 registrada no `DATA.md`, seção 1. **[A CONFIRMAR]** A cópia local do Marcos (mesmas 112 colunas e 179.235 linhas, contagens por ano iguais às esperadas) tem SHA-256 `465abbefd71dc58afa5f293fdbff5a0300aa6cd43c6bd5736edad4c5c31fa460`, diferente do registrado. Conferir com o grupo qual cópia gerou o hash do `DATA.md` antes de fechar a versão.
+- **Versão dos dados:** o arquivo é identificado pela impressão digital SHA-256 registrada no `DATA.md`, seção 1: `465abbefd71dc58afa5f293fdbff5a0300aa6cd43c6bd5736edad4c5c31fa460` (112 colunas, 179.235 linhas). Confirmada em 15/11/2026 nas cópias do Marcos, da Yasmin e do Samuel; o hash registrado antes (`4728fc5e…`) não correspondia a nenhuma delas.
 - **Atualização:** o Bondora publica novas versões do relatório; o projeto **congela** a versão com corte em 20/07/2021. Uma versão nova exige recarregar o banco, reaplicar `db/`, rodar `python src/dados/validacao.py` (0 erros) e regerar `python src/dados/relatorio_qualidade.py`, além de atualizar este datasheet e o `DATA.md`.
 - **Erros encontrados:** viram regra no `validacao.py` (erro ou alerta) e linha no relatório de qualidade; decisões sobre eles ficam no `DATA.md`, seção 12.
 - **Repontuação da carteira (feita):** em 14/11, o Samuel repontuou a carteira de 2017–2021 com o modelo `xgboost_v3`. A escala nova do `score_fi_asiakastieto` (1 a 8) e o "M" do `score_es_microl` agora viram `sem_info` (`DATA.md`, seções 7 e 12).

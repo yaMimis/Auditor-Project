@@ -141,9 +141,9 @@ def test_margin_label_says_when_there_is_no_bootstrap():
     """Sem bootstrap o prever() usa ±2 p.p. fixos: a tela não pode chamar isso de intervalo de 95%."""
     with_ci = " ".join(review_kpis(BY_SITUATION["acima_do_justo"]))
     without_ci = " ".join(review_kpis({**BY_SITUATION["acima_do_justo"], "pd_ic95": None}))
-    assert "Incerteza (bootstrap)" in with_ci and "Margem de incerteza" in with_ci
-    assert "Incerteza (bootstrap)" not in without_ci and "Margem padrão de ±2 p.p. (sem bootstrap)" in without_ci
-    assert "Sem intervalo da PD" in without_ci
+    assert "Pode variar de" in with_ci and "Margem: de" in with_ci
+    assert "Pode variar de" not in without_ci and "Margem padrão de ±2 p.p." in without_ci
+    assert "Sem faixa de incerteza do risco" in without_ci
 
 
 # ---------- Laboratório
@@ -167,7 +167,7 @@ def test_scenario_effects_read_like_a_sentence():
          "pd_original": 0.30, "pd_so_este_campo": 0.204, "efeito": "reduz"},
         {"campo": "tempo_emprego_atual", "rotulo": "tempo no emprego atual", "valor_original": "UpTo1Year",
          "valor_novo": "MoreThan5Years", "pd_original": 0.30, "pd_so_este_campo": 0.30, "efeito": "neutro"}])
-    assert "60 meses → 36 meses" in out and "reduz o risco" in out and "PD 30,0% → 20,4%" in out
+    assert "60 meses → 36 meses" in out and "reduz o risco" in out and "risco 30,0% → 20,4%" in out
     assert "até 1 ano → mais de 5 anos" in out and "quase não muda o risco" in out
 
 
@@ -196,7 +196,7 @@ def test_invariance_identical():
 
 def test_invariance_different_points_to_the_field():
     out = components.html_invariance(_invariance(pd=0.35))
-    assert "Resultado diferente em: PD" in out and out.count("ap-changed") == 1
+    assert "Resultado diferente em: risco" in out and out.count("ap-changed") == 1
 
 
 def test_invariance_summary_states():

@@ -1,4 +1,4 @@
-/* Estilo do painel do Auditor de Preço Justo.
+/* Estilo do painel da Auditoria de Crédito.
    Carregado por src/app/main.py (carregar_estilo). Cores: dourado #c89a58/#e4bd7d, fundo #121315. */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 
@@ -32,7 +32,13 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
     background: transparent !important; box-shadow: none !important;
     border-bottom: 2px solid transparent !important;
 }
-.st-key-top_nav [data-testid="stButton"] button p { color: var(--text-light) !important; font-size: .9rem !important; font-weight: 500 !important; white-space: nowrap; }
+.st-key-top_nav [data-testid="stButton"] button p { color: var(--text-light) !important; font-size: .92rem !important; font-weight: 500 !important; white-space: nowrap; overflow: visible; }
+/* notebook (tela estreita): marca e menu um pouco menores, para os 7 nomes caberem inteiros */
+@media (max-width: 1350px) {
+    .st-key-top_nav { padding: .5rem 1.2rem; }
+    .nav-brand { font-size: .9rem; letter-spacing: .04em; }
+    .st-key-top_nav [data-testid="stButton"] button p { font-size: .84rem !important; }
+}
 .st-key-top_nav [data-testid="stButton"] button:hover p { color: var(--gold-light) !important; }
 /* página aberta: fundo escuro levemente dourado, texto dourado e traço embaixo. Mais específico que a
    regra geral dos botões principais (gradiente dourado), que deixava texto dourado sobre fundo dourado. */
@@ -104,7 +110,10 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 
 /* --- COMPONENTES STREAMLIT --- */
 [data-testid="stAppViewContainer"], [data-testid="stMain"] { background: var(--dark-bg); color: var(--text-light); }
-[data-testid="stMain"] .block-container { padding-top: 1.5rem !important; padding-bottom: 4rem !important; }
+[data-testid="stMain"] .block-container { padding-top: 1.5rem !important; padding-bottom: 5rem !important; }
+/* mais respiro entre os blocos de cada página (o padrão do Streamlit é 1rem) */
+[data-testid="stMain"] [data-testid="stVerticalBlock"] { row-gap: 1.25rem; }
+.st-key-top_nav [data-testid="stVerticalBlock"] { row-gap: .4rem; }
 
 [data-testid="stButton"] button, [data-testid="stDownloadButton"] button {
     min-height: 52px; width: 100%; white-space: pre-wrap !important; text-align: center !important;
@@ -136,7 +145,7 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     background: linear-gradient(145deg, rgba(31, 32, 37, .96), rgba(23, 24, 28, .96));
-    border: 1px solid rgba(200, 154, 88, .24) !important; border-radius: 16px !important; padding: 1.1rem 1.2rem !important;
+    border: 1px solid rgba(200, 154, 88, .24) !important; border-radius: 16px !important; padding: 1.4rem 1.5rem !important;
 }
 [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input, [data-testid="stDateInput"] input,
 [data-testid="stTextArea"] textarea, [data-testid="stSelectbox"] [data-baseweb="select"] > div {
@@ -152,10 +161,10 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 }
 
 /* --- BLOCOS DO RESULTADO (ap-*) --- */
-.ap-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; margin: 1.6rem 0 .6rem 0; }
+.ap-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; margin: 2rem 0 .8rem 0; }
 .ap-title { font-family: 'Playfair Display', serif; font-size: 2.1rem; color: var(--text-light); line-height: 1.1; }
 .ap-meta { color: var(--text-muted); font-size: .9rem; margin-top: .35rem; }
-.ap-chips { display: flex; flex-wrap: wrap; gap: .45rem; margin: .6rem 0 1.1rem 0; }
+.ap-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: .7rem 0 1.4rem 0; }
 .ap-chip { font-size: .74rem; color: #d9d4cb; background: rgba(255,255,255,.04); border: 1px solid rgba(200,154,88,.22); border-radius: 999px; padding: .28rem .7rem; }
 .ap-chip-live { color: #8cc7a1; border-color: rgba(140,199,161,.55); background: rgba(140,199,161,.08); font-weight: 600; }
 /* análise do contrato: dados considerados, preço, desfecho */
@@ -167,19 +176,19 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-outcome-v { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: #f0f2f4; margin-top: .2rem; }
 .ap-badge { display: inline-block; font-size: .72rem; font-weight: 700; border: 1px solid; border-radius: 999px; padding: .2rem .65rem; white-space: nowrap; }
 
-.ap-kpi { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.1rem 1.2rem; min-height: 152px; }
+.ap-kpi { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.3rem 1.4rem; min-height: 140px; }
 .ap-kpi-label { color: var(--text-muted); font-size: .78rem; font-weight: 600; letter-spacing: .04em; }
 .ap-kpi-value { font-family: 'Playfair Display', serif; font-size: 2.25rem; color: var(--gold-light); margin: .35rem 0 .2rem 0; line-height: 1.1; }
 .ap-kpi-unit { font-family: 'DM Sans', sans-serif; font-size: .85rem; color: var(--text-muted); margin-left: .3rem; }
-.ap-kpi-sub { color: #b9b4ab; font-size: .78rem; line-height: 1.4; }
+.ap-kpi-sub { color: #b9b4ab; font-size: .8rem; line-height: 1.5; }
 .ap-kpi-foot { margin-top: .55rem; }
 .ap-faixa { display: inline-block; background: #0b0c0e; color: var(--gold-light); border: 1px solid var(--gold); border-radius: 6px; padding: .15rem .55rem; font-size: .75rem; font-weight: 700; }
 .ap-faixa-off { color: var(--text-muted); border-color: rgba(154,165,181,.4); }
 
-.ap-card { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.25rem 1.35rem; margin-top: 1rem; }
-.ap-card-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--text-light); margin-bottom: .2rem; }
-.ap-card-sub { color: var(--text-muted); font-size: .8rem; margin-bottom: 1rem; }
-.ap-alert { border-left: 3px solid #9aa5b5; background: rgba(154,165,181,.08); border-radius: 0 10px 10px 0; padding: .9rem 1rem; color: #d7dbe2; font-size: .86rem; line-height: 1.5; margin-top: 1rem; }
+.ap-card { background: linear-gradient(145deg, rgba(31,32,37,.96), rgba(23,24,28,.96)); border: 1px solid rgba(200,154,88,.24); border-radius: 16px; padding: 1.5rem 1.6rem; margin-top: 1.6rem; }
+.ap-card-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; color: var(--text-light); margin-bottom: .35rem; }
+.ap-card-sub { color: var(--text-muted); font-size: .84rem; line-height: 1.55; margin-bottom: 1.2rem; max-width: 980px; }
+.ap-alert { border-left: 3px solid #9aa5b5; background: rgba(154,165,181,.08); border-radius: 0 10px 10px 0; padding: 1rem 1.15rem; color: #d7dbe2; font-size: .88rem; line-height: 1.55; margin-top: 1.4rem; }
 
 .ap-ruler { padding: 2.1rem .4rem .2rem .4rem; }
 .ap-ruler-track { position: relative; height: 14px; background: #0f1013; border-radius: 8px; border: 1px solid rgba(255,255,255,.04); }
@@ -194,15 +203,15 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-legend { display: flex; flex-wrap: wrap; gap: 1.1rem; color: var(--text-muted); font-size: .74rem; margin-top: .9rem; align-items: center; }
 .ap-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: .4rem; vertical-align: -1px; }
 
-.ap-factor { display: grid; grid-template-columns: 1.25fr 1fr 2.6rem; gap: .8rem; align-items: center; margin: .55rem 0; }
+.ap-factor { display: grid; grid-template-columns: 1.25fr 1fr 2.6rem; gap: .8rem; align-items: center; margin: .75rem 0; }
 .ap-factor-name { font-size: .85rem; color: #e8e5df; line-height: 1.3; }
 .ap-factor-bar { height: 9px; background: #0f1013; border-radius: 6px; overflow: hidden; }
 .ap-factor-bar div { height: 100%; border-radius: 6px; }
 .ap-factor-w { font-size: .72rem; color: var(--text-muted); text-align: right; }
 
 .ap-parecer-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem; margin-bottom: .6rem; }
-.ap-sec { color: var(--gold-light); font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin: 1rem 0 .35rem 0; }
-.ap-text { color: #e8e5df; font-size: .9rem; line-height: 1.6; margin: 0; }
+.ap-sec { color: var(--gold-light); font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin: 1.3rem 0 .45rem 0; }
+.ap-text { color: #e8e5df; font-size: .92rem; line-height: 1.65; margin: 0; }
 .ap-list { margin: 0; padding-left: 1.1rem; color: #e8e5df; font-size: .88rem; line-height: 1.6; }
 .ap-foot { color: var(--text-muted); font-size: .7rem; margin-top: .9rem; }
 .ap-muted { color: var(--text-muted); }
@@ -252,3 +261,25 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
 .ap-verdict { border-radius: 10px; padding: .7rem .9rem; margin: .2rem 0 .8rem; font-size: .9rem; font-weight: 600; }
 .ap-verdict-ok { background: rgba(140, 199, 161, 0.12); border: 1px solid rgba(140, 199, 161, 0.45); color: #8cc7a1; }
 .ap-verdict-bad { background: rgba(232, 164, 98, 0.12); border: 1px solid rgba(232, 164, 98, 0.5); color: #e8a462; }
+
+/* "Como ler" (Início): o que é juro justo e como ler as situações do preço */
+.ap-define { margin-top: 1.6rem; padding: 1.1rem 1.4rem 1.2rem; border-radius: 14px;
+    border: 1px solid rgba(200,154,88,.22); background: rgba(200,154,88,.04); }
+.ap-define .ap-sec { margin-top: 0; }
+.ap-define-grid { display: grid; grid-template-columns: 1.6fr repeat(4, 1fr); gap: .7rem 1.6rem; }
+@media (max-width: 1200px) { .ap-define-grid { grid-template-columns: 1fr 1fr; } }
+.ap-define-item { color: #c9ccd3; font-size: .84rem; line-height: 1.55; }
+.ap-define-item b { color: var(--gold-light); font-weight: 600; margin-right: .25rem; }
+
+/* Caixas expansíveis (Dados considerados) no mesmo estilo dos cartões */
+[data-testid="stExpander"] details { border: 1px solid rgba(200,154,88,.24) !important; border-radius: 14px !important;
+    background: rgba(28,29,34,.6); }
+[data-testid="stExpander"] summary { padding: .9rem 1.1rem !important; }
+[data-testid="stExpander"] summary p { font-weight: 600; color: var(--text-light); }
+
+/* Títulos das páginas internas com mais espaço embaixo; avisos do Streamlit com cantos iguais aos cartões */
+.ap-title { margin-bottom: .2rem; }
+[data-testid="stAlert"] { border-radius: 12px !important; }
+
+/* Backtest da Início: separado do bloco de cima */
+.st-key-home_backtest { margin-top: 1.6rem; }

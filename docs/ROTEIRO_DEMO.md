@@ -1,4 +1,4 @@
-# Roteiro da demo — Auditor de Preço Justo
+# Roteiro da demo — Auditoria de Crédito
 
 **Versão:** 1.1 · **Data:** 14/11/2026 · **Responsável:** Yasmin (App e infraestrutura) · **Revisor:** grupo · **Status:** rascunho para o ensaio
 
@@ -11,9 +11,9 @@ Demo ao vivo de cerca de **8 minutos**, com ensaio em 15/11 e banca em 21/11, se
 - [ ] Docker Desktop aberto; rodar  `.\iniciar.ps1`, ou `docker compose up -d` e esperar o "Pronto".
 - [ ] Em http://localhost:8000/: `modelo_carregavel: true`, `banco_disponivel: true` e o `pacote_hash` igual ao combinado com o Samuel.
 - [ ] Rodar `python -m scripts.conferir_analise` (20 contratos reais batem com o lote). Se falhar, não apresentar a Análise ao vivo sem entender o porquê.
-- [ ] **Abrir um contrato da base de aquecimento** (Contratos da base → busca): a 1ª chamada ao Gemini e à busca nas normas é a mais lenta.
+- [ ] **Abrir um contrato da base de aquecimento** (Contratos → busca): a 1ª chamada ao Gemini e à busca nas normas é a mais lenta.
 - [ ] **Terminal aberto na raiz do projeto**, com o ambiente ativado, e rodar uma vez `python -m genai.avaliacao.demo_conferencia`. Esperado: parecer original APROVADO e as 4 sabotagens RECUSADAS.
-- [ ] Preencher "Analista responsável" no topo da seção de auditoria.
+- [ ] Preencher o campo "Seu nome" no menu do topo (nome do analista que registra as decisões).
 - [ ] Navegador em tela cheia, zoom em 90% a 100%, abas abertas: painel (8501) e documentação da API (8000/docs).
 - [ ] Vídeo gravado aberto em outra janela, pronto para o plano B.
 - [ ] Print do `terraform plan` ("Plan: 5 to add") num slide, para mostrar a infraestrutura na nuvem sem depender da internet da sala.
@@ -23,13 +23,13 @@ Demo ao vivo de cerca de **8 minutos**, com ensaio em 15/11 e banca em 21/11, se
 | # | Tempo | Na tela | Frase-chave | Prova |
 |---|---|---|---|---|
 | 1 | 0:00 | Capa do painel | "Para cada contrato: qual o risco, se o juro é justo para esse risco e se clientes de mesmo risco pagam diferente. Quem decide é o analista." | Ideia e enquadramento |
-| 2 | 0:45 |  **Contratos da base** → clicar na busca e digitar o começo de um ID (a lista filtra a cada caractere) → escolher: abre a **Análise do contrato** com o selo "Calculado agora pelo modelo" e a **Procedência** | "A carteira inteira já foi pontuada pelo modelo em lote; o analista abre o contrato e confere. Gênero e idade não entram no modelo nem no parecer." | Governança: atributos sensíveis só auditam |
+| 2 | 0:45 |  **Contratos** → clicar na busca e digitar o começo de um ID (a lista filtra a cada caractere) → escolher: abre a **Análise do contrato** com o selo "Calculado agora pelo modelo" e a **Procedência** | "A carteira inteira já foi pontuada pelo modelo em lote; o analista abre o contrato e confere. Gênero e idade não entram no modelo nem no parecer." | Governança: atributos sensíveis só auditam |
 | 3 | 1:45 |  Cartões, régua, **Precificação** (parâmetros e juro justo com PD zero) e motivos SHAP | "O juro justo vem do fluxo de caixa: custo do dinheiro da época, perda esperada e margem da safra, com margem de incerteza do bootstrap." | Modelo e juro justo |
 | 4 | 2:45 | Parecer "Gerado por IA", fontes e referência de mercado do BC | "A IA só escreve. Recomendação e números vêm do código, e cada número do texto é conferido; se falhar, entra o template." | GenAI com checagem |
-| 5 | 3:45 |  **Contratos da base** → chip "Acima do justo" → **Abrir 98ffaaa4-0b86** (faixa D: cobrado 39,0%, justo 34,0%, margem 31,7%–36,8%) → **Resultado observado** | "Indício a investigar, não conclusão." | Linguagem de indício |
-| 6 | 4:30 |  **Contratos da base** → chip "Revisão manual" → **Abrir 1cb66730-5f46** | "Dados fora da faixa de treino: o sistema não arrisca um número e devolve ao analista." | Revisão manual |
+| 5 | 3:45 |  **Contratos** → chip "Acima do justo" → **Abrir 98ffaaa4-0b86** (faixa D: cobrado 39,0%, justo 34,0%, margem 31,7%–36,8%) → **Resultado observado** | "Indício a investigar, não conclusão." | Linguagem de indício |
+| 6 | 4:30 |  **Contratos** → chip "Revisão manual" → **Abrir 1cb66730-5f46** | "Dados fora do que o modelo conhece: o sistema não arrisca um número e devolve ao analista." | Revisão manual |
 | 7 | 5:00 | Decisão do analista: justificativa + **Revisar preço** com nova taxa | "A decisão é humana e fica gravada no banco, com o parecer e a justificativa." | LGPD art. 20 |
-| 8 | 5:45 | **Home → Panorama da carteira**: cartões, faixas e equidade | "Gênero: −0,53 pp; idade 18–25 × 35–44: +5,31 pp. Os dois intervalos não cruzam o zero: indício a investigar, com as ressalvas de proxies e qualidade do dado." | Auditoria de equidade |
+| 8 | 5:45 | **Início → Panorama da carteira**: cartões e faixas; depois **Auditoria**: equidade | "Gênero: −0,53 pp; idade 18–25 × 35–44: +5,31 pp. Os dois intervalos não cruzam o zero: indício a investigar, com as ressalvas de proxies e qualidade do dado." | Auditoria de equidade |
 | 9 | 7:00 |  **Laboratório**: mudar prazo e renda e ver o modelo recalcular (original × recalculado); mudar o juro e ver que só o preço muda; "Usar como proposta" | "O analista testa um juro e vê na hora se entra na margem; o risco não muda, porque o modelo não usa o preço." | Uso operacional |
 | 10 | 7:30 |  Página **Registro** → contadores → Exportar | "Trilha completa: quem decidiu, o quê, por quê e se discordou do sistema." | Rastreabilidade |
 

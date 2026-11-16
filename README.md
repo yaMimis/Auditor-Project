@@ -46,7 +46,7 @@ Contrato → modelo de risco (PD, probabilidade de default) → juro justo por f
 ```
 src/
 ├── api/        BACK-END  · FastAPI: rotas (main.py), formatos (schemas.py), banco (database.py), análise (contract_analysis.py), lote (portfolio.py)
-├── app/        FRONT-END · Streamlit: telas (main.py), visual (styles.css), blocos (components.py)
+├── app/        FRONT-END · Streamlit: moldura (main.py), páginas (paginas/), blocos (components/), visual (styles/)
 ├── modelos/    modelo de risco e juro justo: prever() e o lote da carteira (Samuel)
 └── dados/      cargas do Bondora e das séries de juros (Marcos)
 genai/          parecer: formato JSON, regras, normas, prompts e código (Maria)

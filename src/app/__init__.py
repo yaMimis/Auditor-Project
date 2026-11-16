@@ -1,1 +1,2 @@
-"""Front-end: painel Streamlit (telas em main.py, visual em styles.css, blocos em components.py, carteira em portfolio.py)."""
+"""Front-end: painel Streamlit. main.py (moldura e menu) · nucleo.py (API e navegação) · paginas/ (uma por
+arquivo) · components/ (formatação e HTML) · styles/ (CSS por parte)."""

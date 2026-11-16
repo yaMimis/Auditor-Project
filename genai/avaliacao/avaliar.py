@@ -22,7 +22,12 @@ import time
 from pathlib import Path
 
 from genai.src import cadeia
+
 from genai.src.checagem import ATRIBUTOS_SENSIVEIS, PALAVRAS_PROIBIDAS, EntradaPrever
+
+# A avaliação mede só o modelo principal: com a reserva ligada, um 503 trocaria o modelo no meio
+# da avaliação e misturaria os resultados de dois modelos no mesmo arquivo.
+cadeia.MODELO_LLM_RESERVA = ""
 
 PASTA = Path("genai/avaliacao")
 CASOS = PASTA / "casos_avaliacao.json"

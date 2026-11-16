@@ -35,7 +35,7 @@ Navegador ──► painel (Streamlit, porta 8501) ──► API (FastAPI, porta
 | Arquivo | Para que serve |
 |---|---|
 | `__init__.py` | Marca a pasta como pacote Python. |
-| `main.py` | As **páginas** (Home, Contratos da base, Análise, Laboratório, Auditoria, Registro, Sobre), o menu do topo e as chamadas à API. |
+| `main.py` | As **páginas** (Início, Contratos, Análise, Laboratório, Auditoria, Registro, Sobre), o menu do topo e as chamadas à API. |
 | `components.py` | Formatação (números em português, "24,9%", "€ 1.234") e os **blocos de HTML** de cada cartão. Não usa Streamlit, então é testável com pytest. |
 | `styles.css` | Todo o **visual**: cores, fontes, cartões, menu, selos. O `main.py` só injeta. |
 | `imagens/` | Fotos opcionais: `capa.jpg` (topo da Home) e `equipe/<nome>.jpg` (página Sobre). Sem elas, aparecem a imagem padrão e as iniciais. Instruções em `imagens/LEIA-ME.md`. |

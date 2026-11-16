@@ -1,6 +1,6 @@
-"""Painel do analista — Auditor de Preço Justo (Streamlit).
+"""Painel do analista — Auditoria de Crédito (Streamlit).
 
-Páginas: Home (panorama da carteira) · Contratos da base · Análise do contrato · Laboratório ·
+Páginas: Início (panorama da carteira) · Contratos · Análise · Laboratório ·
 Auditoria · Registro · Sobre. O estilo fica em src/app/styles.css; os blocos de HTML, em components.py.
 O painel só EXIBE: todos os números vêm da API, seja o prever() rodado na hora, seja o lote da
 carteira (Home, lista e plano B). O parecer vem da GenAI, ou do template de reserva.
@@ -24,8 +24,8 @@ from src.app.components import (  # noqa: E402
     COUNTRIES, EMPTY_FAIRNESS, RECOMMENDATIONS, SITUATIONS, badge, compact, esc, eur, html_band_bars,
     html_considered_data, html_fairness_table, html_invariance, html_invariance_summary, html_opinion,
     html_outcome, html_pricing, html_provenance, html_rate_bar, html_reasons, html_scenario_effects,
-    html_scenario_table, html_team_avatar, image_data_uri, line_icon, pct, readable_value, review_kpis,
-    situation_badge)
+    html_how_to_read, html_scenario_table, html_team_avatar, image_data_uri, line_icon, pct, readable_value,
+    review_kpis, situation_badge)
 
 BR_TIMEZONE = timezone(timedelta(hours=-3))
 
@@ -33,7 +33,7 @@ BR_TIMEZONE = timezone(timedelta(hours=-3))
 # 1. CONFIGURAÇÃO DA PÁGINA E API
 # ==========================================
 st.set_page_config(
-    page_title="Auditor de Preço Justo | Auditoria de Crédito",
+    page_title="Auditoria de Crédito",
     page_icon=":material/balance:",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -77,7 +77,8 @@ st.session_state.setdefault("lab", {})  # Laboratório: contrato, original (camp
 
 # Páginas do menu do topo. Botões (e não st.tabs) porque o painel troca de página sozinho:
 # abrir um contrato vai direto para a Análise.
-PAGES = {"home": "Home", "contratos": "Contratos da base", "analise": "Análise do contrato",
+# Nomes curtos: os 7 cabem inteiros no menu mesmo em tela de notebook (o título de cada página diz o resto).
+PAGES = {"home": "Início", "contratos": "Contratos", "analise": "Análise",
          "lab": "Laboratório", "auditoria": "Auditoria", "registro": "Registro", "sobre": "Sobre"}
 
 
@@ -219,9 +220,9 @@ def api_status_line() -> None:
 # 5. BARRA DE NAVEGAÇÃO
 # ==========================================
 with st.container(key="top_nav"):
-    col_brand, col_links, col_analyst = st.columns([1.5, 5.2, 1.3], gap="small", vertical_alignment="center")
+    col_brand, col_links, col_analyst = st.columns([1.55, 5.6, 1.15], gap="small", vertical_alignment="center")
     with col_brand:
-        md(f'<div class="nav-brand">{line_icon("balanca", 20)} AUDITOR DE PREÇO JUSTO</div>')
+        md(f'<div class="nav-brand">{line_icon("balanca", 20)} AUDITORIA DE CRÉDITO</div>')
     with col_links:
         for column_, (page_key, page_label) in zip(st.columns(len(PAGES), gap="small"), PAGES.items()):
             with column_:
@@ -245,12 +246,12 @@ def portfolio_kpis(summary: dict | None) -> None:
          SITUATIONS["acima_do_justo"]),
         ("Abaixo do justo", "[Y%]" if empty_ else pct(summary["abaixo"]), "juro pode não cobrir o risco",
          SITUATIONS["abaixo_do_justo"]),
-        ("Excesso estimado acima da margem", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
-         "estimativa: parcelas acima do teto da margem", None),
-        ("Perda líquida realizada", "€ [VALOR]" if empty_ else eur(summary["perda_nao_coberta_eur"]),
-         "abaixo do justo · só contratos encerrados", None),
+        ("Cobrado a mais (estimativa)", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
+         "soma do que se pagou acima do teto da margem", None),
+        ("Prejuízo real (abaixo do justo)", "€ [VALOR]" if empty_ else eur(summary["perda_nao_coberta_eur"]),
+         "o que não voltou, só contratos já encerrados", None),
     ]
-    for column_, (label_, valor, sub, color) in zip(st.columns(5, gap="small"), cards):
+    for column_, (label_, valor, sub, color) in zip(st.columns(5, gap="medium"), cards):
         with column_:
             style = f'style="color:{color["cor"]}"' if color else ""
             md(f"""<div class="ap-kpi"><div class="ap-kpi-label">{esc(label_)}</div>
@@ -266,7 +267,7 @@ def render_home() -> None:
         <div class="hero-container">
             <div class="hero-title">O preço acompanha<br><span>o risco?</span></div>
             <div class="hero-subtitle">
-                Para cada contrato, o Auditor estima a chance de inadimplência, calcula o juro justo para esse risco
+                Para cada contrato, o sistema estima a chance de inadimplência, calcula o juro justo para esse risco
                 e o compara com o juro cobrado. Um parecer de apoio, em análise hipotética pela lei brasileira,
                 explica o resultado. A decisão é sempre do analista.
             </div>
@@ -310,7 +311,7 @@ def render_home() -> None:
             md("""<div class="audit-eyebrow">Panorama da carteira</div>
                 <div class="ap-title">O preço acompanha o risco?</div>
                 <div class="ap-meta">Contratos pontuados pelo modelo · reestruturados fora da comparação de preço</div>""")
-            st.button("Abrir contratos da base", key="home_to_contracts", icon=":material/arrow_forward:",
+            st.button("Ver os contratos", key="home_to_contracts", icon=":material/arrow_forward:",
                       on_click=go_to, args=("contratos",))
         data = None
         if meta:
@@ -329,31 +330,23 @@ def render_home() -> None:
             data, portfolio_error = portfolio_overview(years[0], years[1], None if p == "Todos" else p,
                                                        None if f == "Todas" else f)
 
+        md(html_how_to_read())  # logo abaixo do título e do botão "Ver os contratos"
+
         if portfolio_error:
             md(f"""<div class="ap-alert"><b>Panorama indisponível.</b> {esc(portfolio_error)} Os campos aparecem entre
                 colchetes até a API servir o lote da carteira.</div>""")
 
-        st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
         portfolio_kpis(data["resumo"] if data else None)
 
-        col_faixa, col_fair = st.columns([1, 1.5], gap="medium")
-        with col_faixa:
-            if data and data["por_faixa"]:
-                body = html_band_bars(data["por_faixa"])
-                note = "Proporções na carteira filtrada; à direita, número de contratos por faixa."
-            else:
-                body = '<div class="ap-empty">Distribuição disponível quando o lote da carteira for gerado.</div>'
-                note = "Mostra, em cada faixa, a parte abaixo, dentro e acima do juro justo."
-            md(f"""<div class="ap-card"><div class="ap-card-title">Situação do preço por faixa de risco</div>
-                {body}<div class="ap-foot">{note}</div></div>""")
-        with col_fair:
-            fairness_rows = (data or {}).get("equidade") or EMPTY_FAIRNESS
-            md(f"""<div class="ap-card"><div class="ap-card-title">Equidade: diferença de juro entre grupos com o mesmo risco</div>
-                <div class="ap-card-sub">Diferença de juros (cobrado − justo) que sobra depois de controlar por risco, país, ano, valor e prazo.
-                País é controle, não grupo comparado.</div>
-                {html_fairness_table(fairness_rows)}
-                <div class="ap-foot">“Indício” pede investigação; não é conclusão. Gênero: comparação só entre 0 e 1, dentro do país;
-                a codificação de 2017–2019 é suspeita. Controlar por renda pode esconder efeito de gênero.</div></div>""")
+        # Situação por faixa, em largura total (a equidade fica só na página Auditoria).
+        if data and data["por_faixa"]:
+            body = html_band_bars(data["por_faixa"])
+            note = "Proporções na carteira filtrada; à direita, número de contratos por faixa."
+        else:
+            body = '<div class="ap-empty">Distribuição disponível quando o lote da carteira for gerado.</div>'
+            note = "Mostra, em cada faixa, a parte abaixo, dentro e acima do juro justo."
+        md(f"""<div class="ap-card"><div class="ap-card-title">Situação do preço por faixa de risco</div>
+            {body}<div class="ap-foot">{note}</div></div>""")
 
         if data and data.get("backtest"):
             columns_ = ["abaixo_do_justo", "dentro_da_margem", "acima_do_justo"]
@@ -361,7 +354,7 @@ def render_home() -> None:
                 [[pct(row.get(c)) if row.get(c) is not None else "—" for c in columns_] for row in data["backtest"]],
                 index=[f'Faixa {row["faixa"]}' for row in data["backtest"]],
                 columns=[SITUATIONS[c]["rotulo"] for c in columns_])
-            with st.container(border=True):
+            with st.container(border=True, key="home_backtest"):  # margem de cima no styles.css
                 md("""<div class="ap-card-title">Backtest (2016): retorno real por faixa e situação do preço</div>
                     <div class="ap-card-sub">Contratos encerrados. Se a auditoria funciona, em cada faixa “abaixo do justo”
                     rende menos e “acima do justo” rende mais.</div>""")
@@ -582,7 +575,7 @@ def decision_block(resultado: dict) -> None:
             O sistema não decide: a decisão final é sempre do analista e fica registrada com o parecer e a justificativa.</div>
         """)
         if revisao_manual:
-            md("""<div class="ap-alert">Revisão manual: o sistema não calculou PD nem juro justo. Confira os dados
+            md("""<div class="ap-alert">Revisão manual: o sistema não calculou o risco nem o juro justo. Confira os dados
                 de origem e registre na justificativa o que foi verificado; a decisão é gravada sem esses números.</div>""")
         if st.session_state.lab.get("proposta") and st.session_state.lab.get("contrato_id") == cid:
             md(f"""<div class="ap-alert"><b>Taxa do Laboratório.</b> {esc(st.session_state.lab["proposta"])}
@@ -598,7 +591,7 @@ def decision_block(resultado: dict) -> None:
                                    max_value=500.0, step=0.5, format="%.2f", **initial,
                                    help="Opcional; registrada só quando a decisão for revisar o preço. "
                                         "O Laboratório pode preenchê-la (\"usar como proposta\").")
-        buttons = st.columns(3, gap="small")
+        buttons = st.columns(3, gap="medium")
         choices = [("manter_preco", "Manter preço", "secondary"),
                     ("revisar_preco", "Revisar preço", "primary"),
                     ("encaminhar_compliance", "Encaminhar ao compliance", "secondary")]
@@ -621,9 +614,8 @@ def decision_block(resultado: dict) -> None:
 
 
 UNCERTAINTY = {
-    "bootstrap": "intervalo de incerteza estimado por bootstrap (reamostragem por cliente)",
-    "margem_padrao": "PD sem intervalo: o pacote do modelo não tem o bootstrap (a margem do juro justo é a "
-                     "padrão de ±2 p.p., que não é um intervalo da PD)",
+    "bootstrap": "faixa estimada refazendo o modelo várias vezes com amostras diferentes dos clientes (bootstrap)",
+    "margem_padrao": "sem faixa de incerteza do risco neste modelo; a margem do juro justo é a padrão de ±2 p.p.",
     "nao_calculada": "não se aplica: revisão manual",
 }
 
@@ -631,8 +623,7 @@ UNCERTAINTY = {
 def uncertainty_text(kind: str | None, n_resamples: int | None) -> str:
     text = UNCERTAINTY.get(kind, "—")
     if kind == "bootstrap" and n_resamples:
-        text += (f" · {n_resamples} reamostragens; com poucas reamostragens os extremos do intervalo são "
-                 "instáveis, então leia como estimativa, não como 95% calibrado")
+        text += f" · {n_resamples} repetições; leia a faixa como estimativa"
     return text
 
 
@@ -651,7 +642,7 @@ def provenance_rows(r: dict, ctx: dict) -> list[tuple[str, str]]:
                 ("Data do cálculo", f"{when} · {seconds} s"),
                 ("Origem dos dados", "banco: empréstimo, cliente, histórico de crédito"),
                 ("Dentro do que o modelo conhece?", "não: revisão manual" if prov.get("fora_do_dominio") else "sim"),
-                ("Incerteza da PD", uncertainty_text(prov.get("incerteza"), prov.get("n_reamostras_bootstrap"))),
+                ("Incerteza do risco", uncertainty_text(prov.get("incerteza"), prov.get("n_reamostras_bootstrap"))),
                 ("Arquivo do modelo", " · ".join(x for x in (prov.get("pacote_arquivo"),
                                                              f'hash {prov["pacote_hash"]}' if prov.get("pacote_hash") else None,
                                                              f'de {prov["pacote_data"]}' if prov.get("pacote_data") else None) if x))]
@@ -660,7 +651,7 @@ def provenance_rows(r: dict, ctx: dict) -> list[tuple[str, str]]:
             ("Data do cálculo", "lote da carteira (calculado antes)"),
             ("Origem dos dados", f"lote ({BATCH_FILE}), servido pela API"),
             ("Dentro do que o modelo conhece?", "não: revisão manual" if manual else "sim"),
-            ("Incerteza da PD", UNCERTAINTY["nao_calculada"] if manual
+            ("Incerteza do risco", UNCERTAINTY["nao_calculada"] if manual
              else UNCERTAINTY["bootstrap"] if r.get("pd_ic95") else UNCERTAINTY["margem_padrao"]),
             ("Arquivo do modelo", "o do momento em que o lote foi gerado")]
 
@@ -681,7 +672,7 @@ def render_analysis(r: dict, ctx: dict) -> None:
     if live and batch_pd is not None and r.get("pd") is not None:
         chips.append('<span class="ap-chip ap-chip-live">Confere com o lote da carteira</span>'
                      if abs(batch_pd - r["pd"]) <= 0.0005 else
-                     f'<span class="ap-chip">O lote tinha PD {pct(batch_pd, 1)}: modelo ou dados mudaram</span>')
+                     f'<span class="ap-chip">No lote o risco era {pct(batch_pd, 1)}: o modelo ou os dados mudaram</span>')
     md(f"""
         <div class="ap-head">
             <div>
@@ -696,20 +687,24 @@ def render_analysis(r: dict, ctx: dict) -> None:
     if st.session_state.get("audit_open_message"):
         md(f'<div class="ap-alert"><b>Valores do lote.</b> {esc(st.session_state.audit_open_message)}</div>')
 
-    md(f"""<div class="ap-card"><div class="ap-card-title">Procedência</div>
-        {html_provenance(provenance_rows(r, ctx))}</div>""")
+    with st.expander("Procedência: de onde vêm estes números (modelo, data do cálculo, origem dos dados)"):
+        md(html_provenance(provenance_rows(r, ctx)))
 
     if situation == "revisao_manual":
         md("""<div class="ap-alert"><b>Revisão manual: o contrato está fora do que o modelo conhece.</b> O prever()
             não calcula risco nem juro justo para dados fora da faixa vista no treino (país não visto, ou valor, prazo
             ou renda vazios ou extremos). O analista decide sem a comparação de preço.</div>""")
-    for column_, card in zip(st.columns(4, gap="small"), review_kpis(r)):
+    for column_, card in zip(st.columns(4, gap="medium"), review_kpis(r)):
         with column_:
             md(card)
 
     if situation != "revisao_manual":
         md(f"""<div class="ap-card"><div class="ap-card-title">Juro cobrado × juro justo</div>
+            <div class="ap-card-sub">O juro justo é o juro que paga o risco deste cliente: o custo do dinheiro na época,
+            a perda esperada com inadimplência e os custos da operação. A faixa dourada é a margem de incerteza.</div>
             {html_rate_bar(r)}</div>""")
+    contract_data_block(analysis)
+    if situation != "revisao_manual":
         source = "parâmetros devolvidos pelo prever()" if analysis.get("precificacao") else "valores do lote"
         md(f"""<div class="ap-card"><div class="ap-card-title">Precificação: como o juro justo foi calculado</div>
             <div class="ap-card-sub">{source}</div>
@@ -720,20 +715,13 @@ def render_analysis(r: dict, ctx: dict) -> None:
         empty = ("Os motivos vêm do modelo calculado na hora; o lote não os guarda." if not live
                  else "Sem motivos para este contrato.")
         md(f"""<div class="ap-card"><div class="ap-card-title">O que mais pesou no risco</div>
-            <div class="ap-card-sub">Contribuição para a previsão (SHAP), com o valor deste contrato: o que pesou na
-            previsão, não causa e efeito. Gênero e idade não entram no modelo. O modelo também considera o mercado do
+            <div class="ap-card-sub">Quanto cada dado empurrou o risco para cima ou para baixo (método SHAP), com o
+            valor deste contrato. Mostra o que pesou na previsão, não causa e efeito. Gênero e idade não entram no modelo. O modelo também considera o mercado do
             contrato (país): ele não aparece nesta lista, por regra do projeto, e os pesos foram calculados sem ele.</div>
             {html_reasons(r.get("motivos") or [], empty)}</div>""")
     with col_opinion:
         md(f"""<div class="ap-card"><div class="ap-seal">Simulação normativa pela lei brasileira ·
             os dados são europeus; a leitura jurídica é hipotética.</div>{html_opinion(r.get("parecer_ia"))}</div>""")
-
-    variables = analysis.get("dados_considerados") or []
-    if variables:
-        given = sum(v.get("origem") == "fornecida" for v in variables)
-        with st.expander(f"Dados considerados · {len(variables)} variáveis "
-                         f"({given} fornecidas × {len(variables) - given} derivadas)"):
-            md(html_considered_data(variables))
 
     md(f"""<div class="ap-card"><div class="ap-card-title">Resultado observado</div>
         <div class="ap-card-sub">Só para contratos encerrados: o que aconteceu de verdade depois da concessão.</div>
@@ -743,6 +731,16 @@ def render_analysis(r: dict, ctx: dict) -> None:
     lab_invite(r, ctx)
     st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
     decision_block(r)
+
+
+def contract_data_block(analysis: dict) -> None:
+    """As variáveis que o modelo usou, recolhidas (clique para abrir), logo antes da Precificação."""
+    variables = analysis.get("dados_considerados") or []
+    if variables:
+        given = sum(v.get("origem") == "fornecida" for v in variables)
+        with st.expander(f"Dados direto do contrato · {len(variables)} variáveis usadas pelo modelo "
+                         f"({given} fornecidas e {len(variables) - given} calculadas a partir delas)"):
+            md(html_considered_data(variables))
 
 
 def lab_invite(r: dict, ctx: dict) -> None:
@@ -767,8 +765,8 @@ def render_analysis_page() -> None:
         result, context = st.session_state.audit_last_result, st.session_state.audit_last_context
         if not result:
             md("""<div class="ap-card"><div class="ap-card-title">Nenhum contrato aberto</div>
-                <div class="ap-card-sub">Escolha um contrato em Contratos da base para abri-lo aqui.</div></div>""")
-            st.button("Ir para Contratos da base", key="go_contracts", icon=":material/arrow_back:",
+                <div class="ap-card-sub">Escolha um contrato na página Contratos para abri-lo aqui.</div></div>""")
+            st.button("Ir para Contratos", key="go_contracts", icon=":material/arrow_back:",
                       on_click=go_to, args=("contratos",))
             return
         st.button("Voltar para a lista", key="back_to_contracts", icon=":material/arrow_back:",
@@ -875,7 +873,7 @@ def render_lab_page() -> None:
             md("""<div class="ap-card"><div class="ap-card-title">Nenhum contrato no Laboratório</div>
                 <div class="ap-card-sub">Abra um contrato e clique em "Abrir no Laboratório". O contrato original não
                 muda: o Laboratório só mostra o que o modelo diria com outros valores.</div></div>""")
-            st.button("Ir para Contratos da base", key="lab_go_contracts", icon=":material/arrow_back:",
+            st.button("Ir para Contratos", key="lab_go_contracts", icon=":material/arrow_back:",
                       on_click=go_to, args=("contratos",))
             return
         cid, base = lab["contrato_id"], lab.get("base")
@@ -1094,7 +1092,7 @@ STUDY_MAP = [
     ("SHAP", "Samuel", "“O que mais pesou”, com o valor do contrato"),
     ("Juro justo por fluxo de caixa", "Samuel", "Precificação; Laboratório"),
     ("Backtest por faixa", "Samuel e Marcos", "Home (retorno real de 2016 por faixa e situação)"),
-    ("Equidade agregada", "Samuel", "Auditoria; Home"),
+    ("Equidade agregada", "Samuel", "Auditoria"),
     ("Teste de invariância (gênero e idade trocados)", "Yasmin", "Auditoria: um contrato na hora e 500 em lote"),
     ("Cenários (o modelo de novo com outros valores)", "Yasmin", "Laboratório; taxa testada vira proposta"),
     ("RAG com normas + checagem", "M. Vitória", "Parecer da Análise"),

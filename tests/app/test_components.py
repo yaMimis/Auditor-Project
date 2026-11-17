@@ -6,7 +6,7 @@ import pytest
 
 from src.app import components
 from src.app.components import (
-    html_logo, readable_value, compact, margin_distance_pp, eur, html_rate_bar,
+    eur_short, html_logo, readable_value, compact, margin_distance_pp, eur, html_rate_bar,
                                  html_reasons, html_opinion, html_fairness_table, review_kpis,
                                  fairness_reading, pct, pp)
 
@@ -227,3 +227,8 @@ def test_logo_credflare():
     assert "Cred" in nav and "Flare" in nav and "cf-play" not in nav
     hero = html_logo("hero", animated=True)
     assert "cf-hero cf-play" in hero and 'aria-label="CredFlare"' in hero
+
+
+def test_eur_short_fits_the_card():
+    assert eur_short(48367395) == "€ 48,4 mi" and eur_short(1880878) == "€ 1,9 mi"
+    assert eur_short(12345) == "€ 12,3 mil" and eur_short(950) == "€ 950" and eur_short(None) == "—"

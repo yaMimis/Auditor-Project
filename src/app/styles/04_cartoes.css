@@ -21,6 +21,10 @@
 .ap-kpi-unit { font-family: 'DM Sans', sans-serif; font-size: .93rem; color: var(--text-muted); margin-left: .3rem; }
 .ap-kpi-sub { color: #b9b4ab; font-size: .88rem; line-height: 1.5; }
 .ap-kpi-foot { margin-top: .55rem; }
+/* Cartões da Início: os cinco do mesmo tamanho, título e número numa linha só (o valor exato em euro fica no title) */
+.ap-kpi-home { min-height: 172px; box-sizing: border-box; }
+.ap-kpi-home .ap-kpi-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-kpi-home .ap-kpi-value { white-space: nowrap; font-size: clamp(1.6rem, 2.2vw, 2.25rem); }
 .ap-faixa { display: inline-block; background: #0b0c0e; color: var(--gold-light); border: 1px solid var(--gold); border-radius: 6px; padding: .15rem .55rem; font-size: .83rem; font-weight: 700; }
 .ap-faixa-off { color: var(--text-muted); border-color: rgba(154,165,181,.4); }
 

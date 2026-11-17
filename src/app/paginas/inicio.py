@@ -5,7 +5,7 @@ import pandas
 import streamlit as st
 
 from src.app.components import (
-    COUNTRIES, esc, eur, html_band_bars, image_data_uri, info_tip, line_icon, pct, SITUATIONS)
+    COUNTRIES, esc, eur, html_band_bars, html_logo, image_data_uri, info_tip, line_icon, pct, SITUATIONS)
 from src.app.nucleo import go_to, IMAGES_DIR, md, portfolio_overview
 
 
@@ -38,6 +38,7 @@ def render_home() -> None:
             rgba(18,19,21,.7) 100%), url('{cover}') !important; }}</style>""")
     md("""
         <div class="hero-container">
+            <div class="hero-logo">""" + html_logo("hero", animated=True) + """</div>
             <div class="hero-title">O preço acompanha<br><span>o risco?</span></div>
             <div class="hero-subtitle">
                 Para cada contrato, o sistema estima a chance de inadimplência, calcula o juro justo para esse risco

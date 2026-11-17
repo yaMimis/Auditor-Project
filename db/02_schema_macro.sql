@@ -1,5 +1,5 @@
 -- =====================================================================
--- Auditor de Preço Justo · séries mensais do custo do dinheiro
+-- CredFlare · séries mensais do custo do dinheiro
 -- PostgreSQL 14+ · idempotente (pode rodar mais de uma vez)
 --
 --   euribor_mensal             Euribor de 3 e de 12 meses (Portal de dados do BCE)

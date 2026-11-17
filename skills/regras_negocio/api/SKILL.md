@@ -1,6 +1,6 @@
 ---
 name: auditor-api
-description: Use para construir ou alterar a API FastAPI do Auditor de Preço Justo — rotas, schemas, leitura do contrato no banco, prever() ao vivo, plano B pelo lote, Laboratório (cenários), lote da carteira, parecer, decisões do analista, códigos de erro e testes da API.
+description: Use para construir ou alterar a API FastAPI do CredFlare — rotas, schemas, leitura do contrato no banco, prever() ao vivo, plano B pelo lote, Laboratório (cenários), lote da carteira, parecer, decisões do analista, códigos de erro e testes da API.
 ---
 
 # API (FastAPI)

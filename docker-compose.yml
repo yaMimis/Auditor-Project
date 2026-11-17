@@ -1,4 +1,4 @@
-# Auditor de Preço Justo: banco (PostgreSQL + pgvector), API (8000) e painel (8501).
+# CredFlare: banco (PostgreSQL + pgvector), API (8000) e painel (8501).
 #   docker compose up -d            sobe tudo (usa a imagem já construída)
 #   docker compose up -d --build    reconstrói a imagem antes (mudou código ou requirements)
 #   docker compose down             para tudo (os dados do banco ficam no volume)

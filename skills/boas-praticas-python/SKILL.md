@@ -1,6 +1,6 @@
 ---
 name: auditor-boas-praticas-python
-description: Use ao escrever ou revisar qualquer código, teste ou documento do Auditor de Preço Justo — idioma, nomes, unidades, pydantic como contrato, testes sintéticos, padrão dos documentos, versionamento e como mudar um contrato entre frentes.
+description: Use ao escrever ou revisar qualquer código, teste ou documento do CredFlare — idioma, nomes, unidades, pydantic como contrato, testes sintéticos, padrão dos documentos, versionamento e como mudar um contrato entre frentes.
 ---
 
 # Boas práticas de Python e documentação

@@ -39,8 +39,8 @@ Navegador ──► painel (Streamlit, porta 8501) ──► API (FastAPI, porta
 | `nucleo.py` | O que **todas as páginas usam**: endereço da API, chamadas HTTP com os erros traduzidos para português, dados do lote em cache, navegação (`go_to`) e o `md()` que injeta HTML. |
 | `paginas/` | **Uma página por arquivo**, cada uma com a sua função `render_*`: `inicio.py`, `contratos.py`, `analise.py` (inclui a decisão do analista), `laboratorio.py`, `auditoria.py`, `registro.py`, `sobre.py`. |
 | `components/` | Formatação (números em português, "24,9%", "€ 1.234") e os **blocos de HTML**, separados por página: `base.py` (formatação, situações, cartão, ícone "i"), `analise.py`, `laboratorio.py`, `carteira.py`, `auditoria.py`, `equipe.py`. Não usa Streamlit, então é testável com pytest. |
-| `styles/` | Todo o **visual**, um `.css` por parte, carregados em ordem pelo número: `01_base`, `02_menu`, `03_inicio`, `04_cartoes`, `05_contratos_analise`, `06_laboratorio`, `07_auditoria`, `08_registro`, `09_sobre`. |
-| `imagens/` | Fotos opcionais: `capa.jpg` (topo da Home) e `equipe/<nome>.jpg` (página Sobre). Sem elas, aparecem a imagem padrão e as iniciais. Instruções em `imagens/LEIA-ME.md`. |
+| `styles/` | Todo o **visual**, um `.css` por parte, carregados em ordem pelo número: `01_base`, `02_menu`, `03_inicio`, `04_cartoes`, `05_contratos_analise`, `06_laboratorio`, `07_auditoria`, `08_registro`, `09_sobre`, `10_logo` (logo CredFlare e a animação da capa). |
+| `imagens/` | `credflare_icone.png` (ícone da aba do navegador) e fotos opcionais: `capa.jpg` (topo da Início) e `equipe/<nome>.jpg` (página Sobre). Sem elas, aparecem a imagem padrão e as iniciais. Instruções em `imagens/LEIA-ME.md`. |
 
 ### `scripts/`: conferências com dados reais
 

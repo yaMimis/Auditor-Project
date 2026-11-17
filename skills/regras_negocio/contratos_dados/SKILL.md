@@ -1,6 +1,6 @@
 ---
 name: auditor-contratos-dados
-description: Use sempre que um formato atravessar frentes no Auditor de Preço Justo — saída do prever(), entrada e saída do parecer, entrada e saída da API, arquivos do lote da carteira e registro de decisões. Define campos, tipos, unidades, nulos e como mudar uma versão.
+description: Use sempre que um formato atravessar frentes no CredFlare — saída do prever(), entrada e saída do parecer, entrada e saída da API, arquivos do lote da carteira e registro de decisões. Define campos, tipos, unidades, nulos e como mudar uma versão.
 ---
 # Contratos de dados entre as frentes
 

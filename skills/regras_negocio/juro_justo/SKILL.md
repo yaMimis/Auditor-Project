@@ -54,9 +54,9 @@ Custo total no fluxo: `euribor + margem_da_safra`. Sensibilidade documentada: ma
 - As quatro situações aparecem em `docs/casos_de_teste.json` e passam no `EntradaPrever`.
 - Toda mudança de parâmetro registrada no `DECISOES.md` (seção 8) com o motivo, e os casos de teste regenerados (notebook 09).
 
-## Estado em 06/11/2026 e pendências
+## Estado em 16/11/2026
 
 - **[PRONTO]** convenção nominal, LGD por país, margem por safra, contratos sem data.
-- **[EM ANDAMENTO] (Samuel, até 09/11)** margem de incerteza por **bootstrap por cliente** (`incerteza.py`: 20 reamostras, IC 95% da PD e do juro justo) no lugar do ±2 pp; preencher `pd_ic95`.
-- **[EM ANDAMENTO] (Samuel, até 09/11)** `juro_pares_mediana`: mediana do juro cobrado **no treino** dos pares (mesma faixa A–E × país × ano, mínimo de 30 contratos por grupo); ano mais novo que o treino → último disponível; em fração; `null` sem grupo. É **segunda opinião**: não muda a `situacao_preco`.
-- **[A DECIDIR]** a margem de 2016 (31,66%) é alta porque absorve a subestimação do default nesse ano. Aplicá-la a 2017–2021 e aos contratos novos pode empurrar quase toda a carteira para "abaixo do justo". Padrão até a decisão: manter e declarar como limitação; conferir a distribuição acima/dentro/abaixo da carteira antes da demo.
+- **[PRONTO]** margem de incerteza por **bootstrap por cliente** (`incerteza.py`: 20 reamostras, IC 95% da PD e do juro justo) no lugar do ±2 pp; `pd_ic95` preenchido.
+- **[PRONTO]** `juro_pares_mediana`: mediana do juro cobrado **no treino** dos pares (mesma faixa A–E × país × ano, mínimo de 30 contratos por grupo); ano mais novo que o treino → último disponível; em fração; `null` sem grupo.
+- **[DECIDIDO] (08/11)** custos e margem de 2016 a 2021 calibrados pela **mediana** de cada safra (`calibrar_margem_mediana`, `docs/resultados/margem_por_safra.json`): o juro justo é relativo à safra e não empurra a carteira toda para um lado. Detalhes no `docs/DECISOES.md`.

@@ -32,7 +32,7 @@ Manter **uma única árvore de pastas**, igual para todos, para que cada arquivo
 │   ├── 02_schema_macro.sql       euribor_mensal, selic_mensal, bc_credito_pessoal_mensal + vw_custo_do_dinheiro
 │   ├── 03_view_modelagem.sql     vw_base_modelagem (recorte + alvo + conjunto)
 │   ├── 04_view_retorno_realizado.sql  vw_retorno_realizado (backtest e ROI)
-│   └── 05_…sql                   [EM ANDAMENTO] (Marcos) tabela das decisões do analista; nome do arquivo a confirmar
+│   └── 05_…08_…sql               decisões do analista, desfecho, gatilho do contrato_id, vw_contrato_modelo
 ├── docs/
 │   ├── DECISOES.md              decisões de modelagem numeradas, com o porquê
 │   ├── glossario.md             siglas e termos

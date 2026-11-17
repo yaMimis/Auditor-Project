@@ -76,10 +76,9 @@ O pacote do modelo guarda a sua própria série Euribor 12m (01/1994–09/2026),
 
 `tests/dados/` passa: `test_validacao` (pandera com `_dados_exemplo.py`), `test_moeda` (EEK só para EE antes de 2011), `test_esquema_sql` (tabelas e views esperadas), `test_view_retorno`, `test_relatorio`. Contagens da carga e da view conferem.
 
-## Estado em 06/11/2026
+## Estado em 16/11/2026
 
-- **[PRONTO]** carga, validação, relatório, EDA, views 01–04, DATA.md sem itens [A CONFIRMAR].
-- **[EM ANDAMENTO] (Marcos)** tabela das decisões do analista (ver `regras_negocio/api` e `painel`).
-- **[PENDENTE]** atualizar o comentário do `03_view_modelagem.sql` sobre os reestruturados (texto antigo) e a lista de variáveis do DATA.md (o modelo atual tem 21; ver `modelo_risco`).
-- **[A CONFIRMAR]** rótulos dos códigos de `escolaridade`, `tipo_moradia` e `tipo_verificacao`: o painel já usa os do dicionário do Bondora (`CODE_LABELS` em `src/app/components/analise.py`); conferir e registrar no glossário.
-- **[A DECIDIR]** estender as séries Euribor e BC no banco além de 07/2021 (o modelo já usa a série própria do pacote).
+- **[PRONTO]** carga, validação, relatório, EDA, views 01–04 e DATA.md.
+- **[PRONTO]** tabela das decisões do analista (`db/05`), `vw_desfecho_contrato` (`db/06`), gatilho do `contrato_id` (`db/07`) e `vw_contrato_modelo` (`db/08`, lida pela API).
+- **[PRONTO]** rótulos dos códigos de `escolaridade`, `tipo_moradia` e `tipo_verificacao`: os do dicionário do Bondora, usados pelo painel (`CODE_LABELS` em `src/app/components/analise.py`).
+- **[DECIDIDO]** as séries Euribor e BC no banco vão até 07/2021, o fim da base; o modelo usa a série própria do pacote.

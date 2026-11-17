@@ -79,9 +79,8 @@ O modelo **subestima o default de 2016 em todas as faixas**: registrar como limi
 - `test_contrato_prever`: saídas passam no `EntradaPrever`; revisão manual ⇔ `alerta_dados` com números nulos; motivos sem atributos sensíveis.
 - Métricas novas salvas em JSON e registradas no `DECISOES.md` com o motivo.
 
-## Estado em 06/11/2026
+## Estado em 16/11/2026
 
 - **[PRONTO]** XGBoost oficial de 05/11, `prever()` v2, `casos_de_teste()` (`docs/casos_de_teste.json`, 2 casos reais por situação).
-- **[EM ANDAMENTO] (Samuel, próximo PR)** teste do `prever()` real com um modelo pequeno treinado no próprio teste, rodando `casos_de_teste()` e cobrindo as 4 situações (a CI não tem o `.joblib`). No mesmo PR: a tabela do `DECISOES.md` passa a listar as 7 colunas indisponíveis.
 - `prever()` v2 no PR #41.
 - **[DEFINIDO] (13/11)** nome da versão: `VERSAO = "xgboost_v3"` (retreino de 05/11 + bootstrap de 08/11). Pacote oficial conferido: `pacote_prever_v1.joblib` (depth 3, mcw 5, lambda 1, 161 árvores, 20 reamostras). Métricas em `docs/resultados/xgboost_v3.json`; o `xgboost_v2.json` é o modelo de 01/11 (23 variáveis, AUC 0,727). Regra: nova versão a cada retrein

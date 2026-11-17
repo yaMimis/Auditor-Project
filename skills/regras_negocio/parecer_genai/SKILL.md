@@ -89,9 +89,8 @@ Antes de trocar o prompt, o modelo ou a busca, rodar a avaliação dos 20 casos 
 
 `tests/genai/` passa (164 testes em 10/11, sem internet e sem banco: o LLM e a busca são trocados por versões falsas): `test_checagem`, `test_conferencia` (números, fontes, tamanho), `test_regras` (palavras e atributos), `test_template` (recomendação por situação, sem LLM em revisão manual), `test_prompt`, `test_cadeia` e `test_cadeia_langchain` (cadeia, fallback e LCEL), `test_avaliacao`, `test_ajustes_v2`, `test_v3`, `test_v4` (checagem de artigos), `test_ajustes_finais`. A avaliação está registrada (`regras_negocio/avaliacao_parecer`).
 
-## Estado em 10/11/2026
+## Estado em 16/11/2026
 
 - **[PRONTO]** checagem (com artigos), ajustes de estilo, template, prompts v1 a v4, `gerar_parecer()` em cadeia LCEL, `contexto_mercado`. Normas e busca: ver `normas_rag`; avaliação: ver `avaliacao_parecer`.
 - **[PRONTO]** integração: a API chama `gerar_parecer()` e carrega o modelo de embeddings na subida; `iniciar.ps1` indexa as normas.
-- **[A DECIDIR]** `REGRAS_PARECER.md` v1.7 e `FORMATO_JSON.md` v1.5 aguardando o ok do grupo.
-- **[PENDENTE] (Maria, até 14/11)** cache dos pareceres dos casos da demo (`docs/ROTEIRO_DEMO.md`).
+- **[PRONTO]** `REGRAS_PARECER.md` v1.7 e `FORMATO_JSON.md` v1.5 em uso.

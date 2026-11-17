@@ -71,7 +71,7 @@ Como o projeto foi construído, de 26/10 a 16/11/2026, na ordem em que as etapas
 4. **Cadeia:** LangChain (LCEL) em quatro passos: busca nas normas, montagem do prompt, Gemini Flash-Lite com saída estruturada e conferência de números e fontes. Sem memória entre pareceres. Se o LLM falha ou a conferência recusa, sai um parecer por regras.
 5. **Prompts v1 a v4 (05 a 09/11):** cada versão corrigiu o que a avaliação mostrou. Na v4: recomendação certa em 100% dos casos, 97% dos pareceres aprovados pela conferência e nenhuma palavra proibida. Revisão humana feita em 10/11.
 6. **Modelo reserva e prompt v5 (16/11):** quando o Gemini responde 503, um segundo modelo assume antes do template; a v5 faz o "acima do justo" citar o CDC sobre a informação do preço (10 de 10 casos).
-- Onde está: `genai/` e o documento para a banca (`docs/Auditor_de_credito.pdf`).
+- Onde está: `genai/` e o documento para a banca (`docs/CredFlare.pdf`).
 
 ## 7. API, painel e banco de decisões
 

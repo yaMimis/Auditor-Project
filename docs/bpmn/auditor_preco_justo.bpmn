@@ -2,7 +2,7 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Auditor" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.52.0">
   <bpmn:collaboration id="Collaboration_Auditor">
     <bpmn:extensionElements />
-    <bpmn:participant id="Participant_Auditor" name="Auditor de Preço Justo - Processo de Avaliação de Crédito" processRef="Process_AuditorPrecoJusto" />
+    <bpmn:participant id="Participant_Auditor" name="CredFlare - Processo de Avaliação de Crédito" processRef="Process_AuditorPrecoJusto" />
   </bpmn:collaboration>
   <bpmn:process id="Process_AuditorPrecoJusto" isExecutable="true">
     <bpmn:laneSet id="LaneSet_01">

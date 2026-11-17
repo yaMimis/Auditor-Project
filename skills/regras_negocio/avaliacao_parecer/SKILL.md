@@ -1,6 +1,6 @@
 ---
 name: auditor-avaliacao-parecer
-description: Use para avaliar o parecer do Auditor de Preço Justo antes de trocar o prompt, o modelo do Gemini ou a busca — os 20 casos, critérios definidos antes dos resultados, avaliar.py, métricas por código, revisão humana e comparação entre versões.
+description: Use para avaliar o parecer do CredFlare antes de trocar o prompt, o modelo do Gemini ou a busca — os 20 casos, critérios definidos antes dos resultados, avaliar.py, métricas por código, revisão humana e comparação entre versões.
 ---
 
 # Avaliação do parecer

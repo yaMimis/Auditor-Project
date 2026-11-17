@@ -1,6 +1,6 @@
 ---
 name: auditor-dados
-description: Use para trabalhar nos dados do Auditor de Preço Justo — fontes (Bondora, Euribor, Selic, BC), esquema PostgreSQL, carga, pseudonimização, conversão de moeda, alvo, recorte, divisão treino/teste, grupos de colunas proibidas e validação com pandera.
+description: Use para trabalhar nos dados do CredFlare — fontes (Bondora, Euribor, Selic, BC), esquema PostgreSQL, carga, pseudonimização, conversão de moeda, alvo, recorte, divisão treino/teste, grupos de colunas proibidas e validação com pandera.
 ---
 
 # Dados

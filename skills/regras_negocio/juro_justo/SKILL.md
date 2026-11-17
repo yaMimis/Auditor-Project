@@ -1,6 +1,6 @@
 ---
 name: auditor-juro-justo
-description: Use para calcular ou alterar o juro justo do Auditor de Preço Justo — fluxo de caixa com brentq, convenção nominal do Bondora, custo do dinheiro (Euribor), LGD por país, margem por safra, margem de incerteza, situação do preço, mediana dos pares e contratos novos sem data.
+description: Use para calcular ou alterar o juro justo do CredFlare — fluxo de caixa com brentq, convenção nominal do Bondora, custo do dinheiro (Euribor), LGD por país, margem por safra, margem de incerteza, situação do preço, mediana dos pares e contratos novos sem data.
 ---
 
 # Juro justo e situação do preço

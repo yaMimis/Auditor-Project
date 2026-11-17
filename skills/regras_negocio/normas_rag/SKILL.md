@@ -1,6 +1,6 @@
 ---
 name: auditor-normas-rag
-description: Use para incluir, trocar ou reindexar as normas do parecer do Auditor de Preço Justo e para mexer na busca (RAG) — fontes oficiais, divisão em trechos, trecho_id, embeddings multilíngues, tabela trechos_normas no pgvector, perguntas de busca por situação e pergunta de governança.
+description: Use para incluir, trocar ou reindexar as normas do parecer do CredFlare e para mexer na busca (RAG) — fontes oficiais, divisão em trechos, trecho_id, embeddings multilíngues, tabela trechos_normas no pgvector, perguntas de busca por situação e pergunta de governança.
 ---
 
 # Normas e busca (RAG)

@@ -1,4 +1,4 @@
-# Skills do Auditor de Preço Justo
+# Skills do CredFlare
 
 Esta pasta descreve o projeto **por setor**, para que uma IA (ou uma pessoa nova no grupo) consiga construir, manter ou replicar cada parte sem ler tudo de uma vez. Cada pasta tem um `SKILL.md` com o mesmo formato:
 

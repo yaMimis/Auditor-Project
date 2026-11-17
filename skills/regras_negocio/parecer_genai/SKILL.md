@@ -1,6 +1,6 @@
 ---
 name: auditor-parecer-genai
-description: Use para construir ou alterar o parecer automatizado do Auditor de Preço Justo — quem decide o quê, linguagem, números, recomendação escolhida pelo código, prompt versionado, cadeia LCEL com o Gemini, conferência por código, ajustes de estilo e template de reserva. Normas e busca ficam em normas_rag; avaliação em avaliacao_parecer.
+description: Use para construir ou alterar o parecer automatizado do CredFlare — quem decide o quê, linguagem, números, recomendação escolhida pelo código, prompt versionado, cadeia LCEL com o Gemini, conferência por código, ajustes de estilo e template de reserva. Normas e busca ficam em normas_rag; avaliação em avaliacao_parecer.
 ---
 
 # Parecer com GenAI

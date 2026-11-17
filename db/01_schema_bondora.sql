@@ -1,5 +1,5 @@
 -- =====================================================================
--- Auditor de Preço Justo · esquema do Bondora LoanData
+-- CredFlare · esquema do Bondora LoanData
 -- PostgreSQL 14+ · idempotente (pode rodar mais de uma vez)
 --
 -- Três tabelas, uma linha por contrato, ligadas por loan_id:

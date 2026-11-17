@@ -1,4 +1,4 @@
-"""Painel do analista — Auditoria de Crédito (Streamlit). Ponto de entrada: streamlit run src/app/main.py
+"""Painel do analista — CredFlare (Streamlit). Ponto de entrada: streamlit run src/app/main.py
 
 Este arquivo só monta a moldura: configuração da página, estilo, memória da sessão, menu do topo e qual
 página mostrar. Cada página fica no seu arquivo em src/app/paginas/; o que todas usam (chamadas à API,
@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:  # "streamlit run src/app/main.py" não põe a raiz no path
     sys.path.insert(0, str(ROOT))
 
-from src.app.components import line_icon  # noqa: E402
+from src.app.components import html_logo  # noqa: E402
 from src.app.nucleo import PAGES, go_to, md  # noqa: E402
 from src.app.paginas.analise import render_analysis_page  # noqa: E402
 from src.app.paginas.auditoria import render_audit_page  # noqa: E402
@@ -31,8 +31,8 @@ from src.app.paginas.sobre import render_about_page  # noqa: E402
 # 1. CONFIGURAÇÃO DA PÁGINA
 # ==========================================
 st.set_page_config(
-    page_title="Auditoria de Crédito",
-    page_icon=":material/balance:",
+    page_title="CredFlare",
+    page_icon=str(Path(__file__).with_name("imagens") / "credflare_icone.png"),
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -70,7 +70,7 @@ st.session_state.setdefault("lab", {})  # Laboratório: contrato, original (camp
 with st.container(key="top_nav"):
     col_brand, col_links, col_analyst = st.columns([1.55, 5.6, 1.15], gap="small", vertical_alignment="center")
     with col_brand:
-        md(f'<div class="nav-brand">{line_icon("balanca", 20)} AUDITORIA DE CRÉDITO</div>')
+        md(f'<div class="nav-brand">{html_logo("nav")}</div>')
     with col_links:
         for column_, (page_key, page_label) in zip(st.columns(len(PAGES), gap="small"), PAGES.items()):
             with column_:

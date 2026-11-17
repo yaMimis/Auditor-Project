@@ -1,6 +1,6 @@
 ---
 name: auditor-painel
-description: Use para construir ou alterar o painel Streamlit do Auditor de Preço Justo — páginas Início, Contratos, Análise, Laboratório, Auditoria, Registro e Sobre, chamadas à API, estilo, ícones e o que pode ou não aparecer na tela.
+description: Use para construir ou alterar o painel Streamlit do CredFlare — páginas Início, Contratos, Análise, Laboratório, Auditoria, Registro e Sobre, chamadas à API, estilo, ícones e o que pode ou não aparecer na tela.
 ---
 
 # Painel do analista (Streamlit)

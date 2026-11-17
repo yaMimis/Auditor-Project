@@ -1,6 +1,6 @@
 ---
 name: auditor-modelo-risco
-description: Use para construir, treinar, avaliar ou alterar o modelo de risco de inadimplência (PD) do Auditor de Preço Justo — variáveis, regras antivazamento, baseline logística, XGBoost calibrado, métricas por país, faixas A–E, revisão manual e motivos SHAP.
+description: Use para construir, treinar, avaliar ou alterar o modelo de risco de inadimplência (PD) do CredFlare — variáveis, regras antivazamento, baseline logística, XGBoost calibrado, métricas por país, faixas A–E, revisão manual e motivos SHAP.
 ---
 # Modelo de risco (PD)
 

@@ -1,4 +1,4 @@
-# infra/ — o Auditor na Google Cloud com Terraform
+# infra/ — o CredFlare na Google Cloud com Terraform
 
 O Terraform cria na Google Cloud (GCP) uma máquina virtual Ubuntu que, ao ligar, instala o Docker, clona este repositório e sobe o mesmo `docker-compose.yml` do dia a dia: banco (PostgreSQL + pgvector), API e painel. Nada do código da aplicação muda.
 

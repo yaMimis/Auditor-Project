@@ -1,6 +1,6 @@
 ---
 name: auditor-auditoria-carteira
-description: Use para o processo em lote do Auditor de Preço Justo — pontuar a carteira, estimar diferença de preço entre grupos de mesmo risco (gênero, idade) com intervalo de confiança, backtest do retorno realizado, ROI e gerar os arquivos que o painel da carteira lê.
+description: Use para o processo em lote do CredFlare — pontuar a carteira, estimar diferença de preço entre grupos de mesmo risco (gênero, idade) com intervalo de confiança, backtest do retorno realizado, ROI e gerar os arquivos que o painel da carteira lê.
 ---
 
 # Auditoria da carteira (lote)

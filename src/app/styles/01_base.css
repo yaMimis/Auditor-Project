@@ -1,6 +1,9 @@
 /* Base: cores (variáveis), fundo, botões, campos e componentes do Streamlit, caixas expansíveis. */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 
+/* Letra base um pouco maior (17px no lugar de 16px): tudo em rem cresce junto, para ler bem no projetor. */
+html { font-size: 17px; }
+
 :root {
     --gold: #c89a58;
     --gold-light: #e4bd7d;
@@ -60,7 +63,7 @@ body { background-color: var(--dark-bg); color: var(--text-light); font-family: 
     background: #141519 !important; color: var(--text-light) !important;
     border-color: rgba(200, 154, 88, .28) !important; border-radius: 8px !important;
 }
-.audit-eyebrow { color: var(--gold-light); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin-bottom: .45rem; }
+.audit-eyebrow { color: var(--gold-light); font-size: .8rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin-bottom: .45rem; }
 
 
 /* Caixas expansíveis (Dados considerados) no mesmo estilo dos cartões */

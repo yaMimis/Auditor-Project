@@ -42,7 +42,7 @@ Cada frente trabalha sozinha sabendo **exatamente** o que recebe e o que entrega
 - `situacao_preco ∈ {acima_do_justo, abaixo_do_justo, dentro_da_margem, revisao_manual}`; `faixa ∈ {A,…,E}`.
 - **Revisão manual:** `pd`, `pd_ic95`, `faixa`, `juro_justo`, `juro_justo_min`, `juro_justo_max`, `diferenca_pp` = `null`; `motivos = []`; `alerta_dados = true`. Fora da revisão manual, `pd`, `faixa` e os três juros justos são obrigatórios.
 - **Extras** ignorados pela GenAI (`extra="ignore"`): `pd_ic95`, `diferenca_pp`, `valor` e `peso` dos motivos, `juro_pares_mediana`.
-- **[EM ANDAMENTO] (Samuel, até 09/11)** `juro_pares_mediana: float | null`: mediana do juro cobrado no treino para a mesma faixa × país × ano (mínimo 30; ano novo → último disponível; `null` sem grupo). Segunda opinião; não altera a situação.
+- **[PRONTO]** `juro_pares_mediana: float | null`: mediana do juro cobrado no treino para a mesma faixa × país × ano (mínimo 30; ano novo → último disponível; `null` sem grupo). Segunda opinião; não altera a situação.
 - Exemplos: `docs/exemplos_prever.json` (ilustrativos, 1 por situação) e `docs/casos_de_teste.json` (reais, 2 por situação, gerados por `casos_de_teste()`).
 
 ## 2. Modelos pydantic (`genai/src/checagem.py`)
@@ -110,7 +110,7 @@ class Parecer(RespostaLLM):         # o que gerar_parecer() devolve à tela
 }
 ```
 
-**[EM ANDAMENTO] (Maria + Yasmin)** referência de mercado do BC: campo opcional `bc_credito_pessoal_aa` (efetiva, % a.a., da `vw_custo_do_dinheiro`) na entrada e `contexto_mercado: str | null` na saída, com **frase fixa escrita pelo código** (valor convertido para nominal; efetiva entre parênteses). O LLM não recebe o número. Antes de 03/2011 fica vazio. Entra como nova versão do `FORMATO_JSON.md`.
+**[PRONTO]** referência de mercado do BC: campo opcional `bc_credito_pessoal_aa` (efetiva, % a.a., da `vw_custo_do_dinheiro`) na entrada e `contexto_mercado: str | null` na saída, com **frase fixa escrita pelo código** (valor convertido para nominal; efetiva entre parênteses). O LLM não recebe o número. Antes de 03/2011 fica vazio. Entra como nova versão do `FORMATO_JSON.md`.
 
 ## 4. API (`src/api/schemas.py`) — painel → API → painel
 
@@ -167,4 +167,4 @@ Campos: `registrado_em`, `analista`, `contrato_id`, `situacao_preco`, `pd`, `jur
 
 ## Estado dos documentos
 
-- `FORMATO_JSON.md` v1.4: entrada aprovada (Samuel, 30/10); recomendação v1.2 aprovada (Maria, 03/11); **saída aguardando aprovação da Yasmin** (o painel já usa exatamente esses campos).
+- `FORMATO_JSON.md` v1.5 em uso: entrada aprovada (Samuel, 30/10), recomendação aprovada (Maria, 03/11) e saída aprovada (Yasmin); o painel usa exatamente esses campos.

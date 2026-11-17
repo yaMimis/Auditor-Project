@@ -56,8 +56,8 @@ As rotas fixas `/contracts/ids` e `/contracts/export` ficam declaradas **antes**
 - `python -m scripts.conferir_analise` termina com **20/20** (PD, juro justo, margem, situação, motivos presentes, nada de gênero ou idade).
 - `GET /` com `modelo_carregavel` e `banco_disponivel` `true` e o `pacote_hash` igual ao do Samuel.
 
-## Estado em 13/11/2026
+## Estado em 16/11/2026
 
 - **[CONCLUÍDO] (Yasmin, 14/11)** Etapa 1 (análise ao vivo por ID, lote pela API, plano B na rota) e Etapa 2 (Laboratório): conferência com dados reais 20/20, pacote `48784ba3742d` (v3 com bootstrap de 20 reamostras).
 - **[DECIDIDO] (13/11)** removido `POST /simulate` (a simulação de juro agora é o Laboratório).
-- **[EM ANDAMENTO] (Yasmin)** Etapa 3: teste de invariância implementado (`POST /contracts/{id}/invariance`, testes em `tests/api/test_invariance.py`); falta rodar com o banco real.
+- **[PRONTO] (Yasmin)** Etapa 3: teste de invariância (`POST /contracts/{id}/invariance`, testes em `tests/api/test_invariance.py`) e em lote (`scripts/invariancia_lote.py`): 500 de 500 idênticos com o banco real.

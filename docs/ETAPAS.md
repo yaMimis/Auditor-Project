@@ -11,7 +11,7 @@ Como o projeto foi construído, de 26/10 a 16/11/2026, na ordem em que as etapas
 | 28/10 a 04/11 | 3. Dados: carga, limpeza e validação | Banco com 179.235 contratos, validação automática e correção da moeda |
 | 03 a 13/11 | 4. Análise exploratória | 10 figuras e os achados que mudaram o modelo |
 | 31/10 a 14/11 | 5. Modelo de risco e juro justo | XGBoost v1 a v3 e juro justo por fluxo de caixa |
-| 03 a 13/11 | 6. GenAI: RAG e parecer | Cadeia em LangChain, prompts v1 a v4 e avaliação com 20 casos |
+| 03 a 16/11 | 6. GenAI: RAG e parecer | Cadeia em LangChain, prompts v1 a v5, modelo reserva e avaliação com 20 casos |
 | 28/10 a 15/11 | 7. API, painel e banco de decisões | FastAPI, Streamlit e registro de decisões no PostgreSQL |
 | 10 a 15/11 | 8. Infraestrutura | Docker Compose local e Terraform na Google Cloud |
 | 08 a 16/11 | 9. Auditoria, ROI e governança | Backtest, equidade, invariância e documentos para a banca |
@@ -70,7 +70,8 @@ Como o projeto foi construído, de 26/10 a 16/11/2026, na ordem em que as etapas
 3. **Critérios antes dos resultados (03/11):** 20 casos de avaliação com a resposta esperada escrita antes da execução (`genai/avaliacao/CRITERIOS.md`).
 4. **Cadeia:** LangChain (LCEL) em quatro passos: busca nas normas, montagem do prompt, Gemini Flash-Lite com saída estruturada e conferência de números e fontes. Sem memória entre pareceres. Se o LLM falha ou a conferência recusa, sai um parecer por regras.
 5. **Prompts v1 a v4 (05 a 09/11):** cada versão corrigiu o que a avaliação mostrou. Na v4: recomendação certa em 100% dos casos, 97% dos pareceres aprovados pela conferência e nenhuma palavra proibida. Revisão humana feita em 10/11.
-- Onde está: `genai/` e o documento para a banca (`Auditor_de_credito.pdf`).
+6. **Modelo reserva e prompt v5 (16/11):** quando o Gemini responde 503, um segundo modelo assume antes do template; a v5 faz o "acima do justo" citar o CDC sobre a informação do preço (10 de 10 casos).
+- Onde está: `genai/` e o documento para a banca (`docs/Auditor_de_credito.pdf`).
 
 ## 7. API, painel e banco de decisões
 

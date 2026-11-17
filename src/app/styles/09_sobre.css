@@ -23,5 +23,5 @@
 
 .team-photo { background-size: cover; background-position: center 25%; }  /* foto do integrante no lugar das iniciais */
 .team-name { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--text-light); margin-bottom: 0.2rem; }
-.team-role { font-size: 0.82rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 0.6rem; }
-.team-bio { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+.team-role { font-size: .9rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 0.6rem; }
+.team-bio { font-size: .93rem; color: var(--text-muted); line-height: 1.4; }

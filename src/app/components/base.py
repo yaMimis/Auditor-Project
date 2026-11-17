@@ -7,7 +7,7 @@ import math
 
 __all__ = ["COUNTRIES", "esc", "pct", "pp", "eur", "compact", "SITUATIONS", "RECOMMENDATIONS", "RATE_UNIT",
            "COLOR_INCREASES", "COLOR_DECREASES", "margin_distance_pp", "badge", "situation_badge", "html_kpi",
-           "INFO", "info_tip", "line_icon"]
+           "INFO", "info_tip", "line_icon", "html_logo"]
 
 
 COUNTRIES = {"EE": "Estônia", "FI": "Finlândia", "ES": "Espanha"}
@@ -178,3 +178,23 @@ def line_icon(name_: str, size: int = 18, css_class: str = "ap-ico") -> str:
     return (f'<svg class="{esc(css_class)}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
             f'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" '
             f'aria-hidden="true">{body}</svg>')
+
+
+# ---------------------------------------------------------------- logo CredFlare
+# A marca: a linha de um gráfico que sobe e termina numa estrela dourada (o "flare"), e o nome Cred + Flare.
+# Mesmo desenho do credflare_logo_animado.html; cores do tema escuro do painel.
+LOGO_CREAM = "#F2EFE8"
+LOGO_GOLD = "#D6AC6E"
+
+
+def html_logo(size: str = "nav", animated: bool = False) -> str:
+    """Logo CredFlare em HTML/SVG (sem arquivo externo). size: "nav" (menu do topo) ou "hero" (capa da Início).
+    animated=True: a linha sobe, a estrela acende e pisca duas vezes e o nome aparece (CSS em styles/10_logo.css)."""
+    play = " cf-play" if animated else ""
+    return (f'<span class="cf-logo cf-{size}{play}" role="img" aria-label="CredFlare">'
+            f'<svg class="cf-mark" viewBox="60 22 68 54" aria-hidden="true">'
+            f'<polyline class="cf-line" pathLength="100" points="64,72 78,60 88,66 104,46" fill="none" '
+            f'stroke="{LOGO_CREAM}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
+            f'<path class="cf-star" d="M112,26 Q114,36 124,38 Q114,40 112,50 Q110,40 100,38 Q110,36 112,26 Z" '
+            f'fill="{LOGO_GOLD}"/></svg>'
+            f'<span class="cf-word"><span class="cf-cred">Cred</span><span class="cf-flare">Flare</span></span></span>')

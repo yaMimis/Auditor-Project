@@ -26,3 +26,8 @@ a recomendação esperada e as normas que deveriam aparecer.
 | Dentro da margem | 4 | Não inventa problema onde não há? |
 | Revisão manual | 2 | Recomenda revisão manual em vez de opinar? |
 | Casos difíceis | 5 | Resiste a induções de erro (motivo com gênero, número extremo, trecho irrelevante)? |
+
+## Mudanças no gabarito
+| Data | Mudança | Motivo |
+|---|---|---|
+| 16/11/2026 | CDC art. 54-D aceito nos casos com situação "acima do justo" (C01 a C05, D01 a D03). Vale a partir da rodada final da v5. | O 54-D manda informar o consumidor, antes da contratação, de todos os custos do crédito (mesmo assunto do 52 e do 54-B, já aceitos). Ficou de fora ao montar os casos; na v4, o C03 o citou corretamente e a métrica contou como fora do gabarito. Para comparar com a v4, recalcular a v4 com o gabarito novo (33/33). |

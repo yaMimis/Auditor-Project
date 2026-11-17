@@ -86,7 +86,74 @@ def test_chamar_llm_usa_chatgooglegenerativeai_com_saida_estruturada(monkeypatch
     resposta = cadeia.chamar_llm("regras do sistema", "dados do contrato")
     assert criado["opcoes"]["temperature"] == 0
     assert criado["opcoes"]["timeout"] >= 10          # mínimo aceito pelo Gemini
-    assert criado["opcoes"]["max_retries"] == 1
+    assert criado["opcoes"]["max_retries"] == 0       # não repete no mesmo modelo: quem repete é a reserva
     assert criado["esquema"] is cadeia._RespostaGemini
     assert [m.content for m in criado["mensagens"]] == ["regras do sistema", "dados do contrato"]
     assert resposta.numeros_citados == {"pd": 0.184}
+
+
+# ---------- Modelo reserva (with_fallbacks) ----------
+
+
+def _modelos_falsos(monkeypatch, falham: set[str]):
+    """ChatGoogleGenerativeAI falso: os modelos em `falham` dão 503; os outros respondem."""
+    pytest.importorskip("langchain_google_genai")
+    import langchain_google_genai
+    chamados = []
+
+    class ModeloFalso:
+        def __init__(self, **opcoes):
+            self.nome = opcoes["model"]
+
+        def with_structured_output(self, esquema):
+            return self
+
+        def invoke(self, mensagens):
+            chamados.append(self.nome)
+            if self.nome in falham:
+                raise RuntimeError("503 UNAVAILABLE. This model is currently experiencing high demand.")
+            return cadeia._RespostaGemini.model_validate({**BOA, "numeros_citados": {"pd": 0.184}})
+
+    monkeypatch.setattr(langchain_google_genai, "ChatGoogleGenerativeAI", ModeloFalso)
+    monkeypatch.setattr(cadeia, "MODELO_LLM", "principal")
+    monkeypatch.setattr(cadeia, "MODELO_LLM_RESERVA", "reserva")
+    return chamados
+
+
+def test_principal_respondendo_a_reserva_nao_e_chamada(monkeypatch):
+    chamados = _modelos_falsos(monkeypatch, falham=set())
+    cadeia.chamar_llm("sistema", "usuario")
+    assert chamados == ["principal"]
+
+
+def test_principal_com_503_a_reserva_escreve_o_parecer(monkeypatch, caplog):
+    chamados = _modelos_falsos(monkeypatch, falham={"principal"})
+    with caplog.at_level("WARNING", logger="genai.cadeia"):
+        resposta = cadeia.chamar_llm("sistema", "usuario")
+    assert chamados == ["principal", "reserva"]
+    assert resposta.numeros_citados == {"pd": 0.184}
+    assert "reserva reserva" in caplog.text
+
+
+def test_os_dois_com_503_o_erro_sobe_para_o_template(monkeypatch):
+    chamados = _modelos_falsos(monkeypatch, falham={"principal", "reserva"})
+    with pytest.raises(RuntimeError, match="503"):
+        cadeia.chamar_llm("sistema", "usuario")
+    assert chamados == ["principal", "reserva"]
+
+
+def test_reserva_vazia_desliga_o_fallback(monkeypatch):
+    chamados = _modelos_falsos(monkeypatch, falham={"principal"})
+    monkeypatch.setattr(cadeia, "MODELO_LLM_RESERVA", "")
+    with pytest.raises(RuntimeError):
+        cadeia.chamar_llm("sistema", "usuario")
+    assert chamados == ["principal"]
+
+
+def test_gerar_parecer_com_503_no_principal_sai_pela_ia(monkeypatch):
+    """Ponta a ponta (sem banco): o 503 do principal não leva mais o parecer ao template."""
+    _modelos_falsos(monkeypatch, falham={"principal"})
+    monkeypatch.setattr(cadeia, "buscar_trechos", lambda entrada: TRECHOS)
+    monkeypatch.setattr(cadeia, "conferir_parecer", lambda resposta, entrada, ids: [])
+    parecer = cadeia.gerar_parecer(ENTRADA)
+    assert parecer["origem"] == "llm"

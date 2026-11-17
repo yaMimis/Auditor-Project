@@ -60,7 +60,7 @@ Detalhes em `regras_negocio/normas_rag`. O que importa aqui: a cadeia recebe at�
 
 - Prompt versionado em `genai/prompts/parecer_vN.md`; `prompt.py` lê só as seções "Mensagem do sistema" e "Mensagem do usuário" e preenche `{situacao}`, `{recomendacao}`, `{faixa}`, `{numeros}`, `{fatores}`, `{trechos}`. Qualquer mudança de regra = novo arquivo, com o motivo anotado nas notas.
 - Versão atual: **`parecer_v4`** (`VERSAO_PROMPT` em `prompt.py`). A v1, a v2 e a v3 continuam no repositório; o motivo de cada versão está nas notas do arquivo.
-- LLM: **Gemini** (`MODELO_LLM`, padrão `gemini-3.5-flash-lite`; plano B `gemini-3.1-flash-lite`) via **LangChain** (`langchain-google-genai`, `ChatGoogleGenerativeAI.with_structured_output`), chave `GOOGLE_API_KEY` no `.env`, **saída estruturada** num esquema plano (`_RespostaGemini`: o Gemini não aceita dicionário livre) convertida para `RespostaLLM`. **10 s por tentativa** (mínimo aceito pelo Gemini), **2 tentativas** (a 2ª só em erro temporário, como 503).
+- LLM: **Gemini** (`MODELO_LLM`, padrão `gemini-3.5-flash-lite`; **modelo reserva** `MODELO_LLM_RESERVA`, padrão `gemini-3.1-flash-lite`, via `with_fallbacks`: assume quando o principal falha, como no 503 "high demand"; vazio desliga; a avaliação desliga para medir só o principal) via **LangChain** (`langchain-google-genai`, `ChatGoogleGenerativeAI.with_structured_output`), chave `GOOGLE_API_KEY` no `.env`, **saída estruturada** num esquema plano (`_RespostaGemini`: o Gemini não aceita dicionário livre) convertida para `RespostaLLM`. **10 s por tentativa** (mínimo aceito pelo Gemini), **1 tentativa por modelo** (principal, depois reserva; cerca de 20 s no pior caso). O log avisa quando o parecer foi escrito pelo reserva.
 - **Cadeia LCEL, fixa, sem agente e sem memória:** `busca_normas | monta_prompt | gemini | conferencia` (`RunnableLambda`). Cada parecer depende só do contrato. Sem LangChain instalado, `_CadeiaSemLangChain` roda os mesmos passos em ordem. Os imports do LangChain e do `sentence-transformers` ficam dentro das funções, para o CI testar sem torch.
 - `gerar_parecer(saida_prever) -> dict`: valida a entrada → escolhe a recomendação → revisão manual? template : cadeia → erro ou conferência reprovada? template : ajustes de estilo → preenche `contrato_id`, `recomendacao`, `origem`, `versao_prompt`, `gerado_em` (−03:00), `contexto_mercado`. **Nunca lança exceção.**
 - A API carrega o modelo de embeddings na subida (`carregar_modelo_embeddings()`), para a 1ª busca não demorar.
@@ -79,7 +79,7 @@ O que foi ajustado vai para o log. As métricas da avaliação medem o LLM **ant
 
 ## Template de reserva
 
-Usado em revisão manual, falha da API, timeout (2 tentativas de 10 s), JSON inválido ou conferência reprovada. Texto só com faixa, situação, números formatados e até 3 rótulos de motivos (em revisão manual, só o juro cobrado). `origem: "template"`, `versao_prompt: "template_v1"`, `fontes: []`, mesma recomendação da tabela, fuso −03:00.
+Usado em revisão manual, falha da API, timeout (principal e reserva, 10 s cada), JSON inválido ou conferência reprovada. Texto só com faixa, situação, números formatados e até 3 rótulos de motivos (em revisão manual, só o juro cobrado). `origem: "template"`, `versao_prompt: "template_v1"`, `fontes: []`, mesma recomendação da tabela, fuso −03:00.
 
 ## Avaliação
 

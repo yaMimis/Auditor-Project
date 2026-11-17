@@ -1,4 +1,4 @@
-# Qualidade dos dados · Auditor de Preço Justo
+# Qualidade dos dados · CredFlare
 
 Gerado em 2026-11-13 a partir do banco. As regras estão em `src/dados/validacao.py` e as decisões sobre os dados, em `DATA.md`.
 

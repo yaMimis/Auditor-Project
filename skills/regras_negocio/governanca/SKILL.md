@@ -1,6 +1,6 @@
 ---
 name: auditor-governanca
-description: Use em qualquer tarefa do Auditor de Preço Justo que toque dados pessoais, atributos sensíveis, decisão sobre contratos, texto do parecer ou o que vai para o LLM — regras éticas e de LGPD que nenhum setor pode quebrar.
+description: Use em qualquer tarefa do CredFlare que toque dados pessoais, atributos sensíveis, decisão sobre contratos, texto do parecer ou o que vai para o LLM — regras éticas e de LGPD que nenhum setor pode quebrar.
 ---
 
 # Governança e ética (não negociável)

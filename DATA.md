@@ -1,4 +1,4 @@
-# DATA.md · Regras dos dados · Auditor de Preço Justo
+# DATA.md · Regras dos dados · CredFlare
 
 > Versão 0.9 (rascunho) · 15/11/2026 · Responsável: Marcos (Dados e processo) · Revisão: Samuel (Modelo e juro justo)
 > Legenda: **[DEFINIDO]** = decisão registrada no `docs/DECISOES.md` (Samuel) ou já feita no código; **[JULGADO DEFINIDO]** = não há decisão escrita, mas o texto e o código do grupo já a seguem (vale um aviso se alguém discordar); **[A CONFIRMAR]** = ainda aberto. As seções 3, 4 e 5 seguem o `docs/DECISOES.md` do Samuel (atualizado em 05/11/2026). As colunas citadas usam os nomes do banco (`01_schema_bondora.sql`).

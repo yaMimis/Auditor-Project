@@ -1,6 +1,6 @@
 ---
 name: auditor-estrutura-projeto
-description: Use para criar, reorganizar ou localizar arquivos no Auditor de Preço Justo — árvore de pastas oficial, o que mora em cada pasta, o que fica fora do Git e onde cada setor guarda código, documentos, testes e resultados.
+description: Use para criar, reorganizar ou localizar arquivos no CredFlare — árvore de pastas oficial, o que mora em cada pasta, o que fica fora do Git e onde cada setor guarda código, documentos, testes e resultados.
 ---
 
 # Estrutura do projeto

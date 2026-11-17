@@ -1,6 +1,6 @@
 ---
 name: auditor-visao-geral
-description: Use para entender o Auditor de Preço Justo antes de mexer em qualquer setor — a ideia, o enquadramento (Bondora como substituto, análise jurídica hipotética, decisão humana), o fluxo ponta a ponta, as camadas de tecnologia e as quatro frentes da equipe.
+description: Use para entender o CredFlare antes de mexer em qualquer setor — a ideia, o enquadramento (Bondora como substituto, análise jurídica hipotética, decisão humana), o fluxo ponta a ponta, as camadas de tecnologia e as quatro frentes da equipe.
 ---
 
 # Visão geral do projeto

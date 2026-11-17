@@ -142,7 +142,9 @@ O primeiro build leva alguns minutos (PyTorch); os seguintes reaproveitam o cach
 - [`docs/qualidade_dados.md`](docs/qualidade_dados.md): relatório de qualidade dos dados (regras e alertas).
 - [`docs/datasheet.md`](docs/datasheet.md): datasheet dos dados (motivação, composição, coleta, pré-processamento, usos, distribuição e manutenção).
 - [`notebooks/dados/01_eda.ipynb`](notebooks/dados/01_eda.ipynb): análise exploratória e as figuras dos slides (`docs/figuras/`).
+- [`docs/ETAPAS.md`](docs/ETAPAS.md): etapas do desenvolvimento, da escolha do tema à entrega.
 - [`docs/bpmn/`](docs/bpmn/): processo em BPMN 2.0.
+- [`docs/der/`](docs/der/README.md): DER do banco de dados (tabelas, relacionamentos e views).
 - [`genai/FORMATO_JSON.md`](genai/FORMATO_JSON.md) e [`genai/REGRAS_PARECER.md`](genai/REGRAS_PARECER.md): contrato e regras do parecer.
 - [`genai/avaliacao/`](genai/avaliacao/CRITERIOS.md): critérios, os 20 casos de avaliação e os resultados do parecer (prompts v2 a v4), com a revisão humana da v4.
 - [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md): roteiro da demo, plano B e perguntas prováveis.

@@ -57,6 +57,10 @@ Menu do topo com botões (não `st.tabs`, porque o painel troca de página sozin
 - **[PRONTO] (Yasmin)** Etapa 3: página Auditoria com a equidade agregada e o teste de invariância (um contrato na hora e 500 contratos em lote: 500 de 500 idênticos, `docs/resultados/invariancia_lote.json`).
 - **[PRONTO]** rótulos dos códigos de escolaridade, moradia e verificação tirados do dicionário do Bondora (`CODE_LABELS` em `src/app/components/analise.py`).
 
+## Logo (17/11)
+
+- **CredFlare:** a linha de um gráfico que sobe e termina numa estrela dourada, e o nome Cred (creme `#F2EFE8`) + Flare (dourado `#D6AC6E`). `html_logo()` em `components/base.py` desenha em SVG/HTML, sem arquivo externo: pequeno no menu do topo, grande e animado na capa da Início (a linha se desenha, a estrela acende e pisca duas vezes, o nome aparece; CSS em `styles/10_logo.css`). Ícone da aba: `imagens/credflare_icone.png`. Versões para slides e documentos: `docs/figuras/logo/` (fundo escuro, fundo claro e ícone, em SVG e PNG).
+
 ## Auditoria e Registro (16/11)
 
 - **Auditoria:** lado a lado, equidade agregada (esquerda, gráfico com ponto = diferença e barra = IC 95% em torno do zero) e teste de invariância (direita: anel "500 de 500" do lote e o teste de um contrato com a coluna "Igual?").

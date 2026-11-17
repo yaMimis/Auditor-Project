@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 
 from src.app import components
-from src.app.components import (readable_value, compact, margin_distance_pp, eur, html_rate_bar,
+from src.app.components import (
+    html_logo, readable_value, compact, margin_distance_pp, eur, html_rate_bar,
                                  html_reasons, html_opinion, html_fairness_table, review_kpis,
                                  fairness_reading, pct, pp)
 
@@ -219,3 +220,10 @@ def test_team_avatar_uses_the_photo_when_there_is_one(tmp_path):
     assert uri.startswith("data:image/png;base64,")
     out = components.html_team_avatar("YG", uri)
     assert "team-photo" in out and "YG" not in out
+
+
+def test_logo_credflare():
+    nav = html_logo("nav")
+    assert "Cred" in nav and "Flare" in nav and "cf-play" not in nav
+    hero = html_logo("hero", animated=True)
+    assert "cf-hero cf-play" in hero and 'aria-label="CredFlare"' in hero

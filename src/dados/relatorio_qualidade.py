@@ -136,7 +136,7 @@ def gerar_relatorio(tabelas: dict[str, pd.DataFrame], resultado: pd.DataFrame,
     n_contratos = len(e) if e is not None else 0
     n_clientes = c["cliente_id"].nunique() if c is not None and "cliente_id" in c.columns else 0
 
-    partes = ["# Qualidade dos dados · Auditor de Preço Justo", "",
+    partes = ["# Qualidade dos dados · CredFlare", "",
               f"Gerado em {hoje} a partir do banco. As regras estão em `src/dados/validacao.py` "
               "e as decisões sobre os dados, em `DATA.md`.", "",
               "## Resumo", "",

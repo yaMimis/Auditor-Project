@@ -1,8 +1,15 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/figuras/logo/credflare_logo_escuro.svg">
+    <img src="docs/figuras/logo/credflare_logo_claro.svg" alt="CredFlare" width="380">
+  </picture>
+</p>
+
 # CredFlare
 
 Projeto integrador do bootcamp de IA aplicada (segmento BFSI, TCS). Para cada contrato de crédito, o sistema estima o risco de inadimplência, diz se o juro cobrado é justo para esse risco e verifica se clientes com o mesmo risco pagam juros diferentes por gênero ou idade (país entra no modelo como controle, não como grupo auditado). Um parecer gerado por IA, apoiado em normas brasileiras, explica o resultado ao analista, que decide.
 
-Status: em desenvolvimento. Entrega dos arquivos em 19/11/2026 e apresentação em 21/11/2026.
+Status: concluído. Entrega dos arquivos em 19/11/2026 e apresentação em 21/11/2026.
 
 ## Enquadramento
 

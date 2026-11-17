@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Imagem única do Auditor de Preço Justo: a mesma serve a API (padrão) e o painel
+# Imagem única do CredFlare: a mesma serve a API (padrão) e o painel
 # (o docker-compose troca o comando). Ordem pensada para o cache: o que muda pouco
 # (sistema e bibliotecas) vem antes do código, que muda sempre.
 FROM python:3.14-slim

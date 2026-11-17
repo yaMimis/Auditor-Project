@@ -80,8 +80,10 @@ def test_artigo_no_texto_sem_trecho_recuperado_e_recusado_mesmo_sem_fonte():
 
 # ---------- prompt v4 ----------
 
-def test_versao_atual_e_a_v4():
-    assert VERSAO_PROMPT == "parecer_v4"
+def test_v4_continua_no_repositorio():
+    sistema, usuario = carregar_prompt("parecer_v4")
+    assert "O número do artigo vem do trecho, nunca da memória" in sistema
+    assert "{trechos}" in usuario
 
 
 def test_prompt_v4_nao_nomeia_artigo_nas_regras():
@@ -93,7 +95,7 @@ def test_prompt_v4_nao_nomeia_artigo_nas_regras():
 
 
 def test_notas_da_v4_nao_vao_para_o_llm():
-    sistema, usuario = carregar_prompt()
+    sistema, usuario = carregar_prompt("parecer_v4")
     assert "Por que existe a v4" not in sistema + usuario
 
 

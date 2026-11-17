@@ -9,6 +9,10 @@ os 3 primeiros trechos), fontes dentro das normas aceitas, palavras/atributos pr
 consistência entre as 2 rodadas, origem (llm ou template) e tempo.
 O que fica para a revisão humana: fidelidade, citação correta, alucinação e clareza (1 a 5).
 
+Falha do Google (503, 504, tempo esgotado, 429): a rodada é repetida até TENTATIVAS_POR_RODADA vezes,
+com espera crescente, e o número de tentativas fica gravado. Só a indisponibilidade é repetida: resposta
+inválida ou recusa da conferência NÃO é repetida, porque isso seria escolher a resposta que passa.
+
 Como rodar (na pasta raiz, com o banco no ar, DATABASE_URL e GOOGLE_API_KEY definidos):
     python -m genai.avaliacao.avaliar
 Só refazer o relatório .md a partir do .json já gravado (sem chamar o LLM):
@@ -17,6 +21,7 @@ Só refazer o relatório .md a partir do .json já gravado (sem chamar o LLM):
 import json
 import logging
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -33,6 +38,11 @@ PASTA = Path("genai/avaliacao")
 CASOS = PASTA / "casos_avaliacao.json"
 RODADAS = 2
 PAUSA = float(os.getenv("PAUSA_ENTRE_CHAMADAS", "4"))  # segundos; evita o limite do plano gratuito
+TENTATIVAS_POR_RODADA = int(os.getenv("TENTATIVAS_POR_RODADA", "3"))  # 1 = sem repetição
+ESPERA_ENTRE_TENTATIVAS = float(os.getenv("ESPERA_ENTRE_TENTATIVAS", "20"))  # segundos; cresce a cada tentativa
+
+# Avisos de indisponibilidade do Gemini (cadeia.gerar_parecer registra o erro antes de usar o template).
+FALHAS_DO_GOOGLE = ("503", "UNAVAILABLE", "504", "DEADLINE_EXCEEDED", "timed out", "429", "RESOURCE_EXHAUSTED")
 
 
 class _GuardaAvisos(logging.Handler):
@@ -46,6 +56,14 @@ class _GuardaAvisos(logging.Handler):
 
 def _texto(parecer):
     return " ".join([parecer["resumo"], *parecer["pontos_de_atencao"], parecer["recomendacao_texto"]])
+
+
+# v5: o texto da recomendação não deve falar dos bastidores ("o código calculou", "o sistema recomendou").
+BASTIDORES = re.compile(r"\b(c[óo]digo|sistema|calculad[ao] pel[oa]|escolhid[ao])\b", re.IGNORECASE)
+
+
+def fala_dos_bastidores(parecer) -> bool:
+    return bool(BASTIDORES.search(parecer["recomendacao_texto"]))
 
 
 def proibidos(texto):
@@ -83,8 +101,33 @@ def _llm_por_tipo(resultados):
     return grupos
 
 
+def falha_do_google(rodada) -> bool:
+    """Template por indisponibilidade do Gemini (e não por resposta inválida ou recusa da conferência)."""
+    return rodada["origem"] == "template" and any(
+        aviso.startswith("LLM indisponível") and any(codigo in aviso for codigo in FALHAS_DO_GOOGLE)
+        for aviso in rodada["avisos"])
+
+
 def _aceita(trecho_id, prefixos):
     return any(trecho_id.startswith(p) for p in prefixos)
+
+
+def _rodar_uma_vez(caso, esperado, guarda):
+    guarda.avisos.clear()
+    inicio = time.time()
+    parecer = cadeia.gerar_parecer(caso["entrada"])
+    tempo = round(time.time() - inicio, 1)
+    fontes = [f["trecho_id"] for f in parecer["fontes"]]
+    return {
+        "origem": parecer["origem"],
+        "tempo_s": tempo,
+        "recomendacao_ok": parecer["recomendacao"] == esperado["recomendacao"],
+        "fontes": fontes,
+        "fontes_ok": all(_aceita(f, esperado["normas_aceitas"]) for f in fontes),
+        "proibidos": proibidos(_texto(parecer)),
+        "avisos": list(guarda.avisos),
+        "parecer": {**parecer, "gerado_em": str(parecer["gerado_em"])},
+    }
 
 
 def avaliar_caso(caso, guarda):
@@ -98,23 +141,15 @@ def avaliar_caso(caso, guarda):
         recuperados = [] if entrada.vai_para_revisao_manual else [t["trecho_id"] for t in cadeia.buscar_trechos(entrada)]
         rodadas = []
         for _ in range(RODADAS):
-            guarda.avisos.clear()
-            inicio = time.time()
-            parecer = cadeia.gerar_parecer(caso["entrada"])
-            tempo = round(time.time() - inicio, 1)
-            fontes = [f["trecho_id"] for f in parecer["fontes"]]
-            texto = _texto(parecer)
-            rodadas.append({
-                "origem": parecer["origem"],
-                "tempo_s": tempo,
-                "recomendacao_ok": parecer["recomendacao"] == esperado["recomendacao"],
-                "fontes": fontes,
-                "fontes_ok": all(_aceita(f, esperado["normas_aceitas"]) for f in fontes),
-                "proibidos": proibidos(texto),
-                "avisos": list(guarda.avisos),
-                "parecer": {**parecer, "gerado_em": str(parecer["gerado_em"])},
-            })
-            if parecer["origem"] == "llm":
+            falhas_anteriores = []
+            for tentativa in range(1, TENTATIVAS_POR_RODADA + 1):
+                rodada = _rodar_uma_vez(caso, esperado, guarda)
+                if not falha_do_google(rodada) or tentativa == TENTATIVAS_POR_RODADA:
+                    break
+                falhas_anteriores += rodada["avisos"]
+                time.sleep(ESPERA_ENTRE_TENTATIVAS * tentativa)
+            rodadas.append({**rodada, "tentativas": tentativa, "falhas_anteriores": falhas_anteriores})
+            if rodada["origem"] == "llm":
                 time.sleep(PAUSA)
     finally:
         cadeia.buscar_trechos = busca_original
@@ -159,8 +194,13 @@ def escrever_markdown(resultados, caminho):
         f"| Pareceres do LLM que citam a {FONTE_FIXA} | {_pct([any(f.startswith(FONTE_FIXA) for f in r['fontes']) for r in com_llm])} |",
         f"| Recusas da conferência por palavra/atributo proibido | {sum(_recusa_por_palavra(r) for r in todas)} |",
         f"| Recusas da conferência por artigo | {sum(_recusa_por_artigo(r) for r in todas)} |",
+        f"| Recomendação que fala do código ou do sistema (pareceres do LLM) "
+        f"| {_pct([fala_dos_bastidores(r['parecer']) for r in com_llm])} |",
         f"| Sem palavra/atributo proibido | {_pct([not proibidos(_texto(r['parecer'])) for r in todas])} |",
         f"| Mesma resposta nas 2 rodadas | {_pct([res['consistente'] for res in resultados])} |",
+        f"| Rodadas repetidas por falha do Google (503, 504, tempo) | "
+        f"{sum(r.get('tentativas', 1) > 1 for r in todas)} de {len(todas)} |",
+        f"| Rodadas que ficaram no template por falha do Google | {sum(falha_do_google(r) for r in todas)} |",
         f"| Tempo médio do LLM | {sum(r['tempo_s'] for r in com_llm) / max(len(com_llm), 1):.1f} s |",
         "",
         "Casos com resposta diferente entre as rodadas: "

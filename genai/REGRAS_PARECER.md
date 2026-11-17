@@ -1,13 +1,13 @@
 # REGRAS_PARECER.md — Regras para o parecer gerado pela IA
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.7 · **Data:** 09/11/2026
+**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.8 · **Data:** 16/11/2026
 **Status:** v1.2 aprovada pela Maria em 03/11/2026; v1.3 acrescenta a regra sobre os números do REF (seção 5); v1.4 traz a unidade nominal, a referência de mercado do BC, os nomes de países e as correções do primeiro teste real do LLM, aguardando o grupo.
 
 ## 1. Finalidade
 
 Estas regras dizem como o parecer deve ser escrito e o que ele nunca pode fazer. Elas são usadas em dois lugares:
 
-- **No prompt** (`genai/prompts/parecer_v4.md`; a v1, a v2 e a v3 continuam no repositório), como instruções ao LLM.
+- **No prompt** (`genai/prompts/parecer_v5.md`; a v1 a v4 continuam no repositório), como instruções ao LLM.
 - **Na checagem por código** (`genai/src/checagem.py`), que rejeita o parecer que as descumprir.
 
 O formato dos dados (campos, tipos, exemplos) está só em `FORMATO_JSON.md`. Este documento não o repete.
@@ -33,6 +33,9 @@ O LLM nunca calcula números, nunca escolhe a recomendação e nunca decide no l
 - O resumo tem no máximo 2 frases. No máximo 3 pontos de atenção.
 - **Modo hipotético:** os contratos são do Bondora (Europa) e a análise jurídica é uma simulação. Sempre que o parecer relacionar o contrato a uma norma brasileira, usar a forma "se este contrato fosse de um banco brasileiro", com o verbo no condicional ("estaria", "deveria"). Sem norma citada, essa forma não é usada.
 - **Usar:** "indício", "ponto de atenção", "recomenda-se revisar", "recomenda-se encaminhar ao compliance".
+- **"Indício" (v1.8):** só aponta um possível problema no preço. No caso "dentro da margem", a palavra não é usada.
+- **Sem bastidores (v1.8):** o texto não fala do código nem do sistema. O texto da recomendação começa com "Recomenda-se" e explica o motivo. No prompt, isso é pedido de forma positiva: uma regra que proibia falar do "código" fez o modelo falar mais dele (1/33 na v4, 6/20 com a regra).
+- **"Faixa" e "margem" (v1.8):** "faixa" é só a faixa de risco (A a E); o intervalo do juro justo é sempre a "margem".
 - Não começar frases com "Ponto de atenção:"; a frase é escrita diretamente.
 - **Nunca usar:** "ilegal", "ilegalidade", "ilícito", "crime", "fraude", "violação", "viola", "abusivo", "abusiva", "discriminação", "irregular". Essas palavras afirmam uma conclusão jurídica que só o compliance pode tirar.
 - Os fatores de risco são citados pelo `rotulo` que vem do `prever()` (ex.: "dívidas em relação à renda"), nunca pelo nome técnico da variável. O nome é copiado exatamente, sem acrescentar ou trocar palavras. Um fator de risco, sozinho, não é ponto de atenção: ele só explica o risco estimado.
@@ -70,6 +73,8 @@ O LLM nunca calcula números, nunca escolhe a recomendação e nunca decide no l
 - O LLM nunca cita normas que conhece de memória, mesmo que pareçam corretas.
 - Se nenhum trecho recuperado for pertinente, `fontes` fica vazia e o texto não cita nenhuma norma. A tela mostra "Não encontrei base normativa para este caso."
 - A citação precisa dizer o que o trecho diz. Se o trecho não sustenta o ponto, não cite.
+- **Relatório não é norma (v1.8):** o Relatório de Estabilidade Financeira é um relatório do Banco Central; o texto o chama de relatório, nunca de norma ou lei.
+- **Acima do justo (v1.8):** quando vier um trecho do CDC sobre informar o consumidor, antes da contratação, da taxa e do custo do crédito, um dos pontos de atenção diz que valeria verificar se o consumidor foi informado com clareza desse preço, e cita esse trecho. A regra do prompt descreve o conteúdo do trecho e não nomeia artigo.
 
 ---
 
@@ -151,5 +156,6 @@ Nos 20 casos de avaliação (critérios em `genai/avaliacao/CRITERIOS.md`), alé
 | 1.5     | 09/11/2026 | Após a avaliação dos 20 casos (v2): citar a norma sempre que um trecho sustentar um ponto; a busca traz também a LGPD art. 20 (revisão de decisões automatizadas), que pode ser citada em qualquer situação; o REF pode ser citado no caso "abaixo" para explicar que a inadimplência compõe o custo do crédito (sem números); valor central ≠ margem; a recomendação não se repete nos pontos. Prompt passa para `parecer_v3`. |
 | 1.6     | 09/11/2026 | Após a avaliação da v3: o LLM escreveu um artigo que não era o do trecho citado (C01, "CDC, art. 6º, III"), induzido por uma regra do prompt. Seção 9: nova checagem de artigos no código. Nenhuma regra do prompt nomeia artigo; a LGPD art. 20 só é citada se o texto disser o que ela diz; a recomendação não se repete no resumo. Prompt passa para `parecer_v4`. |
 | 1.7     | 09/11/2026 | Após a avaliação da v4, só no código (o prompt continua `parecer_v4`): a recomendação repetida e a LGPD art. 20 decorativa passam a ser retiradas depois da conferência, porque duas versões do prompt não resolveram; juros com 2 casas quando 1 casa os deixaria iguais (C07). |
+| 1.8     | 16/11/2026 | Seção 6: no caso "acima do justo", a busca trazia os trechos do CDC sobre a informação do preço em todos os casos, mas o modelo quase não os citava (1 em 10 rodadas na avaliação v4; 5 de 25 pareceres com fonte na contagem de 16/11, 4 deles só com a LGPD art. 20). Um ponto de atenção passa a tratar da informação do preço ao consumidor, citando esse trecho. Prompt passa para `parecer_v5`. Seções 3 e 6 (clareza, após a primeira rodada da v5): "indício" só para problemas (D05: "indício de aderência"); o texto não fala do código (C10); o Relatório de Estabilidade Financeira é relatório, não norma (C07); "faixa" só para a faixa de risco e "margem" para o intervalo do juro justo (C04). Depois da segunda rodada: a regra negativa sobre o código saiu (piorou de 2/23 para 6/20); o rótulo da mensagem do usuário passa a "RECOMENDAÇÃO" e o texto da recomendação começa com "Recomenda-se". |
 
 Qualquer mudança nestas regras gera nova versão do prompt (`parecer_v2`, `parecer_v3`...) com o motivo anotado.

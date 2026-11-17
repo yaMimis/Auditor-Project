@@ -5,7 +5,7 @@ import pandas
 import streamlit as st
 
 from src.app.components import (
-    COUNTRIES, esc, eur, html_band_bars, html_logo, image_data_uri, info_tip, line_icon, pct, SITUATIONS)
+    COUNTRIES, esc, eur, eur_short, html_band_bars, html_logo, image_data_uri, info_tip, line_icon, pct, SITUATIONS)
 from src.app.nucleo import go_to, IMAGES_DIR, md, portfolio_overview
 
 
@@ -19,16 +19,22 @@ def portfolio_kpis(summary: dict | None) -> None:
          SITUATIONS["acima_do_justo"], "acima"),
         ("Abaixo do justo", "[Y%]" if empty_ else pct(summary["abaixo"]), "juro pode não cobrir o risco",
          SITUATIONS["abaixo_do_justo"], "abaixo"),
-        ("Cobrado a mais (estimativa)", "€ [VALOR]" if empty_ else eur(summary["pago_a_mais_eur"]),
-         "soma do que se pagou acima do teto da margem", None, "cobrado_mais"),
-        ("Prejuízo real (abaixo do justo)", "€ [VALOR]" if empty_ else eur(summary["perda_nao_coberta_eur"]),
-         "o que não voltou, só contratos já encerrados", None, "prejuizo"),
+        ("Cobrado a mais", "€ [VALOR]" if empty_ else eur_short(summary["pago_a_mais_eur"]),
+         "estimativa acima do teto da margem", None, "cobrado_mais",
+         None if empty_ else eur(summary["pago_a_mais_eur"])),
+        ("Prejuízo real", "€ [VALOR]" if empty_ else eur_short(summary["perda_nao_coberta_eur"]),
+         "abaixo do justo, já encerrados", None, "prejuizo",
+         None if empty_ else eur(summary["perda_nao_coberta_eur"])),
     ]
-    for column_, (label_, valor, sub, color, info) in zip(st.columns(5, gap="medium"), cards):
+    # cartões do mesmo tamanho, uma linha de título e uma de número (styles/04_cartoes.css: .ap-kpi-home)
+    for column_, card in zip(st.columns(5, gap="medium"), cards):
+        label_, valor, sub, color, info = card[:5]
+        exact = card[5] if len(card) > 5 else None  # valor exato em euro: aparece ao passar o mouse
         with column_:
             style = f'style="color:{color["cor"]}"' if color else ""
-            md(f"""<div class="ap-kpi">{info_tip(info)}<div class="ap-kpi-label">{esc(label_)}</div>
-                <div class="ap-kpi-value" {style}>{esc(valor)}</div><div class="ap-kpi-sub">{esc(sub)}</div></div>""")
+            title = f' title="{esc(exact)}"' if exact else ""
+            md(f"""<div class="ap-kpi ap-kpi-home">{info_tip(info)}<div class="ap-kpi-label">{esc(label_)}</div>
+                <div class="ap-kpi-value" {style}{title}>{esc(valor)}</div><div class="ap-kpi-sub">{esc(sub)}</div></div>""")
 
 
 def render_home() -> None:

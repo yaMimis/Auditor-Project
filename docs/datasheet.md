@@ -1,4 +1,4 @@
-# Datasheet dos dados · Auditor de Preço Justo
+# Datasheet dos dados · CredFlare
 
 > Versão 1.0 · 13/11/2026 · Responsável: Marcos (Dados e processo)
 > Ficha do conjunto de dados no formato *Datasheets for Datasets* (Gebru et al.): motivação, composição, coleta, pré-processamento, usos, distribuição e manutenção.

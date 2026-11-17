@@ -6,7 +6,7 @@ Como o projeto foi construído, de 26/10 a 16/11/2026, na ordem em que as etapas
 
 | Período | Etapa | Resultado principal |
 | --- | --- | --- |
-| até 28/10 | 1. Escolha do tema | Troca do CredFlow pelo Auditoria de Crédito, com a base da Bondora |
+| até 28/10 | 1. Escolha do tema | Troca do CredFlow pelo CredFlare, com a base da Bondora |
 | 26 a 29/10 | 2. Estrutura e processo | Repositório, CI, regras de trabalho e BPMN v1 |
 | 28/10 a 04/11 | 3. Dados: carga, limpeza e validação | Banco com 179.235 contratos, validação automática e correção da moeda |
 | 03 a 13/11 | 4. Análise exploratória | 10 figuras e os achados que mudaram o modelo |
@@ -19,7 +19,7 @@ Como o projeto foi construído, de 26/10 a 16/11/2026, na ordem em que as etapas
 ## 1. Escolha do tema
 
 - **Primeira ideia:** o CredFlow, sobre portabilidade de crédito via Open Finance, com a base Berka e taxas do Banco Central. A base não tinha juro por contrato, e a taxa teria de ser simulada.
-- **Troca:** o grupo passou para o Auditoria de Crédito, que pergunta se o juro cobrado de cada contrato acompanha o risco. A base Bondora tem contratos reais, com juro, desfecho e perfil do cliente.
+- **Troca:** o grupo passou para o CredFlare, que pergunta se o juro cobrado de cada contrato acompanha o risco. A base Bondora tem contratos reais, com juro, desfecho e perfil do cliente.
 - **Enquadramento:** não existe base pública brasileira com contratos individuais. Os dados europeus são usados como substituto, e o parecer aplica a lei brasileira "como se o contrato fosse de um banco brasileiro".
 - Onde está: `README.md` (Enquadramento) e o plano do projeto.
 

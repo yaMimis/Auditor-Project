@@ -1,4 +1,4 @@
-# Roteiro da demo — Auditoria de Crédito
+# Roteiro da demo — CredFlare
 
 **Versão:** 1.1 · **Data:** 14/11/2026 · **Responsável:** Yasmin (App e infraestrutura) · **Revisor:** grupo · **Status:** rascunho para o ensaio
 

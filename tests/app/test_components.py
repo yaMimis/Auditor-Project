@@ -65,8 +65,10 @@ def test_opinion_escapes_html_and_shows_source():
     html = html_opinion(opinion)
     assert "<script>" not in html and "&lt;script&gt;" in html
     assert "Template de reserva" in html
-    assert "Não encontrei base normativa" in html
+    assert "Parecer padrão (sem IA): este texto não cita normas" in html
     assert "indisponível" in html_opinion(None)
+    llm = html_opinion({**opinion, "origem": "llm", "versao_prompt": "parecer_v4"})
+    assert "sem norma citada" in llm and "A IA não citou norma neste caso" in llm
 
 
 def test_fairness_reading_by_interval():

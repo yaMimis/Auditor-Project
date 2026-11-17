@@ -320,14 +320,17 @@ def html_opinion(opinion: dict | None) -> str:
         origem = badge(f"Gerado por IA · números conferidos · {len(fontes)} fonte(s) recuperada(s)",
                        "#e4bd7d", "rgba(228,189,125,.10)")
     else:
-        origem = badge("Gerado por IA · sem fonte normativa: revisão humana", "#f2b48a", "rgba(242,180,138,.10)")
+        origem = badge("Gerado por IA · números conferidos · sem norma citada", "#f2b48a", "rgba(242,180,138,.10)")
     points = "".join(f"<li>{esc(p)}</li>" for p in opinion.get("pontos_de_atencao", []))
     if fontes:
         sources_html = "".join(
             f'<span class="ap-chip" title="{esc(f.get("trecho_id"))}">'
             f'{esc(f.get("norma"))}, {esc(f.get("artigo"))}</span>' for f in fontes)
     else:
-        sources_html = '<span class="ap-muted">Não encontrei base normativa para este caso.</span>'
+        sources_html = ('<span class="ap-muted">Parecer padrão (sem IA): este texto não cita normas. Os números '
+                        'acima continuam valendo.</span>' if opinion.get("origem") != "llm" else
+                        '<span class="ap-muted">A IA não citou norma neste caso: nenhum trecho encontrado pela '
+                        'busca nas normas foi pertinente.</span>')
     rec = RECOMMENDATIONS.get(opinion.get("recomendacao"), opinion.get("recomendacao"))
     context = ""
     if opinion.get("contexto_mercado"):  # frase fixa escrita pelo código (média do BC), nunca pelo LLM

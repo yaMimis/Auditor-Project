@@ -1,6 +1,6 @@
 ---
 name: auditor-ambiente-e-infra
-description: Use para preparar o ambiente local (venv, .env), subir banco, API e painel com Docker Compose, configurar a CI do GitHub Actions ou resolver problemas de versão de Python e dependências no Auditor de Preço Justo.
+description: Use para preparar o ambiente local (venv, .env), subir banco, API e painel com Docker Compose, configurar a CI do GitHub Actions ou resolver problemas de versão de Python e dependências no CredFlare.
 ---
 
 # Ambiente e infraestrutura

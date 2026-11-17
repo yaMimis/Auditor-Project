@@ -1,5 +1,5 @@
 -- =====================================================================
--- Auditor de Preço Justo · base de modelagem
+-- CredFlare · base de modelagem
 -- PostgreSQL 14+ · idempotente (CREATE OR REPLACE)
 --
 -- Rodar DEPOIS de 01_schema_bondora.sql (a view lê `emprestimo` e `cliente`).

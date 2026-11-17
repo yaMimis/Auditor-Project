@@ -1,4 +1,4 @@
-# iniciar.ps1 - sobe o ambiente completo do Auditor de Preco Justo (banco, API e painel).
+# iniciar.ps1 - sobe o ambiente completo do CredFlare (banco, API e painel).
 #
 # Uso (PowerShell, na raiz do projeto):
 #     .\iniciar.ps1            sobe tudo; constroi a imagem so se ela ainda nao existir

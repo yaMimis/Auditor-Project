@@ -1,6 +1,6 @@
 # REGRAS_PARECER.md — Regras para o parecer gerado pela IA
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.8 · **Data:** 16/11/2026
+**Projeto:** CredFlare · **Frente:** IA Generativa (Maria) · **Versão:** 1.8 · **Data:** 16/11/2026
 **Status:** v1.2 aprovada pela Maria em 03/11/2026; v1.3 acrescenta a regra sobre os números do REF (seção 5); v1.4 traz a unidade nominal, a referência de mercado do BC, os nomes de países e as correções do primeiro teste real do LLM, aguardando o grupo.
 
 ## 1. Finalidade

@@ -1,6 +1,6 @@
 # FORMATO_JSON.md — Contrato de dados do parecer (GenAI)
 
-**Projeto:** Auditor de Preço Justo · **Frente:** IA Generativa (Maria) · **Versão:** 1.5 · **Data:** 08/11/2026
+**Projeto:** CredFlare · **Frente:** IA Generativa (Maria) · **Versão:** 1.5 · **Data:** 08/11/2026
 **Status:** entrada aprovada pelo Samuel em 30/10/2026; recomendação v1.2 (acima do justo → revisar_preco) aprovada pela Maria em 03/11/2026; saída aprovada pela Yasmin em 05/11/2026 (painel usa a seção 5); v1.5 (unidade nominal e referência de mercado do BC) aguardando o grupo.
 
 ## 1. Finalidade

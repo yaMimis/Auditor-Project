@@ -1,4 +1,4 @@
-"""API da Auditoria de Crédito (FastAPI). Documentação interativa em /docs, agrupada como abaixo.
+"""API do CredFlare (FastAPI). Documentação interativa em /docs, agrupada como abaixo.
 
 Situação          GET  /                                     o que está no ar (modelo, banco, GenAI, busca nas normas)
 Carteira (lote)   GET  /portfolio/overview                   panorama da Home
@@ -73,7 +73,7 @@ TAGS = [
 ]
 
 app = FastAPI(
-    title="Auditoria de Crédito · API",
+    title="CredFlare · API",
     version="1.1.0",
     description=(
         "Para cada contrato: chance de inadimplência (modelo XGBoost), juro justo para esse risco, comparação "
@@ -89,7 +89,7 @@ app = FastAPI(
 def read_root():
     """Estado de cada parte, separado: uma parte fora não derruba as outras."""
     return {
-        "status": "API - AUDITORIA DE CRÉDITO OPERACIONAL",
+        "status": "API - CREDFLARE OPERACIONAL",
         "modelo_carregavel": PACOTE_PADRAO.exists(),   # False = falta o .joblib em modelos_salvos/
         "banco_disponivel": database.database_available(),  # False = banco fora ou sem a tabela de decisões
         "versao_modelo": modelo.VERSAO,

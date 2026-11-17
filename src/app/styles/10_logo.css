@@ -1,0 +1,33 @@
+/* Logo CredFlare (menu do topo e capa da Início): linha que sobe + estrela dourada + "Cred" "Flare".
+   Animação da capa: a linha se desenha, a estrela acende e pisca duas vezes, o nome aparece. */
+.cf-logo { display: inline-flex; align-items: center; gap: .55em; line-height: 1; }
+.cf-mark { flex: none; overflow: visible; }
+.cf-word { font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; font-weight: 600; letter-spacing: -.01em; }
+.cf-cred { color: #F2EFE8; }
+.cf-flare { color: #D6AC6E; }
+
+/* menu do topo: logo pequeno, sem animação */
+.cf-nav .cf-mark { width: 34px; height: 27px; }
+.cf-nav .cf-word { font-size: 1.3rem; }
+.nav-brand .cf-logo { letter-spacing: normal; }
+
+/* capa da Início: logo grande, acima do título */
+.hero-logo { margin-bottom: 1.4rem; }
+.cf-hero .cf-mark { width: 72px; height: 57px; }
+.cf-hero .cf-word { font-size: 2.6rem; }
+
+/* animação (a mesma do credflare_logo_animado.html) */
+.cf-play .cf-line { stroke-dasharray: 100; stroke-dashoffset: 100; animation: cf-draw 1.8s ease-out forwards; }
+.cf-play .cf-star { transform-box: fill-box; transform-origin: center; transform: scale(0);
+    animation: cf-pop .9s 1.6s cubic-bezier(.3,1.6,.5,1) forwards, cf-twinkle 1.4s 2.7s ease-in-out 2; }
+.cf-play .cf-cred, .cf-play .cf-flare { display: inline-block; opacity: 0; transform: translateY(6px); }
+.cf-play .cf-cred { animation: cf-fade 1.3s .5s ease-out forwards; }
+.cf-play .cf-flare { animation: cf-fade 1.3s 1.8s ease-out forwards; }
+@keyframes cf-draw { to { stroke-dashoffset: 0; } }
+@keyframes cf-pop { 0% { transform: scale(0) rotate(-90deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes cf-twinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.22) rotate(15deg); } }
+@keyframes cf-fade { to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+    .cf-play .cf-line, .cf-play .cf-star, .cf-play .cf-cred, .cf-play .cf-flare { animation: none; opacity: 1;
+        transform: none; stroke-dashoffset: 0; }
+}

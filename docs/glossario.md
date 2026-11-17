@@ -1,4 +1,4 @@
-# Glossário · Auditor de Preço Justo
+# Glossário · CredFlare
 
 Siglas e termos usados no projeto, com o significado geral e como cada um aparece aqui. As regras dos dados estão em `DATA.md` e as decisões do modelo em `docs/DECISOES.md`.
 

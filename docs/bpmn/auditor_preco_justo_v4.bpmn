@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Auditor" targetNamespace="http://auditor-preco-justo/bpmn" exporter="Auditor de Preco Justo" exporterVersion="4.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Auditor" targetNamespace="http://auditor-preco-justo/bpmn" exporter="CredFlare" exporterVersion="4.0">
   <bpmn:collaboration id="Collaboration_Auditor">
-    <bpmn:participant id="Participant_Contrato" name="Auditor de Preço Justo: avaliação de um contrato" processRef="Process_Contrato" />
+    <bpmn:participant id="Participant_Contrato" name="CredFlare: avaliação de um contrato" processRef="Process_Contrato" />
     <bpmn:participant id="Participant_Equidade" name="Auditoria de equidade da carteira (em lote)" processRef="Process_Equidade" />
   </bpmn:collaboration>
   <bpmn:process id="Process_Contrato" isExecutable="false">

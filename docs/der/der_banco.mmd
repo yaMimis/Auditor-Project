@@ -1,0 +1,136 @@
+erDiagram
+    emprestimo {
+        TEXT loan_id PK
+        INTEGER numero
+        DATE data_referencia
+        DATE data_pedido
+        DATE data_emprestimo
+        DATE data_primeira_parcela
+        DATE data_vencimento_original
+        BOOLEAN novo_cliente
+        NUMERIC_16_2 valor_solicitado
+        NUMERIC_16_2 valor_concedido
+        NUMERIC_10_4 juro_aa
+        INTEGER prazo_meses
+        NUMERIC_16_2 parcela_mensal
+        SMALLINT finalidade
+        SMALLINT tipo_verificacao
+        TEXT rating
+        INTEGER versao_modelo_bondora
+        DOUBLE pd_bondora
+        DOUBLE perda_esperada_bondora
+        DOUBLE lgd_bondora
+        DOUBLE retorno_esperado_bondora
+        TEXT status
+        DATE data_default
+        INTEGER dias_atraso
+        TEXT pior_categoria_atraso
+        BOOLEAN reestruturado
+        DATE data_vencimento_atual
+        DATE data_fim_contrato
+        DATE data_ultimo_pagamento
+        NUMERIC_16_2 principal_pago
+        NUMERIC_16_2 juros_multas_pagos
+        NUMERIC_16_2 principal_baixado
+        NUMERIC_16_2 juros_baixados
+        NUMERIC_16_2 saldo_principal
+        NUMERIC_16_2 recuperacao_principal
+        NUMERIC_16_2 recuperacao_juros
+        NUMERIC_16_2 ead1
+        NUMERIC_16_2 ead2
+        SMALLINT estagio_recuperacao
+    }
+    cliente {
+        TEXT loan_id PK, FK
+        TEXT cliente_id
+        SMALLINT genero
+        SMALLINT idade
+        CHAR_2 pais
+        SMALLINT escolaridade
+        SMALLINT estado_civil
+        SMALLINT n_dependentes
+        SMALLINT situacao_emprego
+        TEXT tempo_emprego_atual
+        TEXT experiencia_trabalho
+        SMALLINT area_ocupacao
+        SMALLINT tipo_moradia
+        NUMERIC_16_2 renda_empregador_principal
+        NUMERIC_16_2 renda_pensao
+        NUMERIC_16_2 renda_auxilio_familiar
+        NUMERIC_16_2 renda_assistencia_social
+        NUMERIC_16_2 renda_licenca
+        NUMERIC_16_2 renda_pensao_alimenticia
+        NUMERIC_16_2 renda_outras
+        NUMERIC_16_2 renda_total
+    }
+    historico_credito {
+        TEXT loan_id PK, FK
+        INTEGER n_emprestimos_anteriores
+        NUMERIC_16_2 valor_emprestimos_anteriores
+        NUMERIC_16_2 pagamentos_anteriores
+        NUMERIC_16_2 quitacoes_antecipadas_valor
+        INTEGER quitacoes_antecipadas_qtd
+        INTEGER passivos_existentes
+        NUMERIC_16_2 passivos_total
+        INTEGER refinanciamento_passivos
+        DOUBLE divida_renda
+        NUMERIC_16_2 caixa_livre
+        TEXT score_es_microl
+        TEXT score_es_equifax
+        TEXT score_fi_asiakastieto
+        NUMERIC_10_2 score_ee_mini
+    }
+    euribor_mensal {
+        DATE mes PK
+        NUMERIC_10_7 euribor_3m
+        NUMERIC_10_7 euribor_12m
+    }
+    selic_mensal {
+        DATE mes PK
+        NUMERIC_10_2 selic_aa
+        NUMERIC_6_2 selic_meta_aa
+    }
+    bc_credito_pessoal_mensal {
+        DATE mes PK
+        NUMERIC_10_2 taxa_aa
+    }
+    decisao_analista {
+        BIGINT decisao_id PK
+        TIMESTAMPTZ registrada_em
+        UUID requisicao_id UK
+        TEXT contrato_id
+        TEXT origem
+        TEXT analista
+        TEXT decisao
+        TEXT justificativa
+        DOUBLE taxa_proposta
+        TEXT recomendacao_sistema
+        TEXT situacao_preco
+        DOUBLE pd
+        TEXT faixa
+        DOUBLE juro_cobrado
+        DOUBLE juro_justo
+        DOUBLE juro_justo_min
+        DOUBLE juro_justo_max
+        TEXT versao_modelo
+        TEXT versao_parecer
+        TEXT origem_parecer
+        JSONB prever_json
+        JSONB parecer_json
+    }
+    trechos_normas {
+        TEXT trecho_id PK
+        TEXT norma
+        TEXT artigo
+        TEXT parte
+        TEXT arquivo
+        TEXT url
+        TEXT texto
+        VECTOR_384 embedding
+    }
+    emprestimo ||--|| cliente : "loan_id"
+    emprestimo ||--|| historico_credito : "loan_id"
+    euribor_mensal ||--o{ emprestimo : "mes da concessao"
+    selic_mensal ||--o{ emprestimo : "mes da concessao"
+    bc_credito_pessoal_mensal |o--o{ emprestimo : "mes da concessao"
+    emprestimo |o--o{ decisao_analista : "contrato_id = loan_id"

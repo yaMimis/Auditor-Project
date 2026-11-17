@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 import math
 
-__all__ = ["COUNTRIES", "esc", "pct", "pp", "eur", "compact", "SITUATIONS", "RECOMMENDATIONS", "RATE_UNIT",
+__all__ = ["COUNTRIES", "esc", "pct", "pp", "eur", "eur_short", "compact", "SITUATIONS", "RECOMMENDATIONS", "RATE_UNIT",
            "COLOR_INCREASES", "COLOR_DECREASES", "margin_distance_pp", "badge", "situation_badge", "html_kpi",
            "INFO", "info_tip", "line_icon", "html_logo"]
 
@@ -42,6 +42,17 @@ def eur(valor, decimals: int = 0) -> str:
     if valor is None or (isinstance(valor, float) and math.isnan(valor)):
         return "—"
     return f"€ {_num(valor, decimals)}"
+
+
+def eur_short(valor) -> str:
+    """Euro abreviado para cartão estreito: € 48,4 mi · € 1,9 mi · € 12,3 mil (o valor exato fica no title)."""
+    if valor is None or (isinstance(valor, float) and math.isnan(valor)):
+        return "—"
+    if abs(valor) >= 1e6:
+        return f"€ {_num(valor / 1e6, 1)} mi"
+    if abs(valor) >= 1e4:
+        return f"€ {_num(valor / 1e3, 1)} mil"
+    return eur(valor)
 
 
 def compact(block: str) -> str:

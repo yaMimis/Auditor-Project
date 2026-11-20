@@ -92,7 +92,7 @@ Como o projeto foi construído, de 26/10 a 16/11/2026, na ordem em que as etapas
 
 - **Backtest de 2016:** os contratos "acima do justo" tiveram o pior retorno (−22,7%) e os "abaixo", o melhor (−9,2%). A hipótese só vale nas faixas de risco B e C. O resultado é apresentado como indício, e a decisão é sempre do analista.
 - **ROI:** 5,59 mi € de perda não coberta em 2016 e 44,3 mi € de excesso estimado acima da margem em 2017 a 2021 (`src/dados/roi_backtest.py`).
-- **Equidade:** a risco igual, jovens de 18 a 25 anos pagam +5,45 pontos percentuais a mais que os de 35 a 44.
+- **Equidade:** a risco igual, jovens de 18 a 25 anos pagam +5,31 pontos percentuais a mais que os de 35 a 44 (IC 4,92 a 5,69; recalculado em 15/11 com a carteira repontuada).
 - **Invariância:** trocando gênero e idade em 500 contratos, 500 deram resultado idêntico.
 - **Documentos:** datasheet dos dados, glossário, roteiro da demo e o documento de justificativas para a banca.
 

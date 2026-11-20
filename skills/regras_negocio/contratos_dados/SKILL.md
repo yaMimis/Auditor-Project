@@ -158,7 +158,7 @@ Leitura: IC 95% que cruza o zero = "Sem indício"; que não cruza = "Indício ·
 
 ## 6. Registro de decisão do analista (painel → banco)
 
-Campos: `registrado_em`, `analista`, `contrato_id`, `situacao_preco`, `pd`, `juro_cobrado`, `juro_justo`, `recomendacao_sistema`, `decisao ∈ {manter_preco, revisar_preco, encaminhar_compliance}`, `nova_taxa_proposta` (só em revisar), `justificativa` (obrigatória), `origem_parecer`, `versao_modelo`, `versao_prompt`. Sem gênero nem idade. **[EM ANDAMENTO] (Marcos)** tabela no banco; hoje o painel guarda na sessão e exporta CSV/JSON.
+Campos: `registrado_em`, `analista`, `contrato_id`, `situacao_preco`, `pd`, `juro_cobrado`, `juro_justo`, `recomendacao_sistema`, `decisao ∈ {manter_preco, revisar_preco, encaminhar_compliance}`, `nova_taxa_proposta` (só em revisar), `justificativa` (obrigatória), `origem_parecer`, `versao_modelo`, `versao_prompt`. Sem gênero nem idade. **[PRONTO]** tabela `decisao_analista` (`db/05`), só de inclusão; a API grava (`POST /decisions`) e o painel lista e exporta em CSV/JSON. Sem banco, a decisão fica como rascunho na sessão.
 
 ## Pronto quando
 

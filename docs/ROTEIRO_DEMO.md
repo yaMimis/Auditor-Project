@@ -1,6 +1,6 @@
 # Roteiro da demo — CredFlare
 
-**Versão:** 1.1 · **Data:** 14/11/2026 · **Responsável:** Yasmin (App e infraestrutura) · **Revisor:** grupo · **Status:** rascunho para o ensaio
+**Versão:** 1.2 · **Data:** 19/11/2026 · **Responsável:** Yasmin (App e infraestrutura) · **Revisor:** grupo · **Status:** versão final para a banca
 
 Demo ao vivo de cerca de **8 minutos**, com ensaio em 15/11 e banca em 21/11, seguida da mesma sequência gravada em vídeo (plano B). Cada bloco diz o que mostrar na tela, a frase-chave e o ponto do guia que ele prova.
 
@@ -74,3 +74,4 @@ Sugestão: mostrar no trecho de **governança e ética** da apresentação (minu
 |---|---|---|
 | 1.0 | 11/11/2026 | Primeira versão do roteiro. |
 | 1.1 | 14/11/2026 | Maria: "Tente enganar a IA" no terminal (seção 3), linha no plano B, resposta nova para "E se a IA inventar um número?", resposta do backtest combinada com o Samuel, frase do bloco 9 e data da banca. |
+| 1.2 | 19/11/2026 | Revisão final: nome CredFlare, versão e data. |

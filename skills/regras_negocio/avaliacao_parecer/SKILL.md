@@ -13,7 +13,7 @@ Medir se o parecer é **certo, fiel às normas e claro** antes de qualquer mudan
 
 ## Arquivos
 
-`genai/avaliacao/CRITERIOS.md`, `montar_casos.py` (monta os casos e as normas aceitas por situação), `casos_avaliacao.json`, `avaliar.py`, `resultados_<versão>_<modelo>.json` e `.md` (v2, v3 e v4); `tests/genai/test_avaliacao.py`.
+`genai/avaliacao/CRITERIOS.md`, `montar_casos.py` (monta os casos e as normas aceitas por situação), `casos_avaliacao.json`, `avaliar.py`, `resultados_<versão>_<modelo>.json` e `.md` (v2 a v5); `tests/genai/test_avaliacao.py`.
 
 ## Regras
 
@@ -25,6 +25,7 @@ Medir se o parecer é **certo, fiel às normas e claro** antes de qualquer mudan
 - **Falha do Google (16/11):** uma rodada que cai no template por 503, 504, tempo esgotado ou 429 é repetida até `TENTATIVAS_POR_RODADA` vezes (padrão 3), com espera crescente (`ESPERA_ENTRE_TENTATIVAS`, padrão 20 s), e o número de tentativas fica no JSON (`tentativas`, `falhas_anteriores`). **Resposta inválida e recusa da conferência nunca são repetidas**: repetir até passar seria escolher o resultado. O relatório mostra quantas rodadas foram repetidas e quantas ficaram no template por falha do Google.
 - Métricas por código além dos critérios: fonte específica por situação (sem contar a LGPD art. 20, que entra em todos os casos), citações da LGPD art. 20, recusas por palavra e por artigo e, desde a v5, recomendações que falam do código ou do sistema (`fala_dos_bastidores`).
 - Resultado da v4 (09/11): recomendação 40/40, sem palavra proibida 40/40, mesma resposta nas 2 rodadas 16/20, fonte específica 8/8 no caso "abaixo" e 1/9 no "acima" (as normas tratam de transparência, não de teto de juros). Revisão humana (10/11, 17 pareceres): fidelidade 17/17, alucinação 0/17, citação correta 7/8, clareza média 3,6. As duas quedas para o template (C13 na v3, C03 na v4) foram timeouts do Gemini.
+- Resultado da v5 (16/11, versão atual): recomendação 40/40, norma aceita no top 3 16/16, pareceres da IA aprovados 33/34, fontes dentro das normas aceitas 33/33, fonte específica no "acima" 10/10 e no "abaixo" 8/8, nenhuma recomendação falando do código (0/33). Revisão humana (17 pareceres): fidelidade 16/17, citação correta 11/11, alucinação 0/17, clareza média 4,2.
 - Na v4, "fontes dentro das normas aceitas" dá 32/33 por causa do C03: ele citou o CDC art. 54-D, II corretamente (sim na revisão humana), mas esse artigo não estava entre as normas aceitas do caso "acima". A métrica está certa: ela mede o gabarito definido antes de rodar, não se a citação está correta.
 - Os casos e as normas aceitas **não mudam depois de rodar** uma versão: mudar o gabarito depois do resultado invalida a comparação. Única mudança até agora: o CDC art. 54-D entrou no "acima" em 16/11, antes da rodada final da v5 (motivo em `CRITERIOS.md` e em `montar_casos.py`). Para comparar com a v4, recalcular a v4 com o gabarito novo. Os casos com país no rótulo ("Estônia") ficam como estão: testam se o código retira o país.
 - A revisão humana é do **texto original do LLM**, antes dos ajustes de estilo; não reavaliar com os ajustes e dizer que o modelo melhorou.
@@ -44,4 +45,4 @@ O `.md` da versão tem as métricas por código e a revisão humana preenchida; 
 
 ## Estado em 10/11/2026
 
-- **[PRONTO]** critérios, 20 casos, `avaliar.py` com `--relatorio`, avaliações v2, v3 e v4, revisão humana da v4.
+- **[PRONTO]** critérios, 20 casos, `avaliar.py` com `--relatorio`, avaliações v2 a v5, revisão humana da v4 e da v5.
